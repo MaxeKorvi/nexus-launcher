@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob: https:; img-src 'self' data: blob: https:; connect-src 'self' https:;">
+  <title>Nexus Launcher</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/icons.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ═══ Custom title bar (spec §2.1) ═══ -->
+    <div class="titlebar">
+      <div class="title">
+        <img class="brand-logo" src="assets/nexus-logo.png" alt="Nexus Launcher">
+        <div class="brand-wordmark"><strong>Nexus</strong><span>Launcher v1.1.26</span></div>
+      </div>
+      <div class="controls">
+        <button id="btn-min" title="Свернуть">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button id="btn-max" title="Развернуть">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="5" width="14" height="14" rx="1"/>
+          </svg>
+        </button>
+        <button id="btn-close" class="close" title="Закрыть">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="6" y1="6" x2="18" y2="18"/>
+            <line x1="18" y1="6" x2="6" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ Main content ═══ -->
+    <main class="content">
+      <!-- Left side panel: Navigation -->
+      <aside class="left-panel" id="left-panel">
+        <div class="nav-list" id="nav-list" style="display: flex; flex-direction: column; height: 100%;">
+          <button class="nav-item active" data-view="home" data-tip="Главная">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>
+            <span class="nav-text">Главная</span>
+          </button>
+          <button class="nav-item" data-view="library" data-tip="Библиотека">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <span class="nav-text">Библиотека</span>
+          </button>
+          <button class="nav-item" data-view="console" data-tip="Консоль" style="margin-top: auto;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+            <span class="nav-text">Консоль</span>
+          </button>
+          <button class="nav-item" data-view="settings" data-tip="Настройки">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="nav-text">Настройки</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Center content: Home view or Dynamic views container -->
+      <div class="center-content">
+        <div class="home-view" id="home-view">
+          <!-- Selected profile/assembly hero -->
+          <section class="selected-profile-hero" id="profile-hero">
+            <div class="profile-cover" id="profile-cover">
+              <div class="profile-details">
+                <div class="profile-icon" id="profile-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M12 12h.01"/><path d="M15 10h.01"/><path d="M18 12h.01"/><path d="M6 12h4"/><path d="M8 10v4"/></svg></div>
+                <div class="profile-info">
+                  <span class="eyebrow" id="profile-type">Minecraft</span>
+                  <h2 id="profile-name">Стандартный профиль</h2>
+                  <div class="profile-meta">
+                    <span class="version-badge" id="profile-version-badge">Версия: —</span>
+                    <span class="status-badge" id="profile-status-badge">● Файлы не проверены</span>
+                  </div>
+                </div>
+              </div>
+              <div class="profile-actions">
+                <button class="btn outline" id="hero-btn-check" title="Проверить файлы версии">Проверить файлы</button>
+                <button class="btn outline" id="hero-btn-folder" title="Открыть папку версии">Папка</button>
+                <button class="btn primary play" id="hero-btn-play">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  Играть
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Center: News (spec §2.3) -->
+          <section class="news compact-news" id="news">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">В курсе событий</span>
+                <h2>Новости Minecraft</h2>
+              </div>
+              <div class="news-actions" style="display: flex; gap: 8px;">
+                <button class="btn outline compact-btn" id="btn-all-news">Все новости</button>
+                <button class="icon-button" id="refresh-news" title="Обновить новости" aria-label="Обновить новости">↻</button>
+              </div>
+            </div>
+            <div id="news-list">
+              <div style="text-align:center;padding:40px;color:var(--text-2);"><span class="spinner"></span> Загрузка новостей…</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Dynamic views render here without replacing the window/sidebar -->
+        <section id="view-container" class="main-view" style="display:none;"></section>
+      </div>
+
+      <!-- Right side panel: Account & Downloads -->
+      <aside class="right-panel" id="right-panel">
+        <div class="user-card" id="user-card">
+          <div class="avatar" id="user-avatar">?</div>
+          <div class="user-card-body">
+            <div class="nick" id="user-nick">Гость</div>
+            <div class="provider" id="user-provider">Войдите в аккаунт</div>
+            <div class="status" id="user-status">Оффлайн</div>
+          </div>
+        </div>
+
+        <div class="downloads-panel" id="downloads-panel">
+          <div class="downloads-panel-head" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-soft); margin-bottom: 10px;">
+            <h3 style="font-size: 14px; font-weight: 700; color: var(--text);">Загрузки</h3>
+            <button class="icon-button" id="downloads-clear" title="Очистить завершённые" style="width: 24px; height: 24px; font-size: 11px;">✓</button>
+          </div>
+          <div class="downloads-panel-body" id="downloads-panel-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+            <div class="empty-state">Нет загрузок</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ═══ Bottom bar (spec §2 lower panel) ═══ -->
+    <footer class="bottom-bar">
+      <div class="left">
+        <div class="account-select" id="account-select" data-tip="Сменить аккаунт">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
+            <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>
+          </svg>
+          <div>
+            <div class="label">Аккаунт</div>
+            <div class="value" id="bottom-account">—</div>
+          </div>
+        </div>
+        <div class="version-select" id="version-select" data-tip="Сменить версию">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
+            <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/>
+          </svg>
+          <div>
+            <div class="label">Версия</div>
+            <div class="value" id="bottom-version">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="right">
+        <button class="btn outline folder-btn" id="btn-open-version-folder" data-tip="Открыть папку выбранной версии">Папка</button>
+        <button class="btn outline" id="btn-force-update" data-tip="Проверить файлы версии">Проверить файлы</button>
+        <button class="btn primary play" id="btn-play">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Играть
+        </button>
+      </div>
+    </footer>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Modal mount -->
+  <div id="modal-mount"></div>
+
+  <!-- Scripts -->
+  <script src="js/shared.js"></script>
+  <script src="js/stores/store.js"></script>
+  <script src="js/components/toast.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/views/home.js"></script>
+  <script src="js/views/library.js"></script>
+  <script src="js/views/accounts.js"></script>
+  <script src="js/views/versions.js"></script>
+  <script src="js/views/mods.js"></script>
+  <script src="js/views/modpacks.js"></script>
+  <script src="js/views/maps.js"></script>
+  <script src="js/views/shaders.js"></script>
+  <script src="js/views/resourcepacks.js"></script>
+  <script src="js/views/downloads.js"></script>
+  <script src="js/views/console.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/views/profile.js"></script>
+  <script src="js/views/about.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

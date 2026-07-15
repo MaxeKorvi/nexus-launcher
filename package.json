@@ -1,0 +1,99 @@
+{
+  "name": "nexus-launcher",
+  "version": "1.1.26",
+  "description": "Nexus Launcher — hotfix20: redesigned unified settings interface",
+  "main": "src/main/main.js",
+  "author": "Nexus Launcher Team",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev --enable-logging",
+    "dist:appimage": "electron-builder --linux AppImage",
+    "dist:deb": "electron-builder --linux deb",
+    "dist:rpm": "electron-builder --linux rpm",
+    "dist:flatpak": "electron-builder --linux flatpak",
+    "dist:all": "electron-builder --linux AppImage deb rpm",
+    "dist:win": "electron-builder --win",
+    "dist:win:nsis": "electron-builder --win nsis",
+    "dist:win:portable": "electron-builder --win portable",
+    "dist:all:win": "electron-builder --win --linux",
+    "rebuild": "electron-rebuild",
+    "test": "node test/compatibility-smoke.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "electron-store": "^8.2.0",
+    "jszip": "^3.10.1"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-rebuild": "^3.2.9"
+  },
+  "build": {
+    "appId": "app.nexus.launcher",
+    "productName": "Nexus Launcher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      "build/installer-assets/**"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "category": "Game",
+      "icon": "src/renderer/assets/nexus-logo.png",
+      "desktop": {
+        "Name": "Nexus Launcher",
+        "Comment": "Modern Minecraft launcher for Linux",
+        "Categories": "Game;Java;",
+        "Terminal": "false",
+        "Type": "Application",
+        "StartupWMClass": "nexus-launcher"
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "src/renderer/assets/nexus-logo.png",
+      "publisherName": "Nexus Launcher Team",
+      "legalTrademarks": "Nexus Launcher"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/installer-assets/installer.ico",
+      "uninstallerIcon": "build/installer-assets/installer.ico",
+      "installerHeader": "build/installer-assets/installer-header.bmp",
+      "installerSidebar": "build/installer-assets/installer-sidebar.bmp",
+      "uninstallerSidebar": "build/installer-assets/installer-sidebar.bmp",
+      "license": "LICENSE.txt",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nexus Launcher",
+      "include": "build/installer.nsh",
+      "language": "1049",
+      "unicode": true,
+      "warningsAsErrors": false,
+      "runAfterFinish": true,
+      "installerLanguages": ["ru_RU", "en_US"],
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
