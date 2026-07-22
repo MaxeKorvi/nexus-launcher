@@ -503,9 +503,12 @@ function expandDownloadUrls(item) {
     mirrors.push(`https://repo1.maven.org/maven2/${rel}`);
   }
 
-  // Prefer mirrors first for library downloads: this prevents old Forge from
-  // stopping on repo1 404 for lwjgl-platform/jinput-platform.
-  return uniqueDownloadUrls([...(item.kind === 'library' ? mirrors : []), ...original, ...(item.kind === 'library' ? [] : mirrors)]);
+  // The repository declared by the profile is authoritative. Trying every
+  // unrelated Maven host first made Fabric/Quilt installs wait for multiple
+  // timeouts before reaching their real repository (and could make all loader
+  // downloads look frozen). Keep mirrors strictly as fallbacks. Legacy Forge
+  // still reaches its mirrors after an immediate 404 from an obsolete URL.
+  return uniqueDownloadUrls([...original, ...mirrors]);
 }
 
 function addCompleted(item, status, extra = {}) {
@@ -1017,5 +1020,5 @@ function setWindow() {}
 
 module.exports = { start, pause, resume, cancel, list, clearCompleted, setWindow };
 if (process.env.NODE_ENV === 'test') {
-  module.exports.__testing = { detectArchiveFormat, isHtmlHead, extractGoogleDriveId };
+  module.exports.__testing = { detectArchiveFormat, isHtmlHead, extractGoogleDriveId, expandDownloadUrls };
 }

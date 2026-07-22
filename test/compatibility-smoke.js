@@ -93,6 +93,7 @@ const Java = require(path.join(root, 'src/services/java'));
 const Shared = require(path.join(root, 'src/services/shared'));
 const Launcher = require(path.join(root, 'src/services/launcher')).__testing;
 const Downloads = require(path.join(root, 'src/services/downloads'));
+const VersionsTesting = require(path.join(root, 'src/services/versions')).__testing;
 
 // ─── Java version parsing ─────────────────────────────────────────────────
 assert.equal(Java.parseJavaMajor('java version "1.8.0_412"'), 8);
@@ -246,6 +247,24 @@ assert.equal(Dt.extractGoogleDriveId('https://drive.google.com/file/d/abc123def4
 assert.equal(Dt.extractGoogleDriveId('https://drive.google.com/uc?export=download&id=abc123def456'), 'abc123def456');
 assert.equal(Dt.extractGoogleDriveId('https://example.com'), '');
 console.log('[OK] Downloads.extractGoogleDriveId');
+
+// Loader libraries must try their declared repository before unrelated mirrors.
+const fabricLibraryUrls = Dt.expandDownloadUrls({
+  url: 'https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar',
+  path: '/game/libraries/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar',
+  kind: 'library'
+});
+assert.equal(fabricLibraryUrls[0], 'https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar');
+console.log('[OK] Downloads loader repository priority');
+
+const orderedLoaders = VersionsTesting.sortLoaderVersions([
+  { version: '0.20.0-beta.9', stable: false },
+  { version: '0.30.0', stable: true },
+  { version: '0.29.2', stable: true }
+]);
+assert.deepEqual(orderedLoaders.map(x => x.version), ['0.30.0', '0.29.2', '0.20.0-beta.9']);
+assert.ok(VersionsTesting.installerArgSets('C:/Nexus/test').every(args => args.includes('C:/Nexus/test')));
+console.log('[OK] Loader version ordering and isolated installer target');
 
 // ─── Full integration: accounts ────────────────────────────────────────────
 const Accounts = require(path.join(root, 'src/services/accounts'));

@@ -126,6 +126,32 @@ async function getJsonWithRetry(urls, cacheName = '', extra = {}) {
   throw lastErr || new Error('Не удалось получить данные с сервера.');
 }
 
+async function getTextWithRetry(urls, cacheName = '') {
+  const list = Array.isArray(urls) ? urls : [urls];
+  let lastErr = null;
+  for (const url of list.filter(Boolean)) {
+    for (const family of [undefined, 4]) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const { data } = await axios.get(url, axiosOptions({ family, responseType: 'text' }));
+          if (cacheName) await writeCachedJson(cacheName, String(data));
+          return String(data);
+        } catch (err) {
+          lastErr = err;
+          const status = err && err.response && err.response.status;
+          if (status && status >= 400 && status < 500 && status !== 429) break;
+          await sleep(350 * attempt);
+        }
+      }
+    }
+  }
+  if (cacheName) {
+    const cachedValue = await readCachedJson(cacheName);
+    if (cachedValue && typeof cachedValue.data === 'string') return cachedValue.data;
+  }
+  throw lastErr || new Error('Не удалось получить метаданные загрузчика.');
+}
+
 async function getManifest() {
   try {
     return await getJsonWithRetry(MANIFEST_URLS, 'version_manifest.json');
@@ -175,6 +201,13 @@ function groupLatestByMinecraft(items) {
     if (!old || compareVersionLike(old.version, item.version) < 0) map[item.mcVersion] = item;
   }
   return map;
+}
+
+function sortLoaderVersions(items) {
+  return [...(items || [])].sort((a, b) =>
+    Number(Boolean(b && b.stable)) - Number(Boolean(a && a.stable)) ||
+    compareVersionLike(b && b.version, a && a.version)
+  );
 }
 
 function normalizeRepositoryBase(url) {
@@ -572,7 +605,7 @@ async function installFabricProfile(rootDir, minecraftVersion, loaderVersion) {
   }
   if (!loaderVersion) throw new Error('Fabric не найден для Minecraft ' + minecraftVersion);
   const url = `${FABRIC_META}/versions/loader/${encodeURIComponent(minecraftVersion)}/${encodeURIComponent(loaderVersion)}/profile/json`;
-  const { data: profile } = await axios.get(url, { timeout: timeoutMs() });
+  const profile = await getJsonWithRetry(url, `fabric_profile_${minecraftVersion}_${loaderVersion}.json`);
   profile.id = profile.id || `fabric-loader-${loaderVersion}-${minecraftVersion}`;
   profile.inheritsFrom = profile.inheritsFrom || minecraftVersion;
   profile.jar = profile.jar || minecraftVersion;
@@ -591,7 +624,7 @@ async function installQuiltProfile(rootDir, minecraftVersion, loaderVersion) {
   }
   if (!loaderVersion) throw new Error('Quilt не найден для Minecraft ' + minecraftVersion);
   const url = `${QUILT_META}/versions/loader/${encodeURIComponent(minecraftVersion)}/${encodeURIComponent(loaderVersion)}/profile/json`;
-  const { data: profile } = await axios.get(url, { timeout: timeoutMs() });
+  const profile = await getJsonWithRetry(url, `quilt_profile_${minecraftVersion}_${loaderVersion}.json`);
   profile.id = profile.id || `quilt-loader-${loaderVersion}-${minecraftVersion}`;
   profile.inheritsFrom = profile.inheritsFrom || minecraftVersion;
   profile.jar = profile.jar || minecraftVersion;
@@ -604,16 +637,42 @@ async function installQuiltProfile(rootDir, minecraftVersion, loaderVersion) {
 }
 
 async function getFabricLoaders(mcVersion) {
-  const { data } = await axios.get(`${FABRIC_META}/versions/loader/${encodeURIComponent(mcVersion)}`, { timeout: timeoutMs() });
-  return Array.isArray(data) ? data.map(x => ({ loader: 'fabric', version: x.loader.version, stable: x.loader.stable !== false, mcVersion })) : [];
+  return cached(`fabric-loaders:${mcVersion}`, async () => {
+    const data = await getJsonWithRetry(
+      `${FABRIC_META}/versions/loader/${encodeURIComponent(mcVersion)}`,
+      `fabric_loaders_${mcVersion}.json`
+    );
+    const items = Array.isArray(data) ? data
+      .filter(x => x && x.loader && x.loader.version)
+      .map(x => ({
+        loader: 'fabric', version: x.loader.version,
+        stable: typeof x.loader.stable === 'boolean' ? x.loader.stable : !/-/.test(x.loader.version), mcVersion
+      })) : [];
+    return sortLoaderVersions(items);
+  });
 }
 async function getQuiltLoaders(mcVersion) {
-  const { data } = await axios.get(`${QUILT_META}/versions/loader/${encodeURIComponent(mcVersion)}`, { timeout: timeoutMs() });
-  return Array.isArray(data) ? data.map(x => ({ loader: 'quilt', version: x.loader.version, stable: x.loader.stable !== false, mcVersion })) : [];
+  return cached(`quilt-loaders:${mcVersion}`, async () => {
+    const data = await getJsonWithRetry(
+      `${QUILT_META}/versions/loader/${encodeURIComponent(mcVersion)}`,
+      `quilt_loaders_${mcVersion}.json`
+    );
+    const items = Array.isArray(data) ? data
+      .filter(x => x && x.loader && x.loader.version)
+      .map(x => ({
+        loader: 'quilt', version: x.loader.version,
+        stable: typeof x.loader.stable === 'boolean' ? x.loader.stable : !/-/.test(x.loader.version), mcVersion
+      }))
+      // Quilt Meta does not guarantee response order. It currently starts with
+      // old 0.20 beta builds, so selecting [0] installed an obsolete loader.
+      : [];
+    return sortLoaderVersions(items);
+  });
 }
 
 async function fetchMavenVersions(baseUrl) {
-  const { data } = await axios.get(`${baseUrl}/maven-metadata.xml`, { timeout: timeoutMs(), responseType: 'text' });
+  const cacheName = `maven_${Buffer.from(baseUrl).toString('hex').slice(-48)}.json`;
+  const data = await getTextWithRetry(`${baseUrl}/maven-metadata.xml`, cacheName);
   return Array.from(String(data).matchAll(/<version>([^<]+)<\/version>/g)).map(m => m[1]);
 }
 
@@ -703,20 +762,25 @@ async function installerJavaCandidates(mcVersion) {
 }
 
 function installerArgSets(gameDir) {
-  // Forge/NeoForge installers changed CLI behavior over time. Never use the
-  // no-argument GUI path in a launcher process; try only non-interactive forms.
+  // Never omit gameDir: recent NeoForge installers ignore cwd and silently use
+  // the user's shared .minecraft folder when no path is supplied. Nexus would
+  // then report success but be unable to find or launch the installed profile.
   return [
     ['--installClient', gameDir],
-    ['--installClient'],
-    ['--install-client', gameDir],
-    ['--install-client']
+    ['--install-client', gameDir]
   ];
 }
 
 async function runInstallerJar(javaPath, installerPath, gameDir, installerArgs) {
   await ensureLauncherProfiles(gameDir);
   await new Promise((resolve, reject) => {
-    const args = ['-Djava.net.preferIPv4Stack=true', '-jar', installerPath, ...(installerArgs || ['--installClient', gameDir])];
+    const args = [
+      '-Djava.net.preferIPv4Stack=true',
+      '-Dsun.net.client.defaultConnectTimeout=60000',
+      '-Dsun.net.client.defaultReadTimeout=300000',
+      '-jar', installerPath,
+      ...(installerArgs || ['--installClient', gameDir])
+    ];
     const child = spawn(javaPath, args, {
       cwd: gameDir,
       env: { ...process.env, NEXUS_INSTALL_DIR: gameDir },
@@ -729,8 +793,8 @@ async function runInstallerJar(javaPath, installerPath, gameDir, installerArgs) 
       if (settled) return;
       settled = true;
       try { child.kill('SIGKILL'); } catch {}
-      reject(new Error(`Installer timeout (${path.basename(javaPath)} ${installerArgs.join(' ')}): установщик не ответил за 120 секунд`));
-    }, 120000);
+      reject(new Error(`Installer timeout (${path.basename(javaPath)} ${installerArgs.join(' ')}): установщик не ответил за 10 минут`));
+    }, 10 * 60 * 1000);
     child.stdout.on('data', d => { stdout += d.toString(); if (stdout.length > 9000) stdout = stdout.slice(-9000); });
     child.stderr.on('data', d => { stderr += d.toString(); if (stderr.length > 9000) stderr = stderr.slice(-9000); });
     child.on('exit', code => {
@@ -756,19 +820,18 @@ async function runInstallerWithJavaFallback(installerPath, gameDir, minecraftVer
   let lastError = null;
   for (const java of candidates) {
     for (const args of argSets) {
-      try {
-        await runInstallerJar(java.path, installerPath, gameDir, args);
-        return { javaPath: java.path, javaVersion: java.version || null, args };
-      } catch (err) {
-        lastError = err;
-        console.warn('[versions] installer failed with', java.path, args.join(' '), err.message);
-        const msg = String(err.message || '');
-        // If an installer explicitly rejects this flag, try the next non-GUI
-        // argument shape immediately instead of retrying the same bad variant.
-        if (!/UnrecognizedOptionException|not a recognized option|Unknown option|Invalid option/i.test(msg)) {
-          // For JVM/runtime issues continue with the next Java after trying the
-          // canonical form, otherwise a broken Java can waste minutes.
-          if (args !== argSets[0]) break;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await runInstallerJar(java.path, installerPath, gameDir, args);
+          return { javaPath: java.path, javaVersion: java.version || null, args };
+        } catch (err) {
+          lastError = err;
+          console.warn('[versions] installer failed with', java.path, args.join(' '), `attempt ${attempt}/3`, err.message);
+          const msg = String(err.message || '');
+          if (/UnrecognizedOptionException|not a recognized option|Unknown option|Invalid option/i.test(msg)) break;
+          const transient = /timed out|timeout|checksum|download|connection|socket|handshake|HTTP|manifest/i.test(msg);
+          if (!transient || attempt >= 3) break;
+          await sleep(1000 * attempt);
         }
       }
     }
@@ -915,14 +978,10 @@ async function installForgeProfile(rootDir, minecraftVersion, forgeVersion) {
   try {
     await runInstallerWithJavaFallback(installerPath, rootDir, minecraftVersion);
   } catch (installerError) {
-    // Some Forge installers still include a complete profile. Use it as a last
-    // non-GUI fallback before surfacing an error to the user.
-    try {
-      console.warn('[versions] forge installer failed, trying direct profile fallback:', installerError.message);
-      return await installForgeProfileDirect(rootDir, minecraftVersion, installerPath, fullVersion);
-    } catch (directError) {
-      throw new Error(`${installerError.message} | direct fallback: ${directError.message}`);
-    }
+    // Modern installers have processors that create patched runtime artifacts.
+    // Merely extracting version.json produces a profile that looks installed
+    // but cannot launch, so never claim success through the legacy fallback.
+    throw new Error(`Forge ${fullVersion} не установлен полностью: ${installerError.message}`);
   }
   const installed = await scanVersionJsons(rootDir);
   const profile = installed.find(x => /forge/i.test(x.id)) || installed.find(x => x.id !== minecraftVersion);
@@ -1359,7 +1418,7 @@ async function remove(versionId, root) {
 
 async function getFabricAvailability() {
   return cached('availability:fabric', async () => {
-    const { data } = await axios.get(`${FABRIC_META}/versions/game`, { timeout: timeoutMs() });
+    const data = await getJsonWithRetry(`${FABRIC_META}/versions/game`, 'fabric_games.json');
     const map = {};
     for (const item of Array.isArray(data) ? data : []) {
       if (item.version) map[item.version] = { loader: 'fabric', mcVersion: item.version, label: 'Fabric', stable: item.stable !== false };
@@ -1370,7 +1429,7 @@ async function getFabricAvailability() {
 
 async function getQuiltAvailability() {
   return cached('availability:quilt', async () => {
-    const { data } = await axios.get(`${QUILT_META}/versions/game`, { timeout: timeoutMs() });
+    const data = await getJsonWithRetry(`${QUILT_META}/versions/game`, 'quilt_games.json');
     const map = {};
     for (const item of Array.isArray(data) ? data : []) {
       const version = item.version || item.id;
@@ -1474,5 +1533,11 @@ async function getStoragePaths(versionId) {
 
 module.exports = { list, getInstalled, install, repair, remove, getLoaders, getLoaderAvailability, getStoragePaths, installVanilla, applySkinSystem, installSkinSupportMods };
 if (process.env.NODE_ENV === 'test') {
-  module.exports.__testing = { parseMavenCoordinate, extractLegacyForgeInstallFile, extractBundledMavenArtifacts, legacyLaunchwrapperVersion, recommendedInstallerJava };
+  module.exports.__testing = {
+    parseMavenCoordinate, extractLegacyForgeInstallFile, extractBundledMavenArtifacts,
+    legacyLaunchwrapperVersion, recommendedInstallerJava, installFabricProfile,
+    installQuiltProfile, installForgeProfile, installNeoForgeProfile,
+    getFabricLoaders, getQuiltLoaders, resolveLoaderInfo, downloadProfileLibraries,
+    sortLoaderVersions, installerArgSets
+  };
 }
