@@ -175,7 +175,9 @@ ipcMain.handle('shell:open-path', (_e, p) => {
   const resolved = path.resolve(String(p));
   const home = app.getPath('home');
   const userData = app.getPath('userData');
-  if (!resolved.startsWith(home) && !resolved.startsWith(userData)) {
+  const nexusRoot = path.resolve(String(process.env.SystemDrive || 'C:') + path.sep, 'NexusLauncher');
+  const allowed = [home, userData, nexusRoot].some(root => resolved === root || resolved.startsWith(root + path.sep));
+  if (!allowed) {
     throw new Error('Blocked unsafe path access');
   }
   return shell.openPath(resolved);
@@ -184,7 +186,9 @@ ipcMain.handle('shell:show-in-folder', (_e, p) => {
   const resolved = path.resolve(String(p));
   const home = app.getPath('home');
   const userData = app.getPath('userData');
-  if (!resolved.startsWith(home) && !resolved.startsWith(userData)) {
+  const nexusRoot = path.resolve(String(process.env.SystemDrive || 'C:') + path.sep, 'NexusLauncher');
+  const allowed = [home, userData, nexusRoot].some(root => resolved === root || resolved.startsWith(root + path.sep));
+  if (!allowed) {
     throw new Error('Blocked unsafe path access');
   }
   return shell.showItemInFolder(resolved);

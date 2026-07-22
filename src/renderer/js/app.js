@@ -14,6 +14,7 @@ window.App = {
     this.bindDownloadsEvents();
     this.bindDownloadDrawer();
     this.bindLauncherConsole();
+    this.bindLiquidGlass();
 
     // Subscribe before the main process reveals the window.
     window.api.win.onReady(() => {});
@@ -37,13 +38,40 @@ window.App = {
   async applyRuntimeSettings(settings = null) {
     try {
       const s = settings || await window.api.invoke('settings:get');
-      document.body.classList.toggle('light-theme', s.theme === 'light');
+      document.body.classList.remove('light-theme');
       document.body.classList.toggle('theme-glass-dark', s.theme === 'glass-dark');
       document.body.classList.toggle('theme-acrylic', s.theme === 'acrylic');
       document.body.classList.toggle('theme-emerald', s.theme === 'emerald');
       document.body.classList.toggle('theme-crimson', s.theme === 'crimson');
       document.body.classList.toggle('no-animations', s.animations === false);
     } catch {}
+  },
+
+  bindLiquidGlass() {
+    const surface = document.createElement('div');
+    surface.className = 'liquid-cursor-surface';
+    document.body.appendChild(surface);
+    let frame = 0;
+    let x = innerWidth / 2;
+    let y = innerHeight / 2;
+    let lastRipple = 0;
+    document.addEventListener('pointermove', (event) => {
+      x = event.clientX;
+      y = event.clientY;
+      if (!frame) frame = requestAnimationFrame(() => {
+        frame = 0;
+        document.body.style.setProperty('--liquid-x', `${x}px`);
+        document.body.style.setProperty('--liquid-y', `${y}px`);
+      });
+      const now = performance.now();
+      if (now - lastRipple < 90 || (!document.body.classList.contains('light-theme') && !document.body.classList.contains('theme-glass-dark'))) return;
+      lastRipple = now;
+      const ripple = document.createElement('i');
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      surface.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+    }, { passive: true });
   },
 
   bindTitlebar() {
@@ -358,7 +386,13 @@ window.App = {
         folder = selected ? (paths.selected || paths.all) : paths.all;
       } catch {}
     }
-    if (folder) window.api.shell.openPath(folder);
+    if (!folder) return Toast.error('Папка не найдена', 'Сначала выберите установленную версию');
+    try {
+      const error = await window.api.shell.openPath(folder);
+      if (error) throw new Error(error);
+    } catch (error) {
+      Toast.error('Не удалось открыть папку', error.message || String(error));
+    }
   },
 
   async launch() {
@@ -377,6 +411,7 @@ window.App = {
     }
     if (Store.get('isLaunching')) return;
     Toast.info('Запуск', `Minecraft ${versionId}…`);
+    this.navigate('console');
     Store.set('isLaunching', true);
     this.updateHomeProfile();
     try {

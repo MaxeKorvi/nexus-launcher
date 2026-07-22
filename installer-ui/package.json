@@ -1,0 +1,18 @@
+{
+  "name": "nexus-launcher-installer",
+  "version": "2026.1.0",
+  "description": "Nexus Launcher custom installer",
+  "main": "main.js",
+  "author": "Nexus Launcher Team",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": { "electron": "33.4.11" },
+  "build": {
+    "appId": "app.nexus.launcher.installer",
+    "productName": "Nexus Launcher Installer",
+    "directories": { "output": "../dist/custom-installer" },
+    "files": ["main.js", "preload.js", "index.html", "styles.css", "renderer.js", "assets/**/*"],
+    "extraResources": [{ "from": "payload/NexusLauncher.zip", "to": "payload/NexusLauncher.zip" }],
+    "win": { "target": ["portable"], "icon": "assets/nexus-logo.png" },
+    "portable": { "artifactName": "Nexus Launcher Setup 2026.1.0.exe", "requestExecutionLevel": "user" }
+  }
+}

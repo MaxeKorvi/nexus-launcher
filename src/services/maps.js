@@ -8,7 +8,7 @@ const JSZip = require('jszip');
 const Downloads = require('./downloads');
 const InstallState = require('./install-state');
 const Settings = require('./settings');
-const { searchMinecraftInside, resolveMinecraftInsideDownload } = require('./catalog');
+const { searchMinecraftInside, resolveMinecraftInsideDownload, searchCurseForge, resolveCurseForgeDownload, dedupeByPriority } = require('./catalog');
 const { sanitizeName } = require('./shared');
 
 const defaultRoot = () => Settings.getAll().gameFolder || path.join(app.getPath('home'), '.minecraft');
@@ -68,7 +68,20 @@ async function moveFileSafe(src, dest) {
 }
 
 async function list({ query = '', mcVersion = '', page = 0, pageSize = 60 } = {}) {
-  return searchMinecraftInside({ section: 'maps', query, mcVersion, page, pageSize });
+  const results = await Promise.allSettled([
+    searchCurseForge({ query, type: 'world', mcVersion, page, pageSize }),
+    searchMinecraftInside({ section: 'maps', query, mcVersion, page, pageSize })
+  ]);
+  const hits = [];
+  const errors = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      hits.push(...(result.value.hits || []));
+      if (result.value.error) errors.push(result.value.error);
+    } else errors.push(result.reason && result.reason.message || String(result.reason));
+  }
+  const ordered = dedupeByPriority(hits, ['curseforge', 'minecraft-inside']);
+  return { source: 'all', total: ordered.length, hits: ordered.slice(0, pageSize), errors };
 }
 
 async function extractMapZip(zipPath, root, title) {
@@ -115,7 +128,10 @@ async function install(map) {
   }
   const dir = savesDir(rootDir);
   await fsp.mkdir(dir, { recursive: true });
-  const resolved = await resolveMinecraftInsideDownload(map);
+  const resolved = map.source === 'curseforge'
+    ? await resolveCurseForgeDownload({ projectId: map.id, mcVersion: map.mcVersion, type: 'world' })
+    : await resolveMinecraftInsideDownload(map);
+  if (!resolved || !resolved.url) throw new Error('Источник не вернул ссылку для скачивания карты.');
   let fileName = resolved.fileName || `${Date.now()}.zip`;
   const tempPath = path.join(dir, `.nexus-map-${Date.now()}-${sanitizeName(fileName)}.download`);
   await Downloads.start({

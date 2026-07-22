@@ -466,7 +466,11 @@ async function add({ type, code, deviceCode, interval, expiresIn, nickname, emai
 async function remove(id) {
   const all = getAllAccounts();
   const acc = all.find(a => a.id === id);
-  saveAllAccounts(all.filter(a => a.id !== id));
+  const remaining = all.filter(a => a.id !== id);
+  if (acc && acc.active && remaining.length && !remaining.some(a => a.active)) {
+    remaining[0] = { ...remaining[0], active: true };
+  }
+  saveAllAccounts(remaining);
   if (acc) await deleteToken(id, acc.type);
   return true;
 }

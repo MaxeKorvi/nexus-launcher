@@ -56,14 +56,9 @@ window.Views.console = {
     document.getElementById('c-open').onclick = () => window.api.invoke('settings:open-logs');
 
     this._unsub = window.api.on('launcher:console', (line) => {
-      const lines = Store.get('consoleLines') || [];
-      let type = 'info';
-      if (/error|exception|fail/i.test(line)) type = 'error';
-      else if (/success|complete|done/i.test(line)) type = 'success';
-      lines.push({ text: line, type });
-      if (lines.length > 2000) lines.shift();
-      Store.set('consoleLines', lines);
-      this.appendLine({ text: line, type });
+      // App.bindLauncherConsole is the single writer. This view only redraws
+      // after that listener stores the new line, preventing duplicate entries.
+      requestAnimationFrame(() => this.renderLines());
     });
 
     this.renderLines();

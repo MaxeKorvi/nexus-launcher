@@ -27,6 +27,16 @@ const { app, shell } = require('electron');
 
 const store = new Store({ name: 'settings' });
 
+function defaultGameFolder() {
+  if (process.platform === 'win32') {
+    const systemDrive = String(process.env.SystemDrive || 'C:').replace(/[\\/]+$/, '');
+    return path.join(systemDrive, 'NexusLauncher');
+  }
+  return path.join(app.getPath('home'), '.minecraft');
+}
+
+const DEFAULT_GAME_FOLDER = defaultGameFolder();
+
 const DEFAULTS = {
   java: {
     path: null,         // null = auto-detect
@@ -41,11 +51,11 @@ const DEFAULTS = {
   theme: 'amoled',      // amoled | light | system
   language: 'ru',       // ru | en
   proxy: { enabled: false, host: '', port: 8080, type: 'http' },
-  gameFolder: path.join(app.getPath('home'), '.minecraft'),
-  modpacksFolder: path.join(app.getPath('home'), '.minecraft', 'modpacks'),
+  gameFolder: DEFAULT_GAME_FOLDER,
+  modpacksFolder: path.join(DEFAULT_GAME_FOLDER, 'modpacks'),
   autoUpdates: true,
   verifyOnLaunch: true,
-  downloadThreads: 8,
+  downloadThreads: 16,
   networkTimeout: 30,
   downloadRetries: 5,
   animations: true,
@@ -69,7 +79,30 @@ function deepMerge(base, patch) {
 }
 
 function getAll() {
-  const settings = deepMerge(DEFAULTS, store.store);
+  const saved = store.store;
+  const settings = deepMerge(DEFAULTS, saved);
+  if (settings.theme === 'light') {
+    settings.theme = 'glass-dark';
+    store.set('theme', 'glass-dark');
+  }
+  // Migrate only the old launcher default. A path deliberately selected by the
+  // user remains untouched.
+  if (process.platform === 'win32') {
+    const oldDefault = path.join(app.getPath('home'), '.minecraft');
+    if (settings.gameFolder === oldDefault) {
+      settings.gameFolder = DEFAULT_GAME_FOLDER;
+      if (!saved.modpacksFolder || saved.modpacksFolder === path.join(oldDefault, 'modpacks')) {
+        settings.modpacksFolder = path.join(DEFAULT_GAME_FOLDER, 'modpacks');
+      }
+      store.set('gameFolder', settings.gameFolder);
+      store.set('modpacksFolder', settings.modpacksFolder);
+    }
+  }
+  if (!saved.performanceProfileVersion) {
+    if (!saved.downloadThreads || Number(saved.downloadThreads) === 8) settings.downloadThreads = 16;
+    store.set('downloadThreads', settings.downloadThreads);
+    store.set('performanceProfileVersion', 1);
+  }
   // Телеметрия в этой сборке не отправляется: нет подключённого сервера сбора.
   // Даже если в старых настройках осталось true, интерфейс и backend считают её отключённой.
   settings.telemetry = false;

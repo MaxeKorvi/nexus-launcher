@@ -12,7 +12,7 @@ window.Views.settings = {
   },
 
   async renderAsync() {
-    const c = document.getElementById('library-view-content') || document.getElementById('view-container');
+    const c = document.getElementById('view-container');
     const home = document.getElementById('home-view');
     const mainContent = document.querySelector('main.content');
     if (mainContent) mainContent.style.display = 'grid';
@@ -164,7 +164,7 @@ window.Views.settings = {
                 <label class="form-row">
                   <span>Потоки загрузки</span>
                   <select class="select" id="set-threads">
-                    ${[2, 4, 6, 8, 10, 12, 16].map(n => `<option value="${n}" ${Number(s.downloadThreads) === n ? 'selected' : ''}>${n} потоков</option>`).join('')}
+                    ${[4, 8, 12, 16, 24, 32].map(n => `<option value="${n}" ${Number(s.downloadThreads) === n ? 'selected' : ''}>${n} потоков</option>`).join('')}
                   </select>
                   <small>Количество параллельных потоков скачивания файлов игры.</small>
                 </label>
@@ -212,7 +212,6 @@ window.Views.settings = {
                   <span>Тема оформления</span>
                   <select class="select" id="set-theme">
                     <option value="amoled" ${s.theme === 'amoled' ? 'selected' : ''}>Тёмная Nexus</option>
-                    <option value="light" ${s.theme === 'light' ? 'selected' : ''}>Светлая: Жидкое стекло (Liquid Glass)</option>
                     <option value="glass-dark" ${s.theme === 'glass-dark' ? 'selected' : ''}>Тёмная: Жидкое стекло (Liquid Glass)</option>
                     <option value="acrylic" ${s.theme === 'acrylic' ? 'selected' : ''}>Тёмный акрил (Glassmorphism)</option>
                     <option value="emerald" ${s.theme === 'emerald' ? 'selected' : ''}>Изумрудный бор (Emerald)</option>
@@ -279,6 +278,7 @@ window.Views.settings = {
         });
       };
     }
+    this.bindAutoSave();
   },
 
   async load() {
@@ -301,6 +301,26 @@ window.Views.settings = {
   isSwitchOn(id) {
     const el = document.getElementById(id);
     return Boolean(el && el.classList.contains('on'));
+  },
+
+  bindAutoSave() {
+    let timer = null;
+    const schedule = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const save = document.getElementById('save-all-settings');
+        if (!save) return;
+        this._autoSaving = true;
+        save.click();
+      }, 350);
+    };
+    document.querySelectorAll('.settings-view input:not(#settings-search), .settings-view select, .settings-view textarea').forEach(el => {
+      el.addEventListener(el.matches('select') ? 'change' : 'input', schedule);
+    });
+    ['sw-auto-updates', 'sw-verify', 'sw-animations', 'sw-start-system', 'sw-minimize-tray'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', schedule);
+    });
   },
 
   async bindStaticActions() {
@@ -388,8 +408,10 @@ window.Views.settings = {
         await this.save('minimizeToTray', this.isSwitchOn('sw-minimize-tray'), true);
 
         await window.App.applyRuntimeSettings(this.settings);
-        Toast.success('Настройки сохранены');
+        if (!this._autoSaving) Toast.success('Настройки сохранены');
+        this._autoSaving = false;
       } catch (e) {
+        this._autoSaving = false;
         Toast.error('Не удалось сохранить настройки', e.message || String(e));
       }
     };

@@ -1,7 +1,7 @@
 {
   "name": "nexus-launcher",
-  "version": "1.1.26",
-  "description": "Nexus Launcher — hotfix20: redesigned unified settings interface",
+  "version": "2026.1.0",
+  "description": "Nexus Launcher — Release 2026.1.0",
   "main": "src/main/main.js",
   "author": "Nexus Launcher Team",
   "license": "GPL-3.0-or-later",

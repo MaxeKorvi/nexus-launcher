@@ -21,7 +21,7 @@ const { createHttpsAgent, sleep } = require('./shared');
 function maxConcurrency() {
   // Keep the queue responsive. Huge parallel asset downloads can freeze Electron
   // renderers and trigger ECONNRESET on Mojang/CDN endpoints.
-  try { return Math.max(1, Math.min(12, Number(Settings.getAll().downloadThreads) || 4)); } catch { return 4; }
+  try { return Math.max(1, Math.min(32, Number(Settings.getAll().downloadThreads) || 16)); } catch { return 16; }
 }
 function networkTimeoutMs() {
   try { return Math.max(10000, Number(Settings.getAll().networkTimeout || 60) * 1000); } catch { return 60000; }

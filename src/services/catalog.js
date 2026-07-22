@@ -199,15 +199,22 @@ async function searchModrinth({ query = '', projectType, mcVersion = '', loader 
   if (mcVersion) facets.push([`versions:${mcVersion}`]);
   loader = normalizeLoader(loader);
   if (loader) facets.push([`categories:${loader}`]);
-  const { data } = await client().get(`${MODRINTH}/search`, {
+  const request = (requestFacets) => client().get(`${MODRINTH}/search`, {
     params: {
       query,
-      facets: JSON.stringify(facets),
+      facets: JSON.stringify(requestFacets),
       limit: Math.min(100, pageSize),
       offset: page * Math.min(100, pageSize),
       index
     }
   });
+  let { data } = await request(facets);
+  // Some projects do not tag every supported game version/loader in search.
+  // Retry broadly so the catalog never looks completely broken; file selection
+  // still prefers a compatible version during installation.
+  if (!(data.hits || []).length && (mcVersion || loader)) {
+    ({ data } = await request([[`project_type:${projectType}`]]));
+  }
   return {
     source: 'modrinth',
     total: data.total_hits,

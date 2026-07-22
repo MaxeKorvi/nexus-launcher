@@ -200,8 +200,11 @@ function minecraftVersionFromMeta(vmeta, versionId) {
  * @returns {boolean}
  */
 function isLegacyForge(vmeta, versionId) {
-  const text = JSON.stringify(vmeta || {}) + ' ' + String(versionId || '');
-  return /forge/i.test(text) && /(1\.7|1\.8|1\.9|1\.10|1\.11|1\.12)/.test(text);
+  const loaderText = `${versionId || ''} ${(vmeta && vmeta.id) || ''} ${(vmeta && vmeta.mainClass) || ''}`;
+  if (!/forge/i.test(loaderText)) return false;
+  const mcVersion = minecraftVersionFromMeta(vmeta, versionId);
+  const tuple = versionTuple(mcVersion);
+  return Boolean(tuple && tuple[0] === 1 && tuple[1] <= 12);
 }
 
 /** @param {number} ms @returns {Promise<void>} */

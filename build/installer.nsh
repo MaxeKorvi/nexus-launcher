@@ -7,7 +7,7 @@
 !include WinMessages.nsh
 !include nsDialogs.nsh
 
-BrandingText "Nexus Launcher v1.1.26"
+BrandingText "Nexus Launcher — Release 2026.1.0"
 
 Var hasExistingInstallation
 Var existingInstallDir
@@ -22,6 +22,12 @@ Var NexusDialog
   !endif
   !ifndef MUI_TEXTCOLOR
     !define MUI_TEXTCOLOR 0xCCCCCC
+  !endif
+  !ifndef MUI_WELCOMEPAGE_TITLE
+    !define MUI_WELCOMEPAGE_TITLE "Добро пожаловать в Nexus Launcher"
+  !endif
+  !ifndef MUI_WELCOMEPAGE_TEXT
+    !define MUI_WELCOMEPAGE_TEXT "Установщик подготовит Nexus Launcher — Release 2026.1.0.$\r$\n$\r$\nВерсии Minecraft будут храниться отдельно в C:\NexusLauncher\nexus-versions.$\r$\n$\r$\nНажмите «Далее», чтобы продолжить."
   !endif
 !macroend
 

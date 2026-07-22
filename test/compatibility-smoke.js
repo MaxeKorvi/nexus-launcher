@@ -3,6 +3,7 @@ const assert = require('assert');
 const Module = require('module');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 const originalLoad = Module._load;
 
 const fakeElectron = {
@@ -103,11 +104,11 @@ console.log('[OK] Java.parseJavaMajor');
 let req = Launcher.javaRequirement({ id: '1.7.10-Forge10.13.4.1614-1.7.10', inheritsFrom: '1.7.10', mainClass: 'net.minecraft.launchwrapper.Launch' }, '1.7.10-Forge10.13.4.1614-1.7.10');
 assert.deepEqual([req.major, req.exact], [8, true]);
 req = Launcher.javaRequirement({ id: '1.20.4' }, '1.20.4');
-assert.deepEqual([req.major, req.exact], [17, false]);
+assert.deepEqual([req.major, req.exact], [17, true]);
 req = Launcher.javaRequirement({ id: '1.20.5' }, '1.20.5');
-assert.deepEqual([req.major, req.exact], [21, false]);
+assert.deepEqual([req.major, req.exact], [21, true]);
 req = Launcher.javaRequirement({ id: 'future', javaVersion: { majorVersion: 25 } }, 'future');
-assert.deepEqual([req.major, req.exact], [25, false]);
+assert.deepEqual([req.major, req.exact], [25, true]);
 console.log('[OK] javaRequirement');
 
 // ─── Shared: parseMavenCoordinate ─────────────────────────────────────────
@@ -151,6 +152,7 @@ console.log('[OK] Shared.minecraftVersionFromMeta');
 // ─── Shared: isLegacyForge ─────────────────────────────────────────────────
 assert.ok(Shared.isLegacyForge({}, 'forge-1.7.10-1234'));
 assert.ok(!Shared.isLegacyForge({}, 'forge-1.20.4-1234'));
+assert.ok(!Shared.isLegacyForge({ id: '1.19.2-forge', libraries: [{ name: 'example:library:1.12.0' }] }, '1.19.2-forge'));
 assert.ok(!Shared.isLegacyForge({}, 'fabric-1.7.10'));
 console.log('[OK] Shared.isLegacyForge');
 
@@ -182,6 +184,48 @@ console.log('[OK] resolveMainClass');
 const issues = Launcher.preflightLaunch({ libraries: [] }, 'test', '/nonexistent');
 assert.ok(issues.length > 0);
 console.log('[OK] preflightLaunch');
+
+// Empty files and missing derived runtime data must be repaired before Java starts.
+const preflightRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-preflight-'));
+fs.mkdirSync(path.join(preflightRoot, 'versions', '1.20.4'), { recursive: true });
+fs.writeFileSync(path.join(preflightRoot, 'versions', '1.20.4', '1.20.4.jar'), 'client');
+fs.mkdirSync(path.join(preflightRoot, 'libraries', 'org', 'example', 'demo', '1.0'), { recursive: true });
+fs.writeFileSync(path.join(preflightRoot, 'libraries', 'org', 'example', 'demo', '1.0', 'demo-1.0.jar'), '');
+const damagedIssues = Launcher.preflightLaunch({
+  id: '1.20.4',
+  assetIndex: { id: '12' },
+  libraries: [{ name: 'org.example:demo:1.0' }]
+}, '1.20.4', preflightRoot);
+assert.ok(damagedIssues.some(x => x.includes('библиотеки')));
+assert.ok(damagedIssues.some(x => x.includes('индекс ресурсов')));
+fs.rmSync(preflightRoot, { recursive: true, force: true });
+console.log('[OK] preflight detects damaged installation');
+
+// Child loader profiles override matching parent libraries without losing base arguments.
+const merged = Launcher.mergeVersionMeta(
+  { id: '1.20.4', libraries: [{ name: 'org.example:demo:1.0' }], arguments: { jvm: ['-Dparent=1'], game: ['--demo'] } },
+  { id: 'loader', inheritsFrom: '1.20.4', libraries: [{ name: 'org.example:demo:2.0' }], arguments: { jvm: ['-Dchild=1'] } }
+);
+assert.equal(merged.libraries.length, 1);
+assert.equal(merged.libraries[0].name, 'org.example:demo:2.0');
+assert.deepEqual(merged.arguments.jvm, ['-Dparent=1', '-Dchild=1']);
+assert.equal(merged.jar, '1.20.4');
+console.log('[OK] inherited profile merge');
+
+// Forge JVM ignoreList must reference the inherited vanilla JAR, while game
+// arguments keep the selected profile id.
+const forgeArgs = Launcher.buildLaunchArgs({
+  settings: { java: { minHeap: 512, maxHeap: 2048, jvmArgs: '', jvmPreset: 'default' }, resolution: { width: 1280, height: 720, fullscreen: false } },
+  vmeta: {
+    id: '1.18.2-forge-40.3.12', jar: '1.18.2', mainClass: 'cpw.mods.bootstraplauncher.BootstrapLauncher', libraries: [],
+    arguments: { jvm: ['-DignoreList=${version_name}.jar', '-cp', '${classpath}'], game: ['--version', '${version_name}'] }
+  },
+  versionId: '1.18.2-forge-40.3.12', gameDir: preflightRoot, versionDir: '',
+  account: { playerNick: 'Player', playerUuid: '0', accessToken: '0', userType: 'legacy' }, skinAgent: null, javaMajor: 17
+});
+assert.ok(forgeArgs.includes('-DignoreList=1.18.2.jar'));
+assert.equal(forgeArgs[forgeArgs.indexOf('--version') + 1], '1.18.2-forge-40.3.12');
+console.log('[OK] Forge inherited JAR placeholder');
 
 // ─── Downloads: detectArchiveFormat ───────────────────────────────────────
 function buf(...bytes) { return Buffer.from(bytes); }
@@ -216,6 +260,7 @@ async function runExtendedTests() {
   for (const acc of initialAccounts) {
     await Accounts.remove(acc.id);
   }
+  assert.equal((await Accounts.list()).length, 0, 'Fresh profile must not contain a pre-authorized account');
   const acc = await Accounts.add({ type: 'local', nickname: 'TestPlayer' });
   assert.equal(acc.nickname, 'TestPlayer');
   assert.equal(acc.type, 'local');
@@ -225,12 +270,25 @@ async function runExtendedTests() {
   await Accounts.remove(acc.id);
   const listAfter = await Accounts.list();
   assert.equal(listAfter.length, 0);
+  const firstLocal = await Accounts.add({ type: 'local', nickname: 'LocalOne' });
+  await Accounts.add({ type: 'local', nickname: 'LocalTwo' });
+  await Accounts.remove(firstLocal.id);
+  const persistedLocal = await Accounts.list();
+  assert.equal(persistedLocal.length, 1);
+  assert.equal(persistedLocal[0].nickname, 'LocalTwo');
+  assert.equal(persistedLocal[0].active, true);
+  await Accounts.remove(persistedLocal[0].id);
   console.log('[OK] Adding/removing accounts');
 
   // 2. Settings
   Settings.reset();
   const defaults = Settings.getAll();
   assert.equal(defaults.autoUpdates, true);
+  if (process.platform === 'win32') {
+    const expectedDrive = String(process.env.SystemDrive || 'C:').replace(/[\\/]+$/, '');
+    assert.equal(defaults.gameFolder, path.join(expectedDrive, 'NexusLauncher'));
+    assert.equal(defaults.modpacksFolder, path.join(expectedDrive, 'NexusLauncher', 'modpacks'));
+  }
   Settings.set('autoUpdates', false);
   assert.equal(Settings.getAll().autoUpdates, false);
   Settings.reset();

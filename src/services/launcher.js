@@ -168,14 +168,14 @@ function preflightLaunch(vmeta, versionId, rootDir) {
   const issues = [];
   const jarVersion = vmeta.jar || versionId;
   const clientJar = path.join(rootDir, 'versions', jarVersion, `${jarVersion}.jar`);
-  if (!fs.existsSync(clientJar)) issues.push(`Отсутствует client JAR: ${clientJar}`);
+  if (!fileNonEmpty(clientJar)) issues.push(`Отсутствует или повреждён client JAR: ${clientJar}`);
   const libraries = [];
   for (const lib of vmeta.libraries || []) {
     if (!libraryAllowed(lib)) continue;
     const file = getLibraryPath(lib, rootDir);
     if (file) libraries.push(file);
   }
-  const missingLibs = libraries.filter(file => !fs.existsSync(file));
+  const missingLibs = libraries.filter(file => !fileNonEmpty(file));
   if (missingLibs.length) {
     issues.push(`Отсутствуют библиотеки: ${missingLibs.slice(0, 8).join(', ')}${missingLibs.length > 8 ? ' …' : ''}`);
   }
@@ -185,7 +185,23 @@ function preflightLaunch(vmeta, versionId, rootDir) {
       issues.push('Forge старой версии: в JSON отсутствует net.minecraft:launchwrapper');
     }
   }
+  const assetIndex = vmeta.assetIndex && vmeta.assetIndex.id
+    ? path.join(rootDir, 'assets', 'indexes', `${vmeta.assetIndex.id}.json`)
+    : null;
+  if (assetIndex && !fileNonEmpty(assetIndex)) issues.push(`Отсутствует индекс ресурсов: ${assetIndex}`);
+
+  const nativesDir = path.join(rootDir, 'versions', jarVersion, 'natives');
+  const needsNatives = (vmeta.libraries || []).some(lib => libraryAllowed(lib) && lib.natives && lib.natives[osName()]);
+  if (needsNatives && !directoryHasFiles(nativesDir)) issues.push(`Не распакованы natives: ${nativesDir}`);
   return issues;
+}
+
+function fileNonEmpty(file) {
+  try { return fs.statSync(file).isFile() && fs.statSync(file).size > 0; } catch { return false; }
+}
+
+function directoryHasFiles(dir) {
+  try { return fs.readdirSync(dir, { withFileTypes: true }).some(entry => entry.isFile()); } catch { return false; }
 }
 
 function sanitizeArgs(args) {
@@ -223,16 +239,16 @@ function javaRequirement(vmeta, versionId) {
 
   const declared = Number(vmeta && vmeta.javaVersion && vmeta.javaVersion.majorVersion);
   if (declared) {
-    return { major: declared, exact: declared <= 8, mcVersion, reason: 'метаданные версии' };
+    return { major: declared, exact: true, mcVersion, reason: 'метаданные версии' };
   }
 
   if (!tuple) return { major: 17, exact: false, mcVersion, reason: 'без метаданных' };
   const minor = tuple[1];
   const patch = tuple[2];
   if (minor <= 16) return { major: 8, exact: true, mcVersion, reason: 'Minecraft 1.16 и старее' };
-  if (minor === 17) return { major: 16, exact: false, mcVersion, reason: 'Minecraft 1.17' };
-  if (minor > 20 || (minor === 20 && patch >= 5)) return { major: 21, exact: false, mcVersion, reason: 'Minecraft 1.20.5+' };
-  return { major: 17, exact: false, mcVersion, reason: 'Minecraft 1.18–1.20.4' };
+  if (minor === 17) return { major: 16, exact: true, mcVersion, reason: 'Minecraft 1.17' };
+  if (minor > 20 || (minor === 20 && patch >= 5)) return { major: 21, exact: true, mcVersion, reason: 'Minecraft 1.20.5+' };
+  return { major: 17, exact: true, mcVersion, reason: 'Minecraft 1.18–1.20.4' };
 }
 
 async function chooseJava(settings, vmeta, versionId) {
@@ -296,9 +312,17 @@ async function resolveAccount(accountId) {
 
   if (acc.type === 'microsoft') {
     const realToken = await Accounts.getAccessToken(acc.id);
-    if (!realToken) throw new Error('Microsoft-токен истёк или недоступен. Зайдите в аккаунт заново.');
-    accessToken = realToken;
-    userType = 'msa';
+    if (realToken) {
+      accessToken = realToken;
+      userType = 'msa';
+    } else {
+      // Allow the owned installation to start offline when Microsoft's refresh
+      // token has expired. Online servers still require signing in again.
+      accessToken = '0';
+      userType = 'legacy';
+      type = 'local';
+      appendLog('[launcher] Microsoft-сессия истекла. Запуск в офлайн-режиме; для лицензионных серверов войдите заново.');
+    }
   } else if (acc.type === 'ely') {
     const realToken = await Accounts.getAccessToken(acc.id);
     if (!realToken) throw new Error('Ely.by-токен истёк или недоступен. Войдите в Ely.by заново.');
@@ -393,7 +417,12 @@ function buildLaunchArgs({ settings, vmeta, versionId, gameDir, versionDir, acco
   const skinJvmArgs = skinAgent ? [skinAgent] : [];
 
   if (vmeta.arguments) {
-    const jvm = sanitizeJvmArgsForJava(resolveMojangArgs(vmeta.arguments.jvm || [], vars, features), javaMajor);
+    // Modern Forge uses ${version_name}.jar in -DignoreList. The actual client
+    // JAR belongs to the inherited vanilla version, not to the Forge profile.
+    // Keeping the profile id here makes SecureJarHandler load vanilla twice
+    // (minecraft + _1._xx_x modules) and fail with ResolutionException.
+    const jvmVars = { ...vars, version_name: jarVersion };
+    const jvm = sanitizeJvmArgsForJava(resolveMojangArgs(vmeta.arguments.jvm || [], jvmVars, features), javaMajor);
     const game = resolveMojangArgs(vmeta.arguments.game || [], vars, features);
     if (settings.resolution.fullscreen && !game.includes('--fullscreen')) game.push('--fullscreen');
     return [...memoryArgs, ...presetArgs, ...customJvmArgs, ...skinJvmArgs, ...jvm, resolveMainClass(vmeta, versionId), ...game];
@@ -542,5 +571,5 @@ async function screenshot() {
 
 module.exports = { start, stop, screenshot };
 if (process.env.NODE_ENV === 'test') {
-  module.exports.__testing = { javaRequirement, sanitizeJvmArgsForJava, resolveMainClass, preflightLaunch };
+  module.exports.__testing = { javaRequirement, sanitizeJvmArgsForJava, resolveMainClass, preflightLaunch, mergeVersionMeta, buildLaunchArgs };
 }

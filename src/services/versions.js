@@ -485,9 +485,22 @@ async function installVanilla(versionId, opts = {}) {
   }
 
   if (vmeta.assetIndex) {
-    const { data: aidx } = await axios.get(vmeta.assetIndex.url, { timeout: timeoutMs() });
-    await fsp.mkdir(path.join(rootDir, 'assets', 'indexes'), { recursive: true });
-    await fsp.writeFile(path.join(rootDir, 'assets', 'indexes', `${vmeta.assetIndex.id}.json`), JSON.stringify(aidx, null, 2));
+    const indexPath = path.join(rootDir, 'assets', 'indexes', `${vmeta.assetIndex.id}.json`);
+    await Downloads.start({
+      id: `${sanitizeName(rootDir)}-asset-index-${vmeta.assetIndex.id}`,
+      label: `Индекс ресурсов ${vmeta.assetIndex.id}`,
+      url: vmeta.assetIndex.url,
+      path: indexPath,
+      size: vmeta.assetIndex.size,
+      sha1: vmeta.assetIndex.sha1,
+      kind: 'asset-index'
+    });
+    let aidx;
+    try {
+      aidx = JSON.parse(await fsp.readFile(indexPath, 'utf8'));
+    } catch (error) {
+      throw new Error(`Повреждён индекс ресурсов ${vmeta.assetIndex.id}: ${error.message}`);
+    }
     for (const obj of Object.values(aidx.objects || {})) {
       const hash = obj.hash;
       const sub = hash.slice(0, 2);
@@ -507,6 +520,9 @@ async function installVanilla(versionId, opts = {}) {
   await Promise.all(uniqueDownloads.map(item => Downloads.start(item)));
 
   if (nativeJars.length) {
+    // Recreate this derived directory so deleted/renamed native libraries do not
+    // leave stale binaries that can make LWJGL load an incompatible DLL/SO.
+    await fsp.rm(nativesDir, { recursive: true, force: true });
     await fsp.mkdir(nativesDir, { recursive: true });
     for (const { path: jarPath, exclude } of nativeJars) {
       try {
@@ -514,11 +530,15 @@ async function installVanilla(versionId, opts = {}) {
         const zip = await JSZip.loadAsync(buf);
         for (const [entryName, entry] of Object.entries(zip.files)) {
           if (entry.dir || exclude.some(ex => entryName.startsWith(ex))) continue;
-          const outPath = path.join(nativesDir, entryName);
+          const outPath = path.resolve(nativesDir, entryName);
+          const nativeRoot = path.resolve(nativesDir) + path.sep;
+          if (!outPath.startsWith(nativeRoot)) throw new Error(`Небезопасный путь в архиве natives: ${entryName}`);
           await fsp.mkdir(path.dirname(outPath), { recursive: true });
           await fsp.writeFile(outPath, await entry.async('nodebuffer'));
         }
-      } catch (e) { console.warn('[versions] Failed to extract natives from', jarPath, e.message); }
+      } catch (e) {
+        throw new Error(`Не удалось распаковать natives из ${path.basename(jarPath)}: ${e.message}`);
+      }
     }
   }
 
@@ -1308,7 +1328,22 @@ async function repair(versionId, opts = {}) {
 
 async function remove(versionId, root) {
   if (root) {
-    if (fs.existsSync(root)) await fsp.rm(root, { recursive: true, force: true });
+    const resolvedRoot = path.resolve(root);
+    const legacyRoot = path.resolve(defaultGameDir());
+    if (resolvedRoot === legacyRoot) {
+      const legacyVersionDir = path.resolve(versionsDir(resolvedRoot), sanitizeName(versionId));
+      const versionsRoot = path.resolve(versionsDir(resolvedRoot)) + path.sep;
+      if (!legacyVersionDir.startsWith(versionsRoot)) throw new Error('Некорректный путь версии.');
+      if (fs.existsSync(legacyVersionDir)) await fsp.rm(legacyVersionDir, { recursive: true, force: true });
+      return true;
+    }
+
+    // Whole-directory removal is only allowed for a launcher-managed instance.
+    // This prevents a stale/tampered UI path from deleting a shared game folder.
+    const managed = fs.existsSync(path.join(resolvedRoot, 'nexus-install.json')) ||
+      fs.existsSync(path.join(resolvedRoot, 'nexus-modpack.json'));
+    if (!managed) throw new Error('Каталог не помечен как установка Nexus; удаление отменено.');
+    if (fs.existsSync(resolvedRoot)) await fsp.rm(resolvedRoot, { recursive: true, force: true });
     return true;
   }
   const installed = await getInstalled();
