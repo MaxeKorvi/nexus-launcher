@@ -7,7 +7,28 @@ window.Views.home = {
     const c = document.getElementById('view-container');
     document.querySelector('main.content').style.display = 'grid';
     if (c) { c.style.display = 'none'; c.innerHTML = ''; }
-    if (home) home.style.display = 'grid';
+    if (home) {
+      home.style.display = 'flex';
+      home.scrollTop = 0;
+    }
+
+    this.initHeroInstancesButton();
   },
+
+  initHeroInstancesButton() {
+    const btn = document.getElementById('hero-btn-instances');
+    if (btn) {
+      btn.onclick = () => {
+        if (window.App) {
+          window.App.navigate('library');
+          if (window.Views.library && window.Views.library.switchTab) {
+            window.Views.library.switchTab('instances');
+          }
+        }
+      };
+    }
+  },
+
   destroy() {}
 };
+

@@ -12,7 +12,7 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
-const { app } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const { spawn } = require('child_process');
 const Downloads = require('./downloads');
 const JSZip = require('jszip');
@@ -83,12 +83,14 @@ function commonFallbackManifest() {
   };
 }
 
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+
 function axiosOptions(extra = {}) {
   return {
     timeout: timeoutMs(),
     httpsAgent: createHttpsAgent({ insecure: process.env.NEXUS_INSECURE_TLS === '1' }),
     headers: {
-      'User-Agent': 'NexusLauncher/1.1.17',
+      'User-Agent': BROWSER_UA,
       'Accept': 'application/json, text/plain, */*',
       ...(extra.headers || {})
     },
@@ -169,7 +171,172 @@ async function getVersionMetaFromManifestEntry(entry) {
 }
 
 function instanceDir(id) { return path.join(isolatedRoot(), sanitizeName(id)); }
-function normalizeLoader(loader) { const v = String(loader || 'vanilla').toLowerCase(); return v === 'none' ? 'vanilla' : v; }
+function normalizeLoader(loader) {
+  const v = String(loader || 'vanilla').toLowerCase();
+  if (v === 'none') return 'vanilla';
+  if (v === 'forgeoptifine' || v === 'forge_optifine' || v === 'forge-optifine') return 'forgeoptifine';
+  if (v === 'fabriciris' || v === 'fabric_iris' || v === 'fabric-iris' || v === 'iris') return 'fabriciris';
+  return v;
+}
+
+const KNOWN_OPTIFINE_MAP = {
+  '1.7.10': { mcversion: '1.7.10', type: 'HD_U', patch: 'E7', filename: 'OptiFine_1.7.10_HD_U_E7.jar' },
+  '1.8.9': { mcversion: '1.8.9', type: 'HD_U', patch: 'M5', filename: 'OptiFine_1.8.9_HD_U_M5.jar' },
+  '1.12.2': { mcversion: '1.12.2', type: 'HD_U', patch: 'G5', filename: 'OptiFine_1.12.2_HD_U_G5.jar' },
+  '1.16.5': { mcversion: '1.16.5', type: 'HD_U', patch: 'G8', filename: 'OptiFine_1.16.5_HD_U_G8.jar' },
+  '1.18.2': { mcversion: '1.18.2', type: 'HD_U', patch: 'H7', filename: 'OptiFine_1.18.2_HD_U_H7.jar' },
+  '1.19.2': { mcversion: '1.19.2', type: 'HD_U', patch: 'H9', filename: 'OptiFine_1.19.2_HD_U_H9.jar' },
+  '1.20.1': { mcversion: '1.20.1', type: 'HD_U', patch: 'I6', filename: 'OptiFine_1.20.1_HD_U_I6.jar' },
+  '1.20.2': { mcversion: '1.20.2', type: 'HD_U', patch: 'I7', filename: 'OptiFine_1.20.2_HD_U_I7.jar' },
+  '1.20.4': { mcversion: '1.20.4', type: 'HD_U', patch: 'I7', filename: 'OptiFine_1.20.4_HD_U_I7.jar' }
+};
+
+async function getOptiFineList() {
+  return cached('optifine:versionList', async () => {
+    try {
+      const data = await getJsonWithRetry('https://bmclapi2.bangbang93.com/optifine/versionList', 'optifine_version_list.json');
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
+async function findOptiFineForVersion(mcVersion) {
+  if (KNOWN_OPTIFINE_MAP[mcVersion]) return KNOWN_OPTIFINE_MAP[mcVersion];
+
+  // Scrape optifine.net/downloads for this version
+  try {
+    const res = await axios.get('https://optifine.net/downloads', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 8000
+    });
+    const escaped = mcVersion.replace(/\./g, '\\.');
+    const rx = new RegExp(`adloadx\\?f=(OptiFine_${escaped}_([^'"]+)\\.jar)`, 'i');
+    const m = String(res.data || '').match(rx);
+    if (m) {
+      return { mcversion: mcVersion, filename: m[1], type: 'HD_U', patch: m[2] };
+    }
+  } catch {}
+
+  const list = await getOptiFineList();
+  const matching = list.filter(x => x.mcversion === mcVersion);
+  if (matching.length) {
+    const release = matching.find(x => !String(x.filename || '').startsWith('preview_'));
+    return release || matching[0];
+  }
+  return null;
+}
+
+async function downloadOptiFineMod(rootDir, mcVersion) {
+  const optifine = await findOptiFineForVersion(mcVersion);
+  if (!optifine) {
+    console.warn(`[versions] OptiFine not found for Minecraft ${mcVersion}`);
+    return null;
+  }
+  const modsDir = path.join(rootDir, 'mods');
+  await fsp.mkdir(modsDir, { recursive: true });
+  const fileName = optifine.filename || `OptiFine_${mcVersion}_${optifine.type}_${optifine.patch}.jar`;
+  const destPath = path.join(modsDir, fileName);
+  if (fs.existsSync(destPath) && fs.statSync(destPath).size > 50000) return fileName;
+
+  emitInstallProgress(mcVersion, `OptiFine (${fileName})`, 0, 100, 'downloading');
+
+  // 1. Direct download via optifine.net token scraping
+  try {
+    const adloadxUrl = `https://optifine.net/adloadx?f=${encodeURIComponent(fileName)}`;
+    const page = await axios.get(adloadxUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 10000
+    });
+    const m = String(page.data || '').match(/href=['"](downloadx\?[^'"]+)['"]/i);
+    if (m) {
+      const directUrl = 'https://optifine.net/' + m[1];
+      const partPath = `${destPath}.part`;
+      const resp = await axios.get(directUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': adloadxUrl
+        },
+        responseType: 'arraybuffer',
+        timeout: 45000
+      });
+      if (resp.data && resp.data.byteLength > 50000) {
+        await fsp.writeFile(partPath, resp.data);
+        await fsp.rename(partPath, destPath);
+        emitInstallProgress(mcVersion, `OptiFine (${fileName})`, 100, 100, 'downloading');
+        return fileName;
+      }
+    }
+  } catch (err) {
+    console.warn('[versions] Direct OptiFine download failed, trying mirrors:', err.message);
+  }
+
+  // 2. Fallback to mirrors
+  const urls = [
+    `https://bmclapi2.bangbang93.com/maven/com/optifine/${mcVersion}/${fileName}`,
+    `https://bmclapi2.bangbang93.com/optifine/${mcVersion}/${optifine.type}/${optifine.patch}`,
+    `https://files.prismsystems.dev/optifine/${fileName}`,
+    `https://raw.githubusercontent.com/Suir/OptiFine-Archive/master/${mcVersion}/${fileName}`
+  ];
+  await Downloads.start({
+    id: `optifine-${mcVersion}`,
+    label: `OptiFine ${mcVersion}`,
+    url: urls[0],
+    urls,
+    path: destPath,
+    kind: 'mod'
+  });
+  return fileName;
+}
+
+async function downloadIrisAndSodiumMods(rootDir, mcVersion) {
+  const modsDir = path.join(rootDir, 'mods');
+  await fsp.mkdir(modsDir, { recursive: true });
+
+  const getModRelease = async (projectId) => {
+    try {
+      const url = `https://api.modrinth.com/v2/project/${projectId}/version?game_versions=${encodeURIComponent(JSON.stringify([mcVersion]))}&loaders=${encodeURIComponent(JSON.stringify(['fabric']))}`;
+      const data = await getJsonWithRetry(url, `${projectId}_${mcVersion}.json`);
+      if (Array.isArray(data) && data.length) {
+        const file = data[0].files.find(f => f.primary) || data[0].files[0];
+        return file ? { url: file.url, filename: file.filename } : null;
+      }
+    } catch (e) {
+      console.warn(`[versions] Could not fetch ${projectId} from Modrinth:`, e.message);
+    }
+    return null;
+  };
+
+  const iris = await getModRelease('iris');
+  const sodium = await getModRelease('sodium');
+
+  if (iris) {
+    const dest = path.join(modsDir, iris.filename);
+    if (!fs.existsSync(dest)) {
+      await Downloads.start({
+        id: `iris-${mcVersion}`,
+        label: `Iris Shaders (${mcVersion})`,
+        url: iris.url,
+        path: dest,
+        kind: 'mod'
+      });
+    }
+  }
+
+  if (sodium) {
+    const dest = path.join(modsDir, sodium.filename);
+    if (!fs.existsSync(dest)) {
+      await Downloads.start({
+        id: `sodium-${mcVersion}`,
+        label: `Sodium (${mcVersion})`,
+        url: sodium.url,
+        path: dest,
+        kind: 'mod'
+      });
+    }
+  }
+}
 
 const loaderAvailabilityCache = new Map();
 const loaderVersionsCache = new Map();
@@ -365,6 +532,8 @@ async function scanVersionJsons(rootDir, fallback = {}) {
 
 function detectLoader(id, meta = {}) {
   const x = `${id} ${meta.mainClass || ''}`.toLowerCase();
+  if (x.includes('forgeoptifine') || (x.includes('forge') && x.includes('optifine'))) return 'forgeoptifine';
+  if (x.includes('fabriciris') || (x.includes('fabric') && x.includes('iris'))) return 'fabriciris';
   if (x.includes('neoforge')) return 'neoforge';
   if (x.includes('forge')) return 'forge';
   if (x.includes('quilt')) return 'quilt';
@@ -431,10 +600,25 @@ async function getInstalled(root) {
   return out.sort((a, b) => String(b.installedAt || b.releaseTime || '').localeCompare(String(a.installedAt || a.releaseTime || '')));
 }
 
+function formatInstanceDirName(minecraftVersion, loader) {
+  const norm = normalizeLoader(loader);
+  if (!norm || norm === 'vanilla') return `${minecraftVersion}-Vanilla`;
+  const map = {
+    forgeoptifine: `${minecraftVersion}-Forge-OptiFine`,
+    fabriciris: `${minecraftVersion}-Fabric-Iris`,
+    forge: `${minecraftVersion}-Forge`,
+    fabric: `${minecraftVersion}-Fabric`,
+    quilt: `${minecraftVersion}-Quilt`,
+    neoforge: `${minecraftVersion}-NeoForge`
+  };
+  return map[norm] || `${minecraftVersion}-${norm}`;
+}
+
 async function install(versionId, opts = {}) {
   const loader = normalizeLoader(opts.loader);
   if (loader && loader !== 'vanilla') return installLoader(versionId, opts);
-  const rootDir = opts.gameDir || instanceDir(opts.profileId || versionId);
+  const dirName = sanitizeName(opts.customDirName || opts.folderName || opts.profileId || formatInstanceDirName(versionId, 'vanilla'));
+  const rootDir = opts.gameDir || instanceDir(dirName);
   const result = await installVanilla(versionId, { ...opts, gameDir: rootDir });
   if (!opts.skipInstallMeta) {
     await writeInstallMeta(rootDir, {
@@ -451,8 +635,44 @@ async function install(versionId, opts = {}) {
   return { ...result, rootDir, path: rootDir, id: versionId, profileId: versionId, loader: 'vanilla' };
 }
 
+const cancelledInstalls = new Set();
+
+function emitInstallProgress(versionId, currentFile, completed, total, stage = 'downloading') {
+  const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send('versions:progress', {
+        versionId,
+        currentFile: currentFile ? path.basename(currentFile) : '',
+        completed,
+        total,
+        percent,
+        stage
+      });
+    } catch {}
+  }
+}
+
+async function cancelInstall(versionId) {
+  if (versionId) {
+    const strId = String(versionId);
+    cancelledInstalls.add(strId);
+    await Downloads.cancelGroup((item, id) => {
+      return (item && (item.versionId === strId || (item.id && item.id.includes(strId)))) || (id && id.includes(strId));
+    });
+    emitInstallProgress(strId, 'Установка отменена', 0, 0, 'cancelled');
+  } else {
+    await Downloads.cancelAll();
+    emitInstallProgress('all', 'Установка отменена', 0, 0, 'cancelled');
+  }
+  return { ok: true };
+}
+
 async function installVanilla(versionId, opts = {}) {
+  const strVersionId = String(versionId);
+  cancelledInstalls.delete(strVersionId);
   const rootDir = opts.gameDir || instanceDir(versionId);
+  emitInstallProgress(strVersionId, 'Получение манифеста...', 0, 1, 'manifest');
   const data = await getManifest();
   const v = (data.versions || []).find(x => x.id === versionId);
   if (!v) {
@@ -468,6 +688,7 @@ async function installVanilla(versionId, opts = {}) {
   const targetDir = path.join(versionsDir(rootDir), versionId);
   await fsp.mkdir(targetDir, { recursive: true });
   await fsp.writeFile(path.join(targetDir, `${versionId}.json`), JSON.stringify(vmeta, null, 2));
+  await ensureDefaultOptions(rootDir);
 
   const dl = [];
   const nativesDir = path.join(targetDir, 'natives');
@@ -481,7 +702,9 @@ async function installVanilla(versionId, opts = {}) {
       path: path.join(targetDir, `${versionId}.jar`),
       size: vmeta.downloads.client.size,
       sha1: vmeta.downloads.client.sha1,
-      kind: 'client'
+      kind: 'client',
+      internal: true,
+      versionId: strVersionId
     });
   }
 
@@ -497,7 +720,9 @@ async function installVanilla(versionId, opts = {}) {
         path: path.join(rootDir, 'libraries', artifact.rel),
         size: artifact.size,
         sha1: artifact.sha1,
-        kind: 'library'
+        kind: 'library',
+        internal: true,
+        versionId: strVersionId
       });
     }
     const native = nativeArtifact(lib);
@@ -511,7 +736,9 @@ async function installVanilla(versionId, opts = {}) {
         path: jarPath,
         size: native.size,
         sha1: native.sha1,
-        kind: 'library'
+        kind: 'library',
+        internal: true,
+        versionId: strVersionId
       });
       nativeJars.push({ path: jarPath, exclude: (lib.extract && lib.extract.exclude) || ['META-INF/'] });
     }
@@ -526,7 +753,9 @@ async function installVanilla(versionId, opts = {}) {
       path: indexPath,
       size: vmeta.assetIndex.size,
       sha1: vmeta.assetIndex.sha1,
-      kind: 'asset-index'
+      kind: 'asset-index',
+      internal: true,
+      versionId: strVersionId
     });
     let aidx;
     try {
@@ -539,20 +768,54 @@ async function installVanilla(versionId, opts = {}) {
       const sub = hash.slice(0, 2);
       dl.push({
         id: `${sanitizeName(rootDir)}-asset-${hash}`,
-        label: 'Ресурс Minecraft',
+        label: `Ресурс ${sub}/${hash.slice(0, 8)}`,
         url: `https://resources.download.minecraft.net/${sub}/${hash}`,
         path: path.join(rootDir, 'assets', 'objects', sub, hash),
         size: obj.size,
         sha1: hash,
-        kind: 'asset'
+        kind: 'asset',
+        internal: true,
+        versionId: strVersionId
       });
     }
   }
 
   const uniqueDownloads = Array.from(new Map(dl.map(item => [item.path, item])).values());
-  await Promise.all(uniqueDownloads.map(item => Downloads.start(item)));
+  const total = uniqueDownloads.length;
+  let completed = 0;
+  let lastEmit = 0;
+  const reportProgress = (currentFileName, force = false) => {
+    const now = Date.now();
+    if (force || now - lastEmit > 100 || completed === total) {
+      lastEmit = now;
+      emitInstallProgress(strVersionId, currentFileName, completed, total, 'downloading');
+    }
+  };
+
+  reportProgress('Подготовка к загрузке...', true);
+
+  try {
+    await Promise.all(uniqueDownloads.map(async item => {
+      if (cancelledInstalls.has(strVersionId)) {
+        throw new Error(`Установка ${versionId} отменена`);
+      }
+      item.internal = true;
+      item.versionId = strVersionId;
+      reportProgress(item.label || item.path);
+      await Downloads.start(item);
+      completed++;
+      reportProgress(item.label || item.path);
+    }));
+  } catch (err) {
+    if (cancelledInstalls.has(strVersionId)) {
+      emitInstallProgress(strVersionId, 'Установка отменена', 0, 0, 'cancelled');
+      throw new Error(`Установка ${versionId} отменена`);
+    }
+    throw err;
+  }
 
   if (nativeJars.length) {
+    emitInstallProgress(strVersionId, 'Распаковка natives...', total, total, 'extracting');
     // Recreate this derived directory so deleted/renamed native libraries do not
     // leave stale binaries that can make LWJGL load an incompatible DLL/SO.
     await fsp.rm(nativesDir, { recursive: true, force: true });
@@ -575,6 +838,7 @@ async function installVanilla(versionId, opts = {}) {
     }
   }
 
+  emitInstallProgress(strVersionId, 'Готово!', total, total, 'done');
   return { ok: true, queued: uniqueDownloads.length, versionId, rootDir };
 }
 
@@ -583,19 +847,28 @@ async function downloadProfileLibraries(profile, rootDir, prefix) {
   for (const lib of profile.libraries || []) {
     if (!isAllowed(lib.rules)) continue;
     const artifact = libraryArtifact(lib);
-    if (!artifact) continue;
+    if (!artifact || !artifact.rel) continue;
+    const dest = path.join(rootDir, 'libraries', artifact.rel);
+    if (fs.existsSync(dest) && fs.statSync(dest).size > 0) continue;
     downloads.push({
       id: `${sanitizeName(rootDir)}-${prefix}-${lib.name}`,
       label: lib.name,
       url: artifact.url,
       urls: artifact.urls,
-      path: path.join(rootDir, 'libraries', artifact.rel),
+      path: dest,
       size: artifact.size,
       sha1: artifact.sha1,
-      kind: 'library'
+      kind: 'library',
+      internal: true
     });
   }
-  await Promise.all(downloads.map(d => Downloads.start(d)));
+  await Promise.all(downloads.map(async (d) => {
+    try {
+      await Downloads.start(d);
+    } catch (e) {
+      console.warn(`[versions] Библиотека пропущена: ${d.label} (${e.message})`);
+    }
+  }));
 }
 
 async function installFabricProfile(rootDir, minecraftVersion, loaderVersion) {
@@ -945,6 +1218,7 @@ async function installForgeProfileDirect(rootDir, minecraftVersion, installerPat
   const dir = path.join(rootDir, 'versions', profile.id);
   await fsp.mkdir(dir, { recursive: true });
   await fsp.writeFile(path.join(dir, `${profile.id}.json`), JSON.stringify(profile, null, 2));
+  await ensureLegacyLaunchwrapperDeclaration([{ id: profile.id, file: path.join(dir, `${profile.id}.json`), meta: profile }], rootDir);
   return { id: profile.id, loaderVersion: fullVersion, direct: true };
 }
 
@@ -1005,7 +1279,7 @@ async function installNeoForgeProfile(rootDir, minecraftVersion, neoVersion) {
 
 
 function isModdedLoader(loader) {
-  return ['fabric', 'forge', 'quilt', 'neoforge'].includes(normalizeLoader(loader));
+  return ['fabric', 'forge', 'quilt', 'neoforge', 'forgeoptifine', 'fabriciris'].includes(normalizeLoader(loader));
 }
 
 function skinModType(fileName) {
@@ -1053,29 +1327,104 @@ async function setSkinJarEnabled(item, enabled) {
   return item.path;
 }
 
-function normalizeSkinSystem(system) {
-  const s = String(system || 'tlskincape').toLowerCase();
-  if (['ely', 'ely.by', 'elyby'].includes(s)) return 'ely';
-  if (['none', 'off', 'disabled', 'nothing', 'ничего'].includes(s)) return 'none';
-  return 'tlskincape';
+async function ensureDefaultOptions(gameDir) {
+  const optFile = path.join(gameDir, 'options.txt');
+  if (fs.existsSync(optFile)) return;
+  const defaultOptions = [
+    'version:3465',
+    'graphicsMode:1',
+    'renderDistance:12',
+    'simulationDistance:10',
+    'mipmapLevels:4',
+    'maxFps:144',
+    'fov:0.1',
+    'gamma:1.0',
+    'entityDistanceScaling:1.0',
+    'autoJump:false',
+    'narrator:0',
+    'particles:0',
+    'smoothLighting:true',
+    'ao:2'
+  ].join('\r\n') + '\r\n';
+  try {
+    await fsp.writeFile(optFile, defaultOptions, 'utf8');
+  } catch {}
 }
 
-async function applySkinSystem(rootDir, system = 'tlskincape') {
+function normalizeSkinSystem(system) {
+  const s = String(system || 'ely').toLowerCase();
+  if (['ely', 'ely.by', 'elyby'].includes(s)) return 'ely';
+  if (['tlauncher', 'tl', 't-launcher'].includes(s)) return 'tlauncher';
+  if (['both', 'all', 'ely_tl', 'both_ely_tl'].includes(s)) return 'both';
+  return 'none';
+}
+
+async function configureCustomSkinLoader(rootDir, mode) {
+  const cslDir = path.join(rootDir, 'CustomSkinLoader');
+  await fsp.mkdir(cslDir, { recursive: true });
+  const cslConfigFile = path.join(cslDir, 'CustomSkinLoader.json');
+
+  let load_list = [];
+  if (mode === 'ely') {
+    load_list = [
+      { name: "ElyBy", type: "ElyBy" },
+      { name: "Mojang", type: "Mojang" }
+    ];
+  } else if (mode === 'tlauncher') {
+    load_list = [
+      {
+        name: "TLauncher",
+        type: "Custom",
+        skin: "https://skin.tlauncher.org/skin/{USERNAME}.png",
+        cape: "https://skin.tlauncher.org/cape/{USERNAME}.png"
+      },
+      { name: "Mojang", type: "Mojang" }
+    ];
+  } else if (mode === 'both') {
+    load_list = [
+      { name: "ElyBy", type: "ElyBy" },
+      {
+        name: "TLauncher",
+        type: "Custom",
+        skin: "https://skin.tlauncher.org/skin/{USERNAME}.png",
+        cape: "https://skin.tlauncher.org/cape/{USERNAME}.png"
+      },
+      { name: "Mojang", type: "Mojang" }
+    ];
+  }
+
+  const configObj = {
+    version: "14.15",
+    enable: mode !== 'none',
+    load_list
+  };
+
+  await fsp.writeFile(cslConfigFile, JSON.stringify(configObj, null, 2), 'utf8');
+}
+
+async function applySkinSystem(rootDir, system = 'ely') {
   const mode = normalizeSkinSystem(system);
   const files = await listSkinModFiles(rootDir);
   const changed = [];
+  const enableMods = mode !== 'none';
   for (const file of files) {
-    const enable =
-      (mode === 'ely' && file.type === 'customskinloader') ||
-      (mode === 'tlskincape' && file.type === 'tlskincape');
+    const enable = (enableMods && file.type === 'customskinloader');
     const newPath = await setSkinJarEnabled(file, enable);
     changed.push({ ...file, enabled: enable, path: newPath || file.path });
+  }
+  if (enableMods) {
+    try {
+      await configureCustomSkinLoader(rootDir, mode);
+    } catch (e) {
+      console.warn('[versions] Failed to write CSL config:', e.message);
+    }
   }
   return { ok: true, system: mode, changed };
 }
 
 async function installCustomSkinLoader(rootDir, minecraftVersion, loader) {
-  const loaders = normalizeLoader(loader) === 'neoforge' ? ['neoforge', 'forge'] : [normalizeLoader(loader)];
+  const effectiveLoader = loader === 'forgeoptifine' ? 'forge' : normalizeLoader(loader);
+  const loaders = effectiveLoader === 'neoforge' ? ['neoforge', 'forge'] : [effectiveLoader];
   for (const l of loaders) {
     try {
       const { data } = await axios.get(`${MODRINTH}/project/${CUSTOM_SKIN_LOADER_PROJECT}/version`, {
@@ -1107,80 +1456,34 @@ async function installCustomSkinLoader(rootDir, minecraftVersion, loader) {
   return null;
 }
 
-function looksLikeTLSkinCape(hit) {
-  const text = `${hit.title || ''} ${hit.slug || ''} ${hit.url || ''}`.toLowerCase();
-  return /tl\s*skin\s*(and|&)?\s*cape|tlskincape|tl-skin-and-cape|tl_skin_cape/.test(text);
-}
-
-async function installTLSkinCape(rootDir, minecraftVersion, loader) {
-  const loaderNorm = normalizeLoader(loader);
-  const queries = ['TL Skin and Cape', 'TLSkinCape', 'tl skin cape'];
-  for (const query of queries) {
-    try {
-      const result = await searchCurseForge({
-        query,
-        type: 'mod',
-        mcVersion: minecraftVersion,
-        loader: loaderNorm,
-        page: 0,
-        pageSize: 20
-      });
-      if (result.error) {
-        console.warn('[versions] TLSkinCape search skipped:', result.error);
-        continue;
-      }
-      const hit = (result.hits || []).find(looksLikeTLSkinCape);
-      if (!hit) continue;
-      const file = await resolveCurseForgeDownload({
-        projectId: hit.id,
-        mcVersion: minecraftVersion,
-        loader: loaderNorm,
-        type: 'mod'
-      });
-      if (!file || !file.url) continue;
-      const dest = path.join(rootDir, 'mods', file.fileName || `TLSkinCape-${minecraftVersion}.jar`);
-      await Downloads.start({
-        id: `skinmod-tl-${sanitizeName(rootDir)}-${sanitizeName(file.fileName || hit.id)}`,
-        label: `TLSkinCape: ${file.fileName || hit.title}`,
-        url: file.url,
-        path: dest,
-        size: file.fileSize,
-        kind: 'mod'
-      });
-      return { file: dest, project: 'TLSkinCape', loader: loaderNorm, curseForgeProjectId: hit.id, fileId: file.fileId };
-    } catch (e) {
-      console.warn('[versions] TLSkinCape skipped:', e.message);
-    }
-  }
-  return null;
-}
-
 async function installSkinSupportMods(rootDir, minecraftVersion, loader) {
   if (!isModdedLoader(loader)) return null;
+  const currentSkinSystem = normalizeSkinSystem(Settings.getAll().skinSystem || 'ely');
+  // If skin system is disabled, do NOT download or inject any skin mod!
+  if (currentSkinSystem === 'none') {
+    await applySkinSystem(rootDir, 'none');
+    return { customSkinLoader: null, tlskincape: null, warnings: [] };
+  }
+
   await fsp.mkdir(path.join(rootDir, 'mods'), { recursive: true });
   const warnings = [];
   let customSkinLoader = null;
-  let tlskincape = null;
 
   try { customSkinLoader = await installCustomSkinLoader(rootDir, minecraftVersion, loader); }
   catch (e) { warnings.push(`CustomSkinLoader: ${e.message}`); }
 
-  try { tlskincape = await installTLSkinCape(rootDir, minecraftVersion, loader); }
-  catch (e) { warnings.push(`TLSkinCape: ${e.message}`); }
-
   if (!customSkinLoader) warnings.push('CustomSkinLoader не найден для этой версии/загрузчика.');
-  if (!tlskincape) warnings.push('TLSkinCape не найден для этой версии/загрузчика или CurseForge API недоступен.');
 
-  await applySkinSystem(rootDir, Settings.getAll().skinSystem || 'tlskincape');
-  return { customSkinLoader, tlskincape, warnings };
+  await applySkinSystem(rootDir, currentSkinSystem);
+  return { customSkinLoader, tlskincape: null, warnings };
 }
 
 async function installLoader(minecraftVersion, opts = {}) {
   const loader = normalizeLoader(opts.loader);
   const loaderInfo = await resolveLoaderInfo(loader, minecraftVersion, opts.loaderVersion);
   const resolvedLoaderVersion = opts.loaderVersion || loaderInfo.version;
-  const baseName = `${loader}-${minecraftVersion}${resolvedLoaderVersion ? '-' + resolvedLoaderVersion : ''}`;
-  const rootDir = opts.gameDir || instanceDir(baseName);
+  const dirName = sanitizeName(opts.customDirName || opts.folderName || formatInstanceDirName(minecraftVersion, loader));
+  const rootDir = opts.gameDir || instanceDir(dirName);
   await installVanilla(minecraftVersion, { gameDir: rootDir, skipInstallMeta: true });
 
   let profile;
@@ -1188,9 +1491,25 @@ async function installLoader(minecraftVersion, opts = {}) {
   else if (loader === 'quilt') profile = await installQuiltProfile(rootDir, minecraftVersion, resolvedLoaderVersion);
   else if (loader === 'forge') profile = await installForgeProfile(rootDir, minecraftVersion, resolvedLoaderVersion);
   else if (loader === 'neoforge') profile = await installNeoForgeProfile(rootDir, minecraftVersion, resolvedLoaderVersion);
+  else if (loader === 'forgeoptifine') {
+    profile = await installForgeProfile(rootDir, minecraftVersion, resolvedLoaderVersion);
+    try {
+      await downloadOptiFineMod(rootDir, minecraftVersion);
+    } catch (e) {
+      console.warn('[versions] Не удалось скачать OptiFine:', e.message);
+    }
+  }
+  else if (loader === 'fabriciris') {
+    profile = await installFabricProfile(rootDir, minecraftVersion, resolvedLoaderVersion);
+    try {
+      await downloadIrisAndSodiumMods(rootDir, minecraftVersion);
+    } catch (e) {
+      console.warn('[versions] Не удалось скачать Iris & Sodium:', e.message);
+    }
+  }
   else throw new Error('Неизвестный загрузчик модов: ' + loader);
 
-  const skinSupport = await installSkinSupportMods(rootDir, minecraftVersion, loader);
+  const skinSupport = await installSkinSupportMods(rootDir, minecraftVersion, loader === 'forgeoptifine' ? 'forge' : (loader === 'fabriciris' ? 'fabric' : loader));
 
   await writeInstallMeta(rootDir, {
     id: profile.id,
@@ -1200,7 +1519,7 @@ async function installLoader(minecraftVersion, opts = {}) {
     loaderVersion: profile.loaderVersion,
     type: 'release',
     kind: 'version',
-    title: `${minecraftVersion} · ${loader}`,
+    title: loader === 'forgeoptifine' ? `${minecraftVersion} · Forge + OptiFine` : (loader === 'fabriciris' ? `${minecraftVersion} · Fabric + Iris Shaders` : `${minecraftVersion} · ${loader}`),
     authlibInjectorApi: AUTHLIB_INJECTOR_API,
     skinSystem: Settings.getAll().skinSystem || 'tlskincape',
     skinSupport: skinSupport || { customSkinLoader: null, tlskincape: null, warnings: [] }
@@ -1239,7 +1558,7 @@ async function ensureLegacyLaunchwrapperDeclaration(chain, rootDir) {
   const mcVersion = (child.meta && child.meta.inheritsFrom) || (base.meta && base.meta.id) || base.id;
   const loader = detectLoader(child.id, child.meta);
   const mainClass = String(child.meta.mainClass || '');
-  if (loader !== 'forge' || minecraftMinor(mcVersion) > 12) return false;
+  if ((loader !== 'forge' && loader !== 'forgeoptifine') || minecraftMinor(mcVersion) > 12) return false;
   if (!/launchwrapper\.Launch/i.test(mainClass) && mainClass) return false;
   const allLibraries = chain.flatMap(x => x.meta.libraries || []);
   if (allLibraries.some(lib => /^net\.minecraft:launchwrapper:/i.test(String(lib.name || '')))) return false;
@@ -1386,33 +1705,44 @@ async function repair(versionId, opts = {}) {
 }
 
 async function remove(versionId, root) {
+  const iso = path.resolve(isolatedRoot());
+  const defaultDir = path.resolve(defaultGameDir());
+  const mpDir = path.resolve(Settings.getAll().modpacksFolder || path.join(defaultGameDir(), 'modpacks'));
+
   if (root) {
     const resolvedRoot = path.resolve(root);
-    const legacyRoot = path.resolve(defaultGameDir());
-    if (resolvedRoot === legacyRoot) {
+    if (resolvedRoot === defaultDir) {
       const legacyVersionDir = path.resolve(versionsDir(resolvedRoot), sanitizeName(versionId));
       const versionsRoot = path.resolve(versionsDir(resolvedRoot)) + path.sep;
       if (!legacyVersionDir.startsWith(versionsRoot)) throw new Error('Некорректный путь версии.');
-      if (fs.existsSync(legacyVersionDir)) await fsp.rm(legacyVersionDir, { recursive: true, force: true });
+      if (fs.existsSync(legacyVersionDir)) await fsp.rm(legacyVersionDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
       return true;
     }
 
-    // Whole-directory removal is only allowed for a launcher-managed instance.
-    // This prevents a stale/tampered UI path from deleting a shared game folder.
-    const managed = fs.existsSync(path.join(resolvedRoot, 'nexus-install.json')) ||
+    // Whole-directory removal is allowed for launcher-managed directories
+    // (isolated instances in nexus-versions, modpacks folder, or folders with nexus metadata).
+    const isInsideIsolated = (resolvedRoot.startsWith(iso + path.sep) && resolvedRoot !== iso) || resolvedRoot === path.join(iso, sanitizeName(versionId));
+    const isInsideModpacks = (resolvedRoot.startsWith(mpDir + path.sep) && resolvedRoot !== mpDir) || resolvedRoot === path.join(mpDir, sanitizeName(versionId));
+    const hasMarker = fs.existsSync(path.join(resolvedRoot, 'nexus-install.json')) ||
       fs.existsSync(path.join(resolvedRoot, 'nexus-modpack.json'));
-    if (!managed) throw new Error('Каталог не помечен как установка Nexus; удаление отменено.');
-    if (fs.existsSync(resolvedRoot)) await fsp.rm(resolvedRoot, { recursive: true, force: true });
+
+    if (!isInsideIsolated && !isInsideModpacks && !hasMarker) {
+      throw new Error('Каталог не помечен как установка Nexus; удаление отменено.');
+    }
+    if (fs.existsSync(resolvedRoot)) {
+      await fsp.rm(resolvedRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    }
     return true;
   }
+
   const installed = await getInstalled();
   const found = installed.find(x => x.id === versionId || x.profileId === versionId);
   if (found && found.path && fs.existsSync(found.path) && !found.legacy) {
-    await fsp.rm(found.path, { recursive: true, force: true });
+    await fsp.rm(found.path, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     return true;
   }
   const dir = path.join(versionsDir(defaultGameDir()), versionId);
-  if (fs.existsSync(dir)) await fsp.rm(dir, { recursive: true, force: true });
+  if (fs.existsSync(dir)) await fsp.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   return true;
 }
 
@@ -1461,9 +1791,9 @@ async function getLoaderAvailability(loader, mcVersions = null) {
   if (hit && Date.now() - hit.at < CACHE_TTL) return hit.value;
 
   let base = {};
-  if (normalized === 'fabric') base = await getFabricAvailability();
+  if (normalized === 'fabric' || normalized === 'fabriciris') base = await getFabricAvailability();
   else if (normalized === 'quilt') base = await getQuiltAvailability();
-  else if (normalized === 'forge') base = await getForgeAvailability();
+  else if (normalized === 'forge' || normalized === 'forgeoptifine') base = await getForgeAvailability();
   else if (normalized === 'neoforge') base = await getNeoForgeAvailability();
   else throw new Error('Неизвестный загрузчик модов: ' + loader);
 
@@ -1471,13 +1801,24 @@ async function getLoaderAvailability(loader, mcVersions = null) {
   const keys = versionsFilter ? Array.from(versionsFilter) : Object.keys(base);
   for (const mc of keys) {
     const info = base[mc];
-    versions[mc] = info
-      ? { ...info, available: true, version: info.version || null, mcVersion: mc }
-      : { loader: normalized, mcVersion: mc, available: false, label: normalized };
+    const isAvailable = info && (normalized !== 'fabriciris' || isIrisSupported(mc));
+    const lbl = normalized === 'fabriciris' ? 'Fabric + Iris Shaders' : (normalized === 'forgeoptifine' ? 'Forge + OptiFine' : (info ? info.label : normalized));
+    versions[mc] = isAvailable
+      ? { ...info, loader: normalized, label: lbl, available: true, version: (info && info.version) || null, mcVersion: mc }
+      : { loader: normalized, mcVersion: mc, available: false, label: lbl };
   }
   const value = { loader: normalized, versions, generatedAt: Date.now() };
   loaderAvailabilityCache.set(cacheKey, { at: Date.now(), value });
   return value;
+}
+
+function isIrisSupported(mc) {
+  // Iris supports MC 1.16.5 up through modern versions
+  const parts = String(mc).split('.').map(n => parseInt(n, 10) || 0);
+  if (parts[0] !== 1) return false;
+  if (parts[1] < 16) return false;
+  if (parts[1] === 16 && (parts[2] || 0) < 5) return false;
+  return true;
 }
 
 async function resolveLoaderInfo(loader, mcVersion, requestedVersion = null) {
@@ -1487,19 +1828,19 @@ async function resolveLoaderInfo(loader, mcVersion, requestedVersion = null) {
   if (requestedVersion) {
     const requested = String(requestedVersion);
     let ok = false;
-    if (normalized === 'fabric') ok = (await getFabricLoaders(mcVersion)).some(x => x.version === requested);
+    if (normalized === 'fabric' || normalized === 'fabriciris') ok = (await getFabricLoaders(mcVersion)).some(x => x.version === requested);
     else if (normalized === 'quilt') ok = (await getQuiltLoaders(mcVersion)).some(x => x.version === requested);
-    else if (normalized === 'forge') {
+    else if (normalized === 'forge' || normalized === 'forgeoptifine') {
       const full = requested.startsWith(`${mcVersion}-`) ? requested : `${mcVersion}-${requested}`;
       ok = (await fetchMavenVersions(FORGE_MAVEN)).includes(full);
       return ok
-        ? { loader: normalized, version: full, mcVersion, label: 'Forge', available: true }
+        ? { loader: normalized, version: full, mcVersion, label: normalized === 'forgeoptifine' ? 'Forge + OptiFine' : 'Forge', available: true }
         : Promise.reject(new Error(`Forge ${requested} недоступен для Minecraft ${mcVersion}`));
     } else if (normalized === 'neoforge') {
       ok = (await fetchMavenVersions(NEOFORGE_MAVEN)).some(v => v === requested && minecraftFromNeoForgeVersion(v) === mcVersion);
     }
     if (!ok) throw new Error(`${normalized} ${requested} недоступен для Minecraft ${mcVersion}`);
-    return { loader: normalized, version: requested, mcVersion, label: normalized, available: true };
+    return { loader: normalized, version: requested, mcVersion, label: normalized === 'forgeoptifine' ? 'Forge + OptiFine' : (normalized === 'fabriciris' ? 'Fabric + Iris' : normalized), available: true };
   }
 
   const availability = await getLoaderAvailability(normalized, [mcVersion]);
@@ -1510,11 +1851,17 @@ async function resolveLoaderInfo(loader, mcVersion, requestedVersion = null) {
 
 async function getLoaders(mcVersion) {
   const out = [{ loader: 'vanilla', version: mcVersion, mcVersion, label: 'Vanilla', available: true }];
-  for (const loader of ['fabric', 'quilt', 'forge', 'neoforge']) {
+  for (const loader of ['fabric', 'fabriciris', 'quilt', 'forge', 'forgeoptifine', 'neoforge']) {
     try {
       const availability = await getLoaderAvailability(loader, [mcVersion]);
       const info = availability.versions[mcVersion];
-      if (info && info.available) out.push({ ...info, label: ({ fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' })[loader] });
+      if (info && info.available) {
+        out.push({
+          ...info,
+          loader,
+          label: ({ fabric: 'Fabric', fabriciris: 'Fabric + Iris (Шейдеры)', quilt: 'Quilt', forge: 'Forge', forgeoptifine: 'Forge + OptiFine', neoforge: 'NeoForge' })[loader]
+        });
+      }
     } catch {}
   }
   return out;
@@ -1531,7 +1878,7 @@ async function getStoragePaths(versionId) {
   return { all, selected: instanceDir(versionId) };
 }
 
-module.exports = { list, getInstalled, install, repair, remove, getLoaders, getLoaderAvailability, getStoragePaths, installVanilla, applySkinSystem, installSkinSupportMods };
+module.exports = { list, getInstalled, install, cancelInstall, repair, remove, getLoaders, getLoaderAvailability, getStoragePaths, installVanilla, applySkinSystem, installSkinSupportMods };
 if (process.env.NODE_ENV === 'test') {
   module.exports.__testing = {
     parseMavenCoordinate, extractLegacyForgeInstallFile, extractBundledMavenArtifacts,

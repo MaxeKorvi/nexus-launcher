@@ -63,8 +63,13 @@ const DEFAULTS = {
   minimizeToTray: true,
   telemetry: false,
   debugMode: false,
-  curseForgeApiKey: '',
-  skinSystem: 'tlskincape',
+  askVersionFolderName: false,
+  skinSystem: 'ely',    // ely | none
+  gpuPreference: 'dedicated', // dedicated | integrated | auto
+  customAccentColor: '#ff8c1a',
+  consoleFontSize: 12,
+  consoleFontFamily: 'monospace',
+  consoleAutoScroll: true,
   experimental: { cuda: false, nito: false }
 };
 
@@ -81,13 +86,13 @@ function deepMerge(base, patch) {
 function getAll() {
   const saved = store.store;
   const settings = deepMerge(DEFAULTS, saved);
-  if (settings.theme === 'light') {
-    settings.theme = 'glass-dark';
-    store.set('theme', 'glass-dark');
+  if (settings.skinSystem === 'tlskincape') {
+    settings.skinSystem = 'ely';
+    store.set('skinSystem', 'ely');
   }
   // Migrate only the old launcher default. A path deliberately selected by the
   // user remains untouched.
-  if (process.platform === 'win32') {
+  if (process.platform === 'win32' && app && typeof app.getPath === 'function') {
     const oldDefault = path.join(app.getPath('home'), '.minecraft');
     if (settings.gameFolder === oldDefault) {
       settings.gameFolder = DEFAULT_GAME_FOLDER;
@@ -120,6 +125,14 @@ function set(key, val) {
     try { app.setLoginItemSettings({ openAtLogin: Boolean(val) }); } catch {}
   }
   return true;
+}
+
+function update(patch) {
+  if (!patch || typeof patch !== 'object') return getAll();
+  for (const [key, val] of Object.entries(patch)) {
+    set(key, val);
+  }
+  return getAll();
 }
 
 function reset() {
@@ -159,4 +172,4 @@ async function getLogs() {
   return content.split('\n').slice(-500).join('\n');
 }
 
-module.exports = { getAll, set, reset, clearCache, openLogs, getLogs, DEFAULTS };
+module.exports = { getAll, set, update, reset, clearCache, openLogs, getLogs, DEFAULTS };

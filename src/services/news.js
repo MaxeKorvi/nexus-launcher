@@ -40,33 +40,63 @@ function cachePath() {
   return path.join(base, 'news-cache.json');
 }
 
+function getLauncherReleaseNewsItem() {
+  const content = `Встречайте масштабное обновление Nexus Launcher 2026.1.1! Мы провели огромную работу над стабильностью, визуальным стилем и удобством лаунчера.
+
+новое:
+1. Вкладка «Темы» — полная кастомизация оформления: 9 готовых стилей (Nexus AMOLED, Изумрудный бор, Сапфир Кибер, Багровый Незер, Cyberpunk Amber, Аметистовый Неон, Жидкое стекло, Премиум Акрил, Светлая тема) и собственный конструктор тем с палитрой цветов.
+2. Вкладка «Серверы» — отдельный раздел сетевой игры: мониторинг доступности, онлайна игроков, задержки (ping) и мгновенное копирование IP.
+3. Интерактивный 3D-предпросмотр скина персонажа с вращением и анимацией бега.
+4. Настройки производительности ПК — реальное автоопределение ОЗУ (4/8/16/32 ГБ), потоков процессора и запуск через дискретную видеокарту (GPU).
+5. Расширенный выбор шрифтов интерфейса с живым предпросмотром начертания.
+6. Выделенная компактная полоса прогресса загрузки и установки версии Minecraft.
+
+исправлено:
+1. Исправлена ошибка сохранения скина для аккаунтов Ely.by, TLauncher и локальных профилей.
+2. Исправлено переключение тем интерфейса без сброса прокрутки наверх.
+3. Исправлена синхронизация цветов интерфейса и подсветки активных пунктов во всех разделах лаунчера.
+4. Исправлено масштабирование и отображение контента при изменении размера окна.
+5. Улучшена стабильность и скорость загрузки версий игры.
+
+Приятной игры!`;
+
+  return {
+    title: 'Релиз Nexus Launcher 2026.1.1: Темы, Серверы, Скины и Оптимизация!',
+    link: 'https://github.com/MaxeKorvi/nexus-launcher',
+    pubDate: new Date().toISOString(),
+    description: 'Масштабное обновление 2026.1.1: Новые вкладки «Темы» и «Серверы», поддержка скинов Ely.by и TLauncher, 3D-предпросмотр, настройка видеокарты и оптимизация интерфейса.',
+    content: content,
+    image: 'assets/news-2026.1.1.jpg',
+    category: 'Nexus Update 2026.1.1'
+  };
+}
+
 async function list() {
   const cached = readCache();
 
   if (cached && Date.now() - cached.savedAt < CACHE_TTL_MS && cached.items && cached.items.length) {
-    // Fast startup: return cache first if it is fresh. It was created from the
-    // real website, so this avoids making the launcher feel frozen on startup.
     refreshCacheInBackground().catch(() => {});
-    return { source: 'minecraft.net-cache', items: cached.items };
+    return { source: 'minecraft.net-cache', items: [getLauncherReleaseNewsItem(), ...cached.items.filter(x => !x.category?.includes('Nexus Update'))] };
   }
 
   try {
     const items = await fetchOfficialMinecraftNews();
     if (items.length) {
       writeCache(items);
-      return { source: 'minecraft.net', items };
+      return { source: 'minecraft.net', items: [getLauncherReleaseNewsItem(), ...items] };
     }
   } catch (error) {
     // Fall through to cache/fallback.
   }
 
   if (cached && cached.items && cached.items.length) {
-    return { source: 'minecraft.net-cache', items: cached.items };
+    return { source: 'minecraft.net-cache', items: [getLauncherReleaseNewsItem(), ...cached.items.filter(x => !x.category?.includes('Nexus Update'))] };
   }
 
   return {
     source: 'offline',
     items: [
+      getLauncherReleaseNewsItem(),
       {
         title: 'Официальные новости Minecraft временно недоступны',
         link: NEWS_URL,

@@ -18,7 +18,7 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const crypto = require('crypto');
 const os = require('os');
-const { app, shell, Notification, safeStorage } = require('electron');
+const { app, shell, Notification, safeStorage, BrowserWindow } = require('electron');
 
 const Store = require('electron-store');
 const store = new Store({ name: 'accounts' });
@@ -54,6 +54,14 @@ function normaliseUuid(uuid) {
   const clean = String(uuid).replace(/-/g, '');
   if (clean.length !== 32) return uuid;
   return `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20)}`;
+}
+
+function offlinePlayerUuid(nickname) {
+  const md5 = crypto.createHash('md5').update('OfflinePlayer:' + nickname, 'utf8').digest();
+  md5[6] = (md5[6] & 0x0f) | 0x30;
+  md5[8] = (md5[8] & 0x3f) | 0x80;
+  const hex = md5.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 function validateNickname(nickname) {
@@ -328,6 +336,228 @@ async function authenticateEly({ username, password, totp }) {
   }
 }
 
+async function loginElyWeb() {
+  return new Promise((resolve, reject) => {
+    let completed = false;
+    let pollInterval = null;
+
+    const authWin = new BrowserWindow({
+      width: 540,
+      height: 720,
+      title: 'Вход через сайт Ely.by',
+      autoHideMenuBar: true,
+      backgroundColor: '#0c0d10',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: false,
+        partition: 'persist:ely_web_session'
+      }
+    });
+
+    const cleanup = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+
+    const injectHook = async () => {
+      if (completed || authWin.isDestroyed()) return;
+      try {
+        await authWin.webContents.executeJavaScript(`
+          (() => {
+            if (window.__nexus_ely_hooked) return;
+            window.__nexus_ely_hooked = true;
+
+            function handlePayload(obj) {
+              if (!obj || typeof obj !== 'object') return;
+              if (obj.user && obj.user.username) {
+                window.__nexus_ely_user = {
+                  username: obj.user.username,
+                  id: obj.user.id,
+                  email: obj.user.email || null,
+                  token: obj.token || null
+                };
+              } else if (obj.username && (obj.id || obj.uuid)) {
+                window.__nexus_ely_user = {
+                  username: obj.username,
+                  id: obj.id || obj.uuid,
+                  email: obj.email || null,
+                  token: obj.token || null
+                };
+              }
+            }
+
+            const _origFetch = window.fetch;
+            if (_origFetch) {
+              window.fetch = async function(...args) {
+                const res = await _origFetch.apply(this, args);
+                try {
+                  const clone = res.clone();
+                  clone.json().then(handlePayload).catch(() => {});
+                } catch (e) {}
+                return res;
+              };
+            }
+
+            const _origOpen = XMLHttpRequest.prototype.open;
+            const _origSend = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.open = function(m, u) {
+              this.__reqUrl = u;
+              return _origOpen.apply(this, arguments);
+            };
+            XMLHttpRequest.prototype.send = function() {
+              this.addEventListener('load', function() {
+                try {
+                  const text = this.responseText;
+                  if (text && text.trim().startsWith('{')) {
+                    const parsed = JSON.parse(text);
+                    handlePayload(parsed);
+                  }
+                } catch (e) {}
+              });
+              return _origSend.apply(this, arguments);
+            };
+          })();
+        `);
+      } catch (e) {}
+    };
+
+    const checkUserInfo = async () => {
+      if (completed || authWin.isDestroyed()) return;
+      try {
+        await injectHook();
+
+        const info = await authWin.webContents.executeJavaScript(`
+          (() => {
+            if (window.__nexus_ely_user && window.__nexus_ely_user.username) {
+              return window.__nexus_ely_user;
+            }
+
+            // 1. Check known Ely.by React/Redux class selectors for username
+            const selectors = [
+              '._3GIXK',
+              '._3q00-',
+              '[class*="activeAccountUsername"]',
+              '[class*="accountUsername"]',
+              '[class*="userName"]'
+            ];
+            for (const sel of selectors) {
+              const el = document.querySelector(sel);
+              if (el && el.textContent && el.textContent.trim()) {
+                const u = el.textContent.trim();
+                if (/^[a-zA-Z0-9_]{3,16}$/.test(u)) {
+                  return { username: u };
+                }
+              }
+            }
+
+            // 2. If page is navigated away from /login, inspect DOM for username
+            const path = window.location.pathname || '';
+            if (path !== '/login' && path !== '/login/' && !path.includes('/login')) {
+              // Try finding text in elements that represent user or profile
+              const candidates = document.querySelectorAll('span, a, div, b, strong');
+              const commonWords = new Set(['login', 'account', 'ely', 'minecraft', 'profile', 'settings', 'email', 'password', 'exit', 'logout', 'help', 'news', 'ru', 'en', 'skin', 'cloaks']);
+              for (const el of candidates) {
+                if (el.children.length === 0 && el.textContent) {
+                  const txt = el.textContent.trim();
+                  if (/^[a-zA-Z0-9_]{3,16}$/.test(txt) && !commonWords.has(txt.toLowerCase())) {
+                    const cls = String(el.className || '') + ' ' + String(el.parentElement ? el.parentElement.className : '');
+                    if (/user|account|profile|nick|name/i.test(cls)) {
+                      return { username: txt };
+                    }
+                  }
+                }
+              }
+            }
+
+            return null;
+          })()
+        `);
+
+        if (info && info.username) {
+          completed = true;
+          cleanup();
+          try { authWin.close(); } catch {}
+
+          const elyProfile = await getElyProfileByName(info.username);
+          const uuid = elyProfile ? elyProfile.id : offlinePlayerUuid(info.username);
+
+          let skinUrl = `http://skinsystem.ely.by/skins/${encodeURIComponent(info.username)}.png`;
+          let capeUrl = `http://skinsystem.ely.by/cloaks/${encodeURIComponent(info.username)}.png`;
+
+          try {
+            const textures = await fetchElyProfileTextures(uuid);
+            if (textures && textures.skinUrl) skinUrl = textures.skinUrl;
+            if (textures && textures.capeUrl) capeUrl = textures.capeUrl;
+          } catch {}
+
+          const account = accountFromProfile('ely', {
+            nickname: info.username,
+            email: info.email || null,
+            uuid,
+            skin: skinUrl,
+            cape: capeUrl
+          }, {
+            onlineMode: true,
+            status: 'connected',
+            skinSystem: 'ely',
+            authServer: 'ely.by'
+          });
+
+          await saveToken(account.id, 'ely', {
+            type: 'web_session',
+            user: { id: info.id || uuid, username: info.username, email: info.email }
+          });
+
+          const accounts = getAllAccounts().map(a => ({ ...a, active: false }));
+          account.active = true;
+          const existingIdx = accounts.findIndex(a => a.nickname.toLowerCase() === info.username.toLowerCase() && a.type === 'ely');
+          if (existingIdx >= 0) {
+            accounts[existingIdx] = { ...accounts[existingIdx], ...account, id: accounts[existingIdx].id };
+            saveAllAccounts(accounts);
+            try { await authWin.loadURL('https://ely.by/skin'); } catch {}
+            return resolve(publicAccount(accounts[existingIdx]));
+          } else {
+            accounts.unshift(account);
+            saveAllAccounts(accounts);
+            try { await authWin.loadURL('https://ely.by/skin'); } catch {}
+            return resolve(publicAccount(account));
+          }
+        }
+      } catch (err) {
+        // Continue polling
+      }
+    };
+
+    authWin.loadURL('https://account.ely.by/login');
+
+    pollInterval = setInterval(checkUserInfo, 1000);
+
+    authWin.webContents.on('did-finish-load', () => {
+      injectHook();
+      checkUserInfo();
+    });
+
+    authWin.webContents.on('did-navigate', () => {
+      injectHook();
+      checkUserInfo();
+    });
+
+    authWin.webContents.on('did-navigate-in-page', () => {
+      injectHook();
+      checkUserInfo();
+    });
+
+    authWin.on('closed', () => {
+      cleanup();
+      if (!completed) {
+        reject(new Error('Окно авторизации Ely.by закрыто до завершения входа.'));
+      }
+    });
+  });
+}
+
 async function refreshElyToken(tok) {
   const { data } = await axios.post(`${ELY_AUTH_URL}/refresh`, {
     accessToken: tok.accessToken,
@@ -371,19 +601,51 @@ function accountFromProfile(type, profile, extra = {}) {
 }
 
 function publicAccount(a) {
-  const out = { ...a, token: undefined };
-  if (out.type === 'tlauncher') {
-    out.type = 'local';
-    out.provider = 'local';
-    out.skinSystem = null;
-    out.onlineMode = false;
-    out.status = out.status || 'offline';
+  return { ...a, token: undefined };
+}
+
+async function fetchElyProfileTextures(uuid) {
+  try {
+    const cleanUuid = String(uuid || '').replace(/-/g, '');
+    if (!cleanUuid) return null;
+    const url = `https://authserver.ely.by/session/profile/${encodeURIComponent(cleanUuid)}`;
+    const res = await axios.get(url, {
+      timeout: 8000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' }
+    });
+    const props = res.data && res.data.properties;
+    if (Array.isArray(props)) {
+      const texProp = props.find(p => p.name === 'textures');
+      if (texProp && texProp.value) {
+        const decoded = JSON.parse(Buffer.from(texProp.value, 'base64').toString('utf8'));
+        const skinUrl = decoded && decoded.textures && decoded.textures.SKIN && decoded.textures.SKIN.url;
+        const capeUrl = decoded && decoded.textures && decoded.textures.CAPE && decoded.textures.CAPE.url;
+        return {
+          skin: skinUrl ? skinUrl.replace(/^http:\/\//, 'https://') : null,
+          cape: capeUrl ? capeUrl.replace(/^http:\/\//, 'https://') : null
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('[accounts] fetchElyProfileTextures failed:', e.message);
   }
-  return out;
+  return null;
 }
 
 async function list() {
-  return getAllAccounts().map(publicAccount);
+  const all = getAllAccounts();
+  for (const acc of all) {
+    if (acc.type === 'ely' && !acc.skin && acc.uuid) {
+      fetchElyProfileTextures(acc.uuid).then(tex => {
+        if (tex && (tex.skin || tex.cape)) {
+          acc.skin = tex.skin || acc.skin;
+          acc.cape = tex.cape || acc.cape;
+          saveAllAccounts(getAllAccounts().map(a => a.id === acc.id ? { ...a, skin: acc.skin, cape: acc.cape } : a));
+        }
+      }).catch(() => {});
+    }
+  }
+  return all.map(publicAccount);
 }
 
 async function add({ type, code, deviceCode, interval, expiresIn, nickname, email, username, password, totp }) {
@@ -419,7 +681,13 @@ async function add({ type, code, deviceCode, interval, expiresIn, nickname, emai
     };
   } else if (type === 'ely') {
     const result = await authenticateEly({ username, password, totp });
-    account = accountFromProfile('ely', result.profile, { onlineMode: true, status: 'connected' });
+    let skin = null;
+    let cape = null;
+    if (result.profile && result.profile.id) {
+      const tex = await fetchElyProfileTextures(result.profile.id);
+      if (tex) { skin = tex.skin; cape = tex.cape; }
+    }
+    account = accountFromProfile('ely', { ...result.profile, skin, cape }, { onlineMode: true, status: 'connected' });
     token = {
       type: 'ely',
       accessToken: result.accessToken,
@@ -429,19 +697,31 @@ async function add({ type, code, deviceCode, interval, expiresIn, nickname, emai
       authServer: 'ely.by'
     };
   } else if (type === 'tlauncher') {
-    // Backward compatibility only: TLauncher authorization is removed.
-    // Old UI payloads are converted to a normal local offline profile.
     const nick = validateNickname(nickname || username);
-    account = accountFromProfile('local', {
+    const skinUrl = `https://skin.tlauncher.org/skin/${encodeURIComponent(nick)}.png`;
+    const capeUrl = `https://skin.tlauncher.org/cape/${encodeURIComponent(nick)}.png`;
+    let skin = null;
+    let cape = null;
+    try {
+      const sRes = await axios.head(skinUrl, { timeout: 4000, validateStatus: s => s === 200 });
+      if (sRes.status === 200) skin = skinUrl;
+    } catch {}
+    try {
+      const cRes = await axios.head(capeUrl, { timeout: 4000, validateStatus: s => s === 200 });
+      if (cRes.status === 200) cape = capeUrl;
+    } catch {}
+    account = accountFromProfile('tlauncher', {
       nickname: nick,
-      uuid: crypto.randomUUID()
-    }, { onlineMode: false, status: 'offline' });
-    token = { type: 'local', accessToken: '0' };
+      uuid: offlinePlayerUuid(nick),
+      skin,
+      cape
+    }, { onlineMode: false, status: 'offline', skinSystem: 'tlauncher' });
+    token = { type: 'tlauncher', accessToken: '0' };
   } else if (type === 'local') {
     const nick = validateNickname(nickname);
     account = accountFromProfile('local', {
       nickname: nick,
-      uuid: crypto.randomUUID()
+      uuid: offlinePlayerUuid(nick)
     }, { onlineMode: false, status: 'offline' });
     token = { type: 'local', accessToken: '0' };
   } else {
@@ -508,6 +788,13 @@ async function getProfile(id) {
       if (tok && tok.profile) {
         acc.nickname = tok.profile.name || acc.nickname;
         acc.uuid = normaliseUuid(tok.profile.id || acc.uuid);
+        if (acc.uuid) {
+          const tex = await fetchElyProfileTextures(acc.uuid);
+          if (tex) {
+            acc.skin = tex.skin || acc.skin;
+            acc.cape = tex.cape || acc.cape;
+          }
+        }
         acc.status = 'connected';
         saveAllAccounts(all.map(a => a.id === id ? acc : a));
       }
@@ -583,14 +870,219 @@ async function startElyOAuth() {
   return { status: 'manual_yggdrasil', authServer: 'https://authserver.ely.by', message: 'Введите логин Ely.by. Пароль не сохраняется; хранится только зашифрованный токен.' };
 }
 
+async function uploadSkinToElyWeb(buf, variant) {
+  return new Promise((resolve) => {
+    let win = null;
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      if (win) {
+        try { win.destroy(); } catch {}
+        win = null;
+      }
+      resolve(result);
+    };
+
+    try {
+      win = new BrowserWindow({
+        show: false,
+        width: 800,
+        height: 600,
+        webPreferences: {
+          partition: 'persist:ely_web_session',
+          contextIsolation: false
+        }
+      });
+
+      const timer = setTimeout(() => {
+        finish({ ok: false, error: 'timeout', message: 'Сайт Ely.by не ответил вовремя. Скин сохранён локально.' });
+      }, 30000);
+
+      win.loadURL('https://ely.by/skin').catch(err => {
+        clearTimeout(timer);
+        finish({ ok: false, error: err.message, message: 'Не удалось загрузить страницу Ely.by.' });
+      });
+
+      win.webContents.on('did-finish-load', async () => {
+        try {
+          const b64 = buf.toString('base64');
+          const res = await win.webContents.executeJavaScript(`
+            (async () => {
+              try {
+                const user = (window.alight && window.alight.service && window.alight.service.currentUser) ||
+                             (window.app && window.app.user);
+                if (!user || !user.id) {
+                  return { ok: false, error: 'not_logged_in', message: 'Сессия Ely.by на сайте не активна. Войдите через «Вход через сайт Ely.by» для синхронизации.' };
+                }
+
+                const byteCharacters = atob('${b64}');
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'image/png' });
+
+                const formData = new FormData();
+                formData.append('file', blob, 'skin.png');
+
+                const uploadResp = await fetch('/skins/upload', {
+                  method: 'POST',
+                  body: formData,
+                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await uploadResp.json();
+                if (data.error && !data.error.includes('success')) {
+                  return { ok: false, error: data.error, message: data.text || 'Ошибка загрузки скина на сайт Ely.by' };
+                }
+
+                const skinId = data.extra && data.extra.id;
+                if (skinId) {
+                  await fetch('/skins/wear', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/x-www-form-urlencoded',
+                      'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'skinId=' + encodeURIComponent(skinId)
+                  }).catch(() => {});
+                }
+
+                return { ok: true, message: data.text || 'Скин успешно обновлён на сайте Ely.by!' };
+              } catch (err) {
+                return { ok: false, error: err.message };
+              }
+            })()
+          `);
+          clearTimeout(timer);
+          finish(res);
+        } catch (e) {
+          clearTimeout(timer);
+          finish({ ok: false, error: e.message });
+        }
+      });
+    } catch (err) {
+      finish({ ok: false, error: err.message });
+    }
+  });
+}
+
+async function changeSkin(accountId, { imageBuffer, variant = 'classic', skinUrl = null }) {
+  const all = getAllAccounts();
+  const acc = all.find(a => a.id === accountId);
+  if (!acc) throw new Error('Аккаунт не найден.');
+
+  if (acc.type === 'microsoft') {
+    const token = await getAccessToken(accountId);
+    if (!token) throw new Error('Microsoft-сессия истекла. Войдите заново.');
+
+    if (imageBuffer) {
+      const buf = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer);
+      const boundary = '----NexusSkinUpload' + Date.now().toString(16);
+      const varVal = variant === 'slim' ? 'slim' : 'classic';
+      
+      const pre = Buffer.from(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="variant"\r\n\r\n` +
+        `${varVal}\r\n` +
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="file"; filename="skin.png"\r\n` +
+        `Content-Type: image/png\r\n\r\n`
+      );
+      const post = Buffer.from(`\r\n--${boundary}--\r\n`);
+      const payload = Buffer.concat([pre, buf, post]);
+
+      await axios.put(MC_PROFILE_URL + '/skins', payload, {
+        timeout: 25000,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
+        }
+      });
+    } else if (skinUrl) {
+      await axios.post(MC_PROFILE_URL + '/skins', {
+        variant: variant === 'slim' ? 'slim' : 'classic',
+        url: skinUrl
+      }, {
+        timeout: 25000,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+    await getProfile(accountId);
+    return { ok: true, message: 'Скин успешно установлен в Minecraft (Mojang)!' };
+  }
+
+  if (acc.type === 'ely' || acc.type === 'tlauncher' || acc.type === 'local') {
+    if (imageBuffer) {
+      const buf = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer);
+      const dataUrl = `data:image/png;base64,${buf.toString('base64')}`;
+
+      // Save skin file locally for offline / in-game rendering
+      const skinDir = path.join(app.getPath('userData'), 'skins');
+      try { await fs.promises.mkdir(skinDir, { recursive: true }); } catch {}
+      const skinFilePath = path.join(skinDir, `${acc.id}_skin.png`);
+      await fs.promises.writeFile(skinFilePath, buf);
+
+      const allAccounts = getAllAccounts();
+      const updated = allAccounts.map(a => {
+        if (a.id === accountId) {
+          return {
+            ...a,
+            skin: dataUrl,
+            skinFile: skinFilePath,
+            skinCustom: true,
+            skinVariant: variant === 'slim' ? 'slim' : 'classic'
+          };
+        }
+        return a;
+      });
+      saveAllAccounts(updated);
+
+      if (acc.type === 'ely') {
+        const elyWebRes = await uploadSkinToElyWeb(buf, variant);
+        if (elyWebRes && elyWebRes.ok) {
+          return {
+            ok: true,
+            message: 'Скин успешно установлен в лаунчере и на сайте Ely.by!'
+          };
+        } else if (elyWebRes && elyWebRes.message) {
+          return {
+            ok: true,
+            message: `Скин сохранён в лаунчере. (${elyWebRes.message})`
+          };
+        }
+        return {
+          ok: true,
+          message: 'Скин успешно установлен в лаунчере!'
+        };
+      }
+
+      return {
+        ok: true,
+        message: 'Скин успешно обновлён!'
+      };
+    }
+    return { ok: true, message: 'Скин сохранён.' };
+  }
+
+  throw new Error('Смена скина не поддерживается для данного типа аккаунта.');
+}
+
 module.exports = {
   list,
   add,
   remove,
   setActive,
   getProfile,
+  changeSkin,
   startMicrosoftOAuth,
-  startElyOAuth,
+  startElyOAuth: loginElyWeb,
+  loginElyWeb,
   getAccessToken,
   getStorageInfo
 };

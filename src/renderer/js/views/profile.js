@@ -33,8 +33,17 @@ window.Views.profile = {
         </div>
       </div>
     `;
-    document.getElementById('p-skin').onclick = () => Toast.info('Скин', 'Откройте официальный сайт Minecraft для смены скина');
-    document.getElementById('p-cape').onclick = () => Toast.info('Плащ', 'Откройте официальный сайт Minecraft для смены плаща');
+    document.getElementById('p-skin').onclick = async () => {
+      const settings = await window.api.invoke('settings:get');
+      if (settings.skinSystem === 'none') {
+        Toast.warning('Система скинов', 'Система скинов отключена в настройках.');
+        return;
+      }
+      window.App.navigate('skins');
+    };
+    document.getElementById('p-cape').onclick = () => {
+      window.api.shell.openExternal('https://www.minecraft.net/profile/skin');
+    };
     this.refresh();
   },
 

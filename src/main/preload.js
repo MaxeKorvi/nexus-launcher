@@ -12,12 +12,15 @@ const ALLOWED_CHANNELS = {
   'accounts:start-ms-oauth': () => ipcRenderer.invoke('accounts:start-ms-oauth'),
   'accounts:start-ely-oauth': () => ipcRenderer.invoke('accounts:start-ely-oauth'),
   'accounts:get-profile': (id) => ipcRenderer.invoke('accounts:get-profile', id),
+  'accounts:change-skin': (payload) => ipcRenderer.invoke('accounts:change-skin', payload),
   'accounts:storage-info': () => ipcRenderer.invoke('accounts:storage-info'),
+  'accounts:get-skin-base64': (url) => ipcRenderer.invoke('accounts:get-skin-base64', url),
 
   // Versions
   'versions:list': (filters) => ipcRenderer.invoke('versions:list', filters),
   'versions:get-installed': () => ipcRenderer.invoke('versions:get-installed'),
   'versions:install': (payload) => ipcRenderer.invoke('versions:install', payload),
+  'versions:cancel': (versionId) => ipcRenderer.invoke('versions:cancel', versionId),
   'versions:repair': (payload) => ipcRenderer.invoke('versions:repair', payload),
   'versions:remove': (versionId, rootDir) => ipcRenderer.invoke('versions:remove', versionId, rootDir),
   'versions:get-loaders': (mcVersion) => ipcRenderer.invoke('versions:get-loaders', mcVersion),
@@ -29,6 +32,7 @@ const ALLOWED_CHANNELS = {
   'mods:get-by-id': (id, source) => ipcRenderer.invoke('mods:get-by-id', id, source),
   'mods:install': (mod) => ipcRenderer.invoke('mods:install', mod),
   'mods:remove': (mod) => ipcRenderer.invoke('mods:remove', mod),
+  'mods:toggle': (mod) => ipcRenderer.invoke('mods:toggle', mod),
   'mods:list-installed': (rootDir) => ipcRenderer.invoke('mods:list-installed', rootDir),
 
   // Modpacks
@@ -74,6 +78,7 @@ const ALLOWED_CHANNELS = {
   // Settings
   'settings:get': () => ipcRenderer.invoke('settings:get'),
   'settings:set': (key, val) => ipcRenderer.invoke('settings:set', key, val),
+  'settings:update': (patch) => ipcRenderer.invoke('settings:update', patch),
   'settings:reset': () => ipcRenderer.invoke('settings:reset'),
   'settings:clear-cache': () => ipcRenderer.invoke('settings:clear-cache'),
   'settings:open-logs': () => ipcRenderer.invoke('settings:open-logs'),
@@ -82,7 +87,32 @@ const ALLOWED_CHANNELS = {
   // Launch
   'launch:start': (opts) => ipcRenderer.invoke('launch:start', opts),
   'launch:stop': () => ipcRenderer.invoke('launch:stop'),
-  'launch:screenshot': () => ipcRenderer.invoke('launch:screenshot')
+  'launch:screenshot': () => ipcRenderer.invoke('launch:screenshot'),
+
+  // System info
+  'system:get-info': () => ipcRenderer.invoke('system:get-info'),
+  'downloads:cancel-all': () => ipcRenderer.invoke('downloads:cancel-all'),
+
+  // Instances
+  'instances:list': () => ipcRenderer.invoke('instances:list'),
+  'instances:get': (id) => ipcRenderer.invoke('instances:get', id),
+  'instances:create': (data) => ipcRenderer.invoke('instances:create', data),
+  'instances:remove': (id) => ipcRenderer.invoke('instances:remove', id),
+  'instances:duplicate': (id, newName) => ipcRenderer.invoke('instances:duplicate', id, newName),
+  'instances:open-folder': (id) => ipcRenderer.invoke('instances:open-folder', id),
+
+  // Worlds
+  'worlds:list': (rootDir) => ipcRenderer.invoke('worlds:list', rootDir),
+  'worlds:backup': (worldName, rootDir, note) => ipcRenderer.invoke('worlds:backup', worldName, rootDir, note),
+  'worlds:list-backups': (rootDir) => ipcRenderer.invoke('worlds:list-backups', rootDir),
+  'worlds:restore': (backupFile, rootDir, targetName) => ipcRenderer.invoke('worlds:restore', backupFile, rootDir, targetName),
+  'worlds:delete-backup': (backupFile, rootDir) => ipcRenderer.invoke('worlds:delete-backup', backupFile, rootDir),
+
+  // Servers
+  'servers:list': () => ipcRenderer.invoke('servers:list'),
+  'servers:add': (data) => ipcRenderer.invoke('servers:add', data),
+  'servers:remove': (id) => ipcRenderer.invoke('servers:remove', id),
+  'servers:ping': (address) => ipcRenderer.invoke('servers:ping', address)
 };
 
 async function invokeBackend(channel, ...payload) {

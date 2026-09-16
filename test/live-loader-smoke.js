@@ -14,7 +14,7 @@ class MockStore {
   clear() { this.store = {}; }
 }
 const fakeElectron = {
-  app: { getPath: () => path.join(os.tmpdir(), 'nexus-live-loader-smoke'), getVersion: () => '2026.1.0' },
+  app: { getPath: () => path.join(os.tmpdir(), 'nexus-live-loader-smoke'), getVersion: () => '2026.1.1' },
   BrowserWindow: { getAllWindows: () => [] },
   shell: { openPath() {} },
   dialog: { async showOpenDialog() { return { filePaths: [] }; } }

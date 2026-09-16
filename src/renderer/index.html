@@ -13,7 +13,7 @@
     <div class="titlebar">
       <div class="title">
         <img class="brand-logo" src="assets/nexus-logo.png" alt="Nexus Launcher">
-        <div class="brand-wordmark"><strong>Nexus</strong><span>Launcher 2026.1.0</span></div>
+        <div class="brand-wordmark"><strong>Nexus</strong><span>Launcher 2026.1.1</span></div>
       </div>
       <div class="controls">
         <button id="btn-min" title="Свернуть">
@@ -48,9 +48,21 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             <span class="nav-text">Библиотека</span>
           </button>
+          <button class="nav-item" data-view="servers" id="nav-servers" data-tip="Серверы">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <span class="nav-text">Серверы</span>
+          </button>
+          <button class="nav-item" data-view="skins" id="nav-skins" data-tip="Скин" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="nav-text">Скин</span>
+          </button>
           <button class="nav-item" data-view="console" data-tip="Консоль" style="margin-top: auto;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
             <span class="nav-text">Консоль</span>
+          </button>
+          <button class="nav-item" data-view="themes" data-tip="Темы">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="16" cy="10" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg>
+            <span class="nav-text">Темы</span>
           </button>
           <button class="nav-item" data-view="settings" data-tip="Настройки">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -77,6 +89,7 @@
                 </div>
               </div>
               <div class="profile-actions">
+                <button class="btn outline" id="hero-btn-instances" title="Управление изолированными профилями">Инстансы</button>
                 <button class="btn outline" id="hero-btn-check" title="Проверить файлы версии">Проверить файлы</button>
                 <button class="btn outline" id="hero-btn-folder" title="Открыть папку версии">Папка</button>
                 <button class="btn primary play" id="hero-btn-play">
@@ -123,7 +136,10 @@
         <div class="downloads-panel" id="downloads-panel">
           <div class="downloads-panel-head" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-soft); margin-bottom: 10px;">
             <h3 style="font-size: 14px; font-weight: 700; color: var(--text);">Загрузки</h3>
-            <button class="icon-button" id="downloads-clear" title="Очистить завершённые" style="width: 24px; height: 24px; font-size: 11px;">✓</button>
+            <div style="display: flex; gap: 4px;">
+              <button class="icon-button" id="downloads-cancel-all" title="Отменить все загрузки" style="width: 24px; height: 24px; font-size: 11px; color: var(--error);">✕</button>
+              <button class="icon-button" id="downloads-clear" title="Очистить завершённые" style="width: 24px; height: 24px; font-size: 11px;">✓</button>
+            </div>
           </div>
           <div class="downloads-panel-body" id="downloads-panel-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
             <div class="empty-state">Нет загрузок</div>
@@ -152,6 +168,17 @@
             <div class="label">Версия</div>
             <div class="value" id="bottom-version">—</div>
           </div>
+        </div>
+      </div>
+      <!-- Version installation progress bar between version selector and action buttons -->
+      <div class="version-install-progress hidden" id="version-install-progress">
+        <div class="vip-meta">
+          <span class="vip-filename" id="vip-filename">Загрузка файлов...</span>
+          <span class="vip-percent" id="vip-percent">0%</span>
+          <button class="vip-cancel" id="vip-cancel-btn" title="Отменить установку" aria-label="Отменить установку">✕</button>
+        </div>
+        <div class="vip-track">
+          <div class="vip-fill" id="vip-fill" style="width: 0%;"></div>
         </div>
       </div>
       <div class="right">
@@ -187,7 +214,13 @@
   <script src="js/views/downloads.js"></script>
   <script src="js/views/console.js"></script>
   <script src="js/views/settings.js"></script>
+  <script src="js/views/themes.js"></script>
+  <script src="js/views/servers.js"></script>
   <script src="js/views/profile.js"></script>
+  <script src="js/libs/skinview3d.bundle.js"></script>
+  <script src="js/views/skins.js"></script>
+  <script src="js/views/instances.js"></script>
+  <script src="js/views/worlds.js"></script>
   <script src="js/views/about.js"></script>
   <script src="js/app.js"></script>
 </body>

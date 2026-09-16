@@ -23,7 +23,7 @@ window.Views.console = {
           <button class="btn outline" id="c-copy">Копировать</button>
           <button class="btn outline" id="c-open">Открыть файл</button>
         </div>
-        <div id="c-output" class="console" style="flex:1; overflow-y:auto; font-family: monospace; background:#020202; border:1px solid var(--border-soft); border-radius:8px; padding:12px; font-size:12px; line-height:1.6;"></div>
+        <div id="c-output" class="console" style="flex:1; overflow-y:auto; font-family: var(--console-font-family, monospace); background:#020202; border:1px solid var(--border-soft); border-radius:8px; padding:12px; font-size: var(--console-font-size, 12px); line-height:1.6;"></div>
       </div>
     `;
 

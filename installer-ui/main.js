@@ -38,7 +38,7 @@ async function install(target, desktopShortcut) {
     await fsp.mkdir(path.dirname(shortcut), { recursive: true });
     await runPowerShell(`$w=New-Object -ComObject WScript.Shell; $s=$w.CreateShortcut(${psQuote(shortcut)}); $s.TargetPath=${psQuote(exe)}; $s.WorkingDirectory=${psQuote(destination)}; $s.IconLocation=${psQuote(exe)}; $s.Save()`);
   }
-  await fsp.writeFile(path.join(destination, 'install-location.json'), JSON.stringify({ installedAt: new Date().toISOString(), version: '2026.1.0' }, null, 2));
+  await fsp.writeFile(path.join(destination, 'install-location.json'), JSON.stringify({ installedAt: new Date().toISOString(), version: '2026.1.1' }, null, 2));
   win.webContents.send('install:progress', { percent: 100, text: 'Nexus Launcher установлен' });
   return { ok: true, exe, destination };
 }

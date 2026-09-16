@@ -29,9 +29,29 @@ window.Views.settings = {
     const downloadActive = (downloads.active || []).length;
     const downloadQueue = (downloads.queue || []).length;
     const downloadCompleted = (downloads.completed || []).length;
-    const heapMb = Number((s.java && s.java.maxHeap) || 4096);
-    const heapGb = Math.round(heapMb / 1024);
+
+    const sysInfo = await window.api.invoke('system:get-info').catch(() => null);
+    const totalRamMb = (sysInfo && sysInfo.totalRamMb) || 8192;
+    const installedRamGb = (sysInfo && sysInfo.installedRamGb) || Math.round(totalRamMb / 1024);
+    const totalRamGb = installedRamGb;
+    const freeRamGb = sysInfo ? (sysInfo.freeRamMb / 1024).toFixed(1) : '?';
+    const cpuModel = (sysInfo && sysInfo.cpuModel) || '';
+    const cpuThreads = (sysInfo && sysInfo.cpuThreads) || 4;
+    const recommendedRamMb = (sysInfo && sysInfo.recommendedRamMb) || (installedRamGb <= 4 ? 2048 : installedRamGb <= 8 ? 4096 : 6144);
+    const recommendedThreads = (sysInfo && sysInfo.recommendedThreads) || cpuThreads;
+
+    const defaultThreadList = [2, 4, 6, 8, 12, 16, 24, 32];
+    if (!defaultThreadList.includes(cpuThreads)) defaultThreadList.push(cpuThreads);
+    defaultThreadList.sort((a, b) => a - b);
+
+    const heapMb = Math.min(totalRamMb, Number((s.java && s.java.maxHeap) || recommendedRamMb));
+    const heapGb = (heapMb / 1024).toFixed(1).replace(/\.0$/, '');
     const accountLabel = active ? Shared.providerLabel(active) : 'Аккаунт не выбран';
+
+    this._totalRamMb = totalRamMb;
+    this._totalRamGb = totalRamGb;
+    this._recommendedRamMb = recommendedRamMb;
+    this._recommendedThreads = recommendedThreads;
 
     c.innerHTML = `
       <div class="view settings-view">
@@ -101,13 +121,26 @@ window.Views.settings = {
                 <label class="form-row">
                   <span>Система скинов</span>
                   <select class="select" id="set-skin-system">
-                    <option value="ely" ${s.skinSystem === 'ely' ? 'selected' : ''}>Ely.by</option>
-                    <option value="tlskincape" ${s.skinSystem === 'tlskincape' ? 'selected' : ''}>TLSkinCape</option>
-                    <option value="none" ${s.skinSystem === 'none' ? 'selected' : ''}>Ничего</option>
+                    <option value="ely" ${s.skinSystem === 'ely' ? 'selected' : ''}>Ely.by (Скины и плащи)</option>
+                    <option value="tlauncher" ${s.skinSystem === 'tlauncher' ? 'selected' : ''}>TLauncher (Скины и плащи)</option>
+                    <option value="both" ${s.skinSystem === 'both' ? 'selected' : ''}>Оба (Ely.by + TLauncher)</option>
+                    <option value="none" ${s.skinSystem === 'none' ? 'selected' : ''}>Отключено (Не устанавливать моды)</option>
                   </select>
-                  <small>Влияет на отображение скинов в игре. Применится при следующем запуске игры.</small>
+                  <small>Влияет на загрузку мода скинов при установке и запуске версий.</small>
                 </label>
 
+                <label class="form-row">
+                  <span>Графический процессор (GPU / CPU)</span>
+                  <select class="select" id="set-gpu-preference">
+                    <option value="dedicated" ${(s.gpuPreference || 'dedicated') === 'dedicated' ? 'selected' : ''}>Дискретная видеокарта (GPU, максимальная производительность)</option>
+                    <option value="integrated" ${s.gpuPreference === 'integrated' ? 'selected' : ''}>Интегрированная графика / Процессор (CPU)</option>
+                    <option value="auto" ${s.gpuPreference === 'auto' ? 'selected' : ''}>Автовыбор системы</option>
+                  </select>
+                  <small>Выбор графического адаптера для запуска Minecraft (NVIDIA, AMD, Intel).</small>
+                </label>
+              </div>
+
+              <div class="settings-two-col">
                 <label class="form-row">
                   <span>Оптимизация Java (GC Пресет)</span>
                   <select class="select" id="set-jvm-preset">
@@ -117,9 +150,7 @@ window.Views.settings = {
                   </select>
                   <small>Автоматически настраивает сборщик мусора под вашу Java.</small>
                 </label>
-              </div>
 
-              <div class="settings-two-col">
                 <label class="form-row">
                   <span>Ручные JVM аргументы</span>
                   <input class="input" id="set-jvm-args" value="${Shared.escapeHtml((s.java && s.java.jvmArgs) || '')}" placeholder="-XX:+UseG1GC ...">
@@ -129,15 +160,28 @@ window.Views.settings = {
 
               <div class="form-row settings-memory-wrap">
                 <div class="settings-memory-head">
-                  <span>Выделяемая оперативная память</span>
-                  <b id="heap-value">${heapGb} GB</b>
+                  <span>Выделяемая оперативная память <small style="color: var(--text-2); font-weight: 400;">(В ПК: ${installedRamGb} ГБ ОЗУ, свободно: ${freeRamGb} ГБ${cpuModel ? `, ${Shared.escapeHtml(cpuModel)}` : ''})</small></span>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn ghost compact-btn" id="btn-recommend-ram" title="Поставить рекомендуемый объём памяти" style="font-size: 11px; padding: 2px 8px;">Рекомендуемое (${(recommendedRamMb / 1024).toFixed(1)} ГБ)</button>
+                    <b id="heap-value">${heapGb} GB</b>
+                  </div>
                 </div>
                 <div class="range-wrap">
-                  <span>2 GB</span>
-                  <input type="range" min="2048" max="16384" step="512" value="${heapMb}" id="set-heap">
-                  <span>16 GB</span>
+                  <span>1 GB</span>
+                  <input type="range" min="1024" max="${totalRamMb}" step="512" value="${heapMb}" id="set-heap">
+                  <span>${installedRamGb} GB</span>
                 </div>
-                <small style="margin-top: 4px; display: block; color: var(--text-2);">Объём памяти, доступный процессу игры. Будет применен при новом запуске Minecraft.</small>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-2); margin-top: 2px; padding: 0 4px;">
+                  <span>1 ГБ</span>
+                  <span>2 ГБ</span>
+                  <span>4 ГБ</span>
+                  ${installedRamGb >= 8 ? '<span>8 ГБ</span>' : ''}
+                  ${installedRamGb >= 16 ? '<span>16 ГБ</span>' : ''}
+                  ${installedRamGb >= 32 ? '<span>32 ГБ</span>' : ''}
+                  <span>${installedRamGb} ГБ (Макс)</span>
+                </div>
+                <div id="ram-warning" style="display: none; margin-top: 8px; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;"></div>
+                <small style="margin-top: 4px; display: block; color: var(--text-2);">Объём памяти, выделяемый процессу игры. Рекомендуется ${(recommendedRamMb / 1024).toFixed(1)} ГБ для комфортной игры с модами.</small>
               </div>
 
               <div class="toggle-list settings-toggle-list">
@@ -162,9 +206,12 @@ window.Views.settings = {
 
               <div class="settings-two-col">
                 <label class="form-row">
-                  <span>Потоки загрузки</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span>Потоки загрузки <small style="color: var(--text-2); font-weight: normal;">(В ПК: ${cpuThreads} потоков CPU)</small></span>
+                    <button class="btn ghost compact-btn" id="btn-recommend-threads" style="padding: 2px 8px; font-size: 11px;">Рекомендуемое (${recommendedThreads} пот.)</button>
+                  </div>
                   <select class="select" id="set-threads">
-                    ${[4, 8, 12, 16, 24, 32].map(n => `<option value="${n}" ${Number(s.downloadThreads) === n ? 'selected' : ''}>${n} потоков</option>`).join('')}
+                    ${defaultThreadList.map(n => `<option value="${n}" ${Number(s.downloadThreads || recommendedThreads) === n ? 'selected' : ''}>${n} потоков${n === recommendedThreads ? ` (Рекомендуется для вашего ПК · ${cpuThreads} потоков)` : ''}</option>`).join('')}
                   </select>
                   <small>Количество параллельных потоков скачивания файлов игры.</small>
                 </label>
@@ -202,23 +249,9 @@ window.Views.settings = {
             <section class="settings-section">
               <div class="settings-section-head">
                 <div>
-                  <h2>Интерфейс</h2>
-                  <p>Внешний вид и поведение окна.</p>
+                  <h2>Интерфейс и анимации</h2>
+                  <p>Настройки плавностей переходов, работы с треем и поведения окна лаунчера. Выбор и настройка тем перенесены во вкладку «Темы».</p>
                 </div>
-              </div>
-
-              <div class="settings-two-col">
-                <label class="form-row">
-                  <span>Тема оформления</span>
-                  <select class="select" id="set-theme">
-                    <option value="amoled" ${s.theme === 'amoled' ? 'selected' : ''}>Тёмная Nexus</option>
-                    <option value="glass-dark" ${s.theme === 'glass-dark' ? 'selected' : ''}>Тёмная: Жидкое стекло (Liquid Glass)</option>
-                    <option value="acrylic" ${s.theme === 'acrylic' ? 'selected' : ''}>Тёмный акрил (Glassmorphism)</option>
-                    <option value="emerald" ${s.theme === 'emerald' ? 'selected' : ''}>Изумрудный бор (Emerald)</option>
-                    <option value="crimson" ${s.theme === 'crimson' ? 'selected' : ''}>Багровый Незер (Crimson)</option>
-                  </select>
-                  <small>Тема применяется моментально к окну лаунчера.</small>
-                </label>
               </div>
 
               <div class="toggle-list settings-toggle-list">
@@ -233,6 +266,78 @@ window.Views.settings = {
                 <div class="toggle-row">
                   <div><b>Сворачивать в трей</b><small>Сворачивать лаунчер при закрытии вместо полного выхода.</small></div>
                   <button class="switch ${s.minimizeToTray ? 'on' : ''}" id="sw-minimize-tray" aria-label="Сворачивать в трей"></button>
+                </div>
+                <div class="toggle-row">
+                  <div><b>Спрашивать имя папки при установке версии</b><small>Запрашивать индивидуальное имя каталога перед скачиванием новой версии.</small></div>
+                  <button class="switch ${s.askVersionFolderName ? 'on' : ''}" id="sw-ask-folder-name" aria-label="Спрашивать имя папки"></button>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-section">
+              <div class="settings-section-head">
+                <div>
+                  <h2>Консоль и логи</h2>
+                  <p>Кастомизация консоли игры, шрифты и поведение журнала событий.</p>
+                </div>
+              </div>
+
+              <div class="settings-two-col">
+                <label class="form-row">
+                  <span>Размер шрифта консоли</span>
+                  <select class="select" id="set-console-font-size">
+                    <option value="11" ${Number(s.consoleFontSize) === 11 ? 'selected' : ''}>11 px (Компактный)</option>
+                    <option value="12" ${!s.consoleFontSize || Number(s.consoleFontSize) === 12 ? 'selected' : ''}>12 px (Стандартный)</option>
+                    <option value="13" ${Number(s.consoleFontSize) === 13 ? 'selected' : ''}>13 px</option>
+                    <option value="14" ${Number(s.consoleFontSize) === 14 ? 'selected' : ''}>14 px (Крупный)</option>
+                    <option value="16" ${Number(s.consoleFontSize) === 16 ? 'selected' : ''}>16 px (Очень крупный)</option>
+                  </select>
+                  <small>Размер текста в консоли вывода процесса игры.</small>
+                </label>
+
+                <label class="form-row">
+                  <span>Семейство шрифтов</span>
+                  <select class="select" id="set-console-font-family">
+                    <option value="monospace" ${!s.consoleFontFamily || s.consoleFontFamily === 'monospace' ? 'selected' : ''}>Системный моноширинный (Monospace)</option>
+                    <option value="'JetBrains Mono', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('JetBrains') ? 'selected' : ''}>JetBrains Mono</option>
+                    <option value="'Fira Code', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Fira') ? 'selected' : ''}>Fira Code</option>
+                    <option value="'Cascadia Code', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Cascadia') ? 'selected' : ''}>Cascadia Code</option>
+                    <option value="'Consolas', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Consolas') ? 'selected' : ''}>Consolas</option>
+                    <option value="'Source Code Pro', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Source Code') ? 'selected' : ''}>Source Code Pro</option>
+                    <option value="'Roboto Mono', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Roboto Mono') ? 'selected' : ''}>Roboto Mono</option>
+                    <option value="'Ubuntu Mono', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Ubuntu Mono') ? 'selected' : ''}>Ubuntu Mono</option>
+                    <option value="'Hack', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Hack') ? 'selected' : ''}>Hack</option>
+                    <option value="'Inconsolata', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Inconsolata') ? 'selected' : ''}>Inconsolata</option>
+                    <option value="'Victor Mono', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Victor Mono') ? 'selected' : ''}>Victor Mono</option>
+                    <option value="'DejaVu Sans Mono', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('DejaVu') ? 'selected' : ''}>DejaVu Sans Mono</option>
+                    <option value="'Anonymous Pro', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Anonymous') ? 'selected' : ''}>Anonymous Pro</option>
+                    <option value="'Liberation Mono', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Liberation') ? 'selected' : ''}>Liberation Mono</option>
+                    <option value="'Monaco', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Monaco') ? 'selected' : ''}>Monaco</option>
+                    <option value="'Menlo', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Menlo') ? 'selected' : ''}>Menlo</option>
+                    <option value="'Courier New', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('Courier') ? 'selected' : ''}>Courier New</option>
+                    <option value="'SF Mono', monospace" ${s.consoleFontFamily && s.consoleFontFamily.includes('SF Mono') ? 'selected' : ''}>SF Mono</option>
+                  </select>
+                  <small>Шрифт отображения логов в окне консоли.</small>
+                </label>
+              </div>
+
+              <!-- Живой предпросмотр шрифта консоли -->
+              <div style="margin-top: 14px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: #07080a; padding: 14px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-2);">Живой предпросмотр шрифта консоли</span>
+                  <span id="console-preview-badge" style="font-size: 11px; font-family: monospace; color: var(--accent);">${s.consoleFontSize || 12}px · ${(s.consoleFontFamily || 'Consolas').replace(/['"]/g, '').split(',')[0]}</span>
+                </div>
+                <div id="console-font-preview" style="font-family: ${s.consoleFontFamily || "'Consolas', monospace"}; font-size: ${s.consoleFontSize || 12}px; line-height: 1.5; color: #cdd6f4; user-select: text; white-space: pre-wrap; word-break: break-all;">
+<span style="color: #6c7086;">[17:42:01] [Client thread/INFO] [Minecraft/Minecraft]:</span> Starting Nexus Launcher client
+<span style="color: #a6e3a1;">[17:42:02] [Client thread/INFO] [Minecraft/Minecraft]:</span> Setting user: <span style="color: #89b4fa;">${Shared.escapeHtml(active ? active.nickname : 'Player')}</span>
+<span style="color: #f9e2af;">[17:42:03] [Client thread/WARN] [OptiFine]:</span> Custom textures and shaders initialized
+<span style="color: #94e2d5;">[17:42:04] [Render thread/INFO] [Minecraft/Minecraft]:</span> OpenGL 4.6 (${cpuModel ? Shared.escapeHtml(cpuModel.split(' ')[0]) : 'GPU'}) initialized</div>
+              </div>
+
+              <div class="toggle-list settings-toggle-list">
+                <div class="toggle-row">
+                  <div><b>Автопрокрутка консоли</b><small>Автоматически скроллить вниз при появлении новых строк в логе Minecraft.</small></div>
+                  <button class="switch ${s.consoleAutoScroll !== false ? 'on' : ''}" id="sw-console-autoscroll" aria-label="Автопрокрутка"></button>
                 </div>
               </div>
             </section>
@@ -253,13 +358,119 @@ window.Views.settings = {
     this.bindSwitch('sw-animations');
     this.bindSwitch('sw-start-system');
     this.bindSwitch('sw-minimize-tray');
+    this.bindSwitch('sw-console-autoscroll');
+
+    const updateRamWarning = (valMb) => {
+      const warningEl = document.getElementById('ram-warning');
+      if (!warningEl) return;
+      const pct = (valMb / totalRamMb) * 100;
+      if (pct > 85) {
+        warningEl.style.display = 'block';
+        warningEl.style.background = 'rgba(255, 68, 68, 0.15)';
+        warningEl.style.border = '1px solid rgba(255, 68, 68, 0.4)';
+        warningEl.style.color = '#ff6b6b';
+        warningEl.textContent = `Критическое выделение: выбрано ${Math.round(pct)}% всей RAM ПК (${(valMb / 1024).toFixed(1)} из ${totalRamGb} ГБ). Это может вызвать сильные зависания Windows и аварийное закрытие игры!`;
+      } else if (pct > 70) {
+        warningEl.style.display = 'block';
+        warningEl.style.background = 'rgba(255, 170, 0, 0.15)';
+        warningEl.style.border = '1px solid rgba(255, 170, 0, 0.4)';
+        warningEl.style.color = '#ffb84d';
+        warningEl.textContent = `Внимание: выделено ${Math.round(pct)}% всей RAM ПК (${(valMb / 1024).toFixed(1)} из ${totalRamGb} ГБ). Рекомендуется оставить запас для операционной системы.`;
+      } else {
+        warningEl.style.display = 'none';
+      }
+    };
 
     const heap = document.getElementById('set-heap');
-    if (heap) heap.oninput = () => {
-      const value = Math.round(Number(heap.value) / 1024);
-      const el = document.getElementById('heap-value');
-      if (el) el.textContent = `${value} GB`;
+    if (heap) {
+      heap.oninput = () => {
+        const valMb = Number(heap.value);
+        const value = (valMb / 1024).toFixed(1).replace(/\.0$/, '');
+        const el = document.getElementById('heap-value');
+        if (el) el.textContent = `${value} GB`;
+        updateRamWarning(valMb);
+      };
+      updateRamWarning(heapMb);
+    }
+
+    const btnRecommendRam = document.getElementById('btn-recommend-ram');
+    if (btnRecommendRam && heap) {
+      btnRecommendRam.onclick = () => {
+        heap.value = this._recommendedRamMb || 4096;
+        const valMb = Number(heap.value);
+        const value = (valMb / 1024).toFixed(1).replace(/\.0$/, '');
+        const el = document.getElementById('heap-value');
+        if (el) el.textContent = `${value} GB`;
+        updateRamWarning(valMb);
+        Toast.info(`Установлено рекомендуемое ОЗУ: ${value} ГБ`);
+      };
+    }
+
+    const btnRecommendThreads = document.getElementById('btn-recommend-threads');
+    const threadsSel = document.getElementById('set-threads');
+    if (btnRecommendThreads && threadsSel) {
+      btnRecommendThreads.onclick = () => {
+        threadsSel.value = this._recommendedThreads || 4;
+        Toast.info(`Установлены рекомендуемые потоки: ${this._recommendedThreads || 4}`);
+      };
+    }
+
+    const fontSizeSel = document.getElementById('set-console-font-size');
+    const fontFamilySel = document.getElementById('set-console-font-family');
+    const fontPreviewEl = document.getElementById('console-font-preview');
+    const fontBadgeEl = document.getElementById('console-preview-badge');
+
+    const updateFontPreview = () => {
+      if (!fontPreviewEl) return;
+      const sz = fontSizeSel ? fontSizeSel.value : '12';
+      const fam = fontFamilySel ? fontFamilySel.value : 'monospace';
+      fontPreviewEl.style.fontSize = sz + 'px';
+      fontPreviewEl.style.fontFamily = fam;
+      if (fontBadgeEl) {
+        const cleanFam = fam.replace(/['"]/g, '').split(',')[0].trim();
+        fontBadgeEl.textContent = `${sz}px · ${cleanFam}`;
+      }
     };
+
+    if (fontSizeSel) {
+      fontSizeSel.addEventListener('change', updateFontPreview);
+      fontSizeSel.addEventListener('input', updateFontPreview);
+    }
+    if (fontFamilySel) {
+      fontFamilySel.addEventListener('change', updateFontPreview);
+      fontFamilySel.addEventListener('input', updateFontPreview);
+    }
+
+    const themeSelect = document.getElementById('set-theme');
+    const customAccentRow = document.getElementById('custom-accent-row');
+    const accentColorInput = document.getElementById('set-accent-color');
+    const accentHexLabel = document.getElementById('accent-hex-label');
+
+    if (themeSelect) {
+      themeSelect.onchange = () => {
+        if (customAccentRow) {
+          customAccentRow.style.display = themeSelect.value === 'custom' ? 'block' : 'none';
+        }
+        window.App.applyRuntimeSettings({
+          ...this.settings,
+          theme: themeSelect.value,
+          customAccentColor: accentColorInput ? accentColorInput.value : null
+        });
+      };
+    }
+
+    if (accentColorInput) {
+      accentColorInput.oninput = () => {
+        if (accentHexLabel) accentHexLabel.textContent = accentColorInput.value;
+        if (themeSelect && themeSelect.value === 'custom') {
+          window.App.applyRuntimeSettings({
+            ...this.settings,
+            theme: 'custom',
+            customAccentColor: accentColorInput.value
+          });
+        }
+      };
+    }
 
     // Bind real-time search functionality
     const searchInput = document.getElementById('settings-search');
@@ -317,9 +528,14 @@ window.Views.settings = {
     document.querySelectorAll('.settings-view input:not(#settings-search), .settings-view select, .settings-view textarea').forEach(el => {
       el.addEventListener(el.matches('select') ? 'change' : 'input', schedule);
     });
-    ['sw-auto-updates', 'sw-verify', 'sw-animations', 'sw-start-system', 'sw-minimize-tray'].forEach(id => {
+    ['sw-auto-updates', 'sw-verify', 'sw-animations', 'sw-start-system', 'sw-minimize-tray', 'sw-ask-folder-name', 'sw-console-autoscroll'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.addEventListener('click', schedule);
+      if (el) {
+        el.onclick = () => {
+          el.classList.toggle('on');
+          schedule();
+        };
+      }
     });
   },
 
@@ -364,20 +580,14 @@ window.Views.settings = {
       await window.api.shell.openPath(gameFolder);
     };
 
-    const openModpacksFolder = document.getElementById('open-modpacks-folder');
-    if (openModpacksFolder) openModpacksFolder.onclick = async () => {
-      const modpacksFolder = document.getElementById('set-modpacks-folder').value.trim();
-      await window.api.shell.openPath(modpacksFolder);
+    const openModDir = document.getElementById('open-modpacks-folder');
+    if (openModDir) openModDir.onclick = async () => {
+      const f = document.getElementById('set-modpacks-folder').value.trim();
+      if (f) window.api.shell.openPath(f);
     };
 
-    const openDownloadManager = document.getElementById('open-download-manager');
-    if (openDownloadManager) openDownloadManager.onclick = () => {
-      // Toggle or show right-panel downloads panel
-      const panel = document.getElementById('downloads-panel');
-      if (panel) {
-        Toast.info('Менеджер загрузок отображается на правой панели');
-      }
-    };
+    const openManager = document.getElementById('open-download-manager');
+    if (openManager) openManager.onclick = () => window.App.openDownloadManager();
 
     const saveAll = document.getElementById('save-all-settings');
     if (saveAll) saveAll.onclick = async () => {
@@ -395,6 +605,7 @@ window.Views.settings = {
         await this.save('java', java, true);
         await this.save('gameFolder', document.getElementById('set-game-folder').value.trim(), true);
         await this.save('skinSystem', document.getElementById('set-skin-system').value, true);
+        await this.save('gpuPreference', document.getElementById('set-gpu-preference').value, true);
         await this.save('autoUpdates', this.isSwitchOn('sw-auto-updates'), true);
         await this.save('verifyOnLaunch', this.isSwitchOn('sw-verify'), true);
 
@@ -402,10 +613,16 @@ window.Views.settings = {
         await this.save('networkTimeout', Number(document.getElementById('set-timeout').value), true);
         await this.save('modpacksFolder', document.getElementById('set-modpacks-folder').value.trim(), true);
 
-        await this.save('theme', document.getElementById('set-theme').value, true);
         await this.save('animations', this.isSwitchOn('sw-animations'), true);
         await this.save('startWithSystem', this.isSwitchOn('sw-start-system'), true);
         await this.save('minimizeToTray', this.isSwitchOn('sw-minimize-tray'), true);
+        await this.save('askVersionFolderName', this.isSwitchOn('sw-ask-folder-name'), true);
+
+        const consoleFontSize = document.getElementById('set-console-font-size');
+        if (consoleFontSize) await this.save('consoleFontSize', Number(consoleFontSize.value), true);
+        const consoleFontFamily = document.getElementById('set-console-font-family');
+        if (consoleFontFamily) await this.save('consoleFontFamily', consoleFontFamily.value, true);
+        await this.save('consoleAutoScroll', this.isSwitchOn('sw-console-autoscroll'), true);
 
         await window.App.applyRuntimeSettings(this.settings);
         if (!this._autoSaving) Toast.success('Настройки сохранены');

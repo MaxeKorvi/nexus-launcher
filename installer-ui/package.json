@@ -1,18 +1,49 @@
 {
   "name": "nexus-launcher-installer",
-  "version": "2026.1.0",
-  "description": "Nexus Launcher custom installer",
+  "version": "2026.1.1",
+  "description": "Custom modern installer frontend for Nexus Launcher",
   "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
   "author": "Nexus Launcher Team",
   "license": "GPL-3.0-or-later",
-  "devDependencies": { "electron": "33.4.11" },
+  "devDependencies": {
+    "electron": "33.4.11"
+  },
   "build": {
-    "appId": "app.nexus.launcher.installer",
+    "appId": "com.nexuslauncher.installerui",
     "productName": "Nexus Launcher Installer",
-    "directories": { "output": "../dist/custom-installer" },
-    "files": ["main.js", "preload.js", "index.html", "styles.css", "renderer.js", "assets/**/*"],
-    "extraResources": [{ "from": "payload/NexusLauncher.zip", "to": "payload/NexusLauncher.zip" }],
-    "win": { "target": ["portable"], "icon": "assets/nexus-logo.png" },
-    "portable": { "artifactName": "Nexus Launcher Setup 2026.1.0.exe", "requestExecutionLevel": "user" }
+    "npmRebuild": false,
+    "compression": "store",
+    "directories": {
+      "output": "../dist/custom-installer"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "renderer.js",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "payload/NexusLauncher.zip",
+        "to": "payload/NexusLauncher.zip"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "assets/nexus-logo.png"
+    },
+    "portable": {
+      "artifactName": "Nexus Launcher Setup 2026.1.1.exe",
+      "requestExecutionLevel": "user"
+    }
   }
 }

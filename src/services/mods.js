@@ -120,6 +120,27 @@ async function install(mod) {
     fileUrl = file.url;
     fileName = file.filename;
     fileSize = file.size;
+
+    // Auto-install required dependencies from Modrinth
+    if (!mod._isDependency && Array.isArray(version.dependencies) && version.dependencies.length) {
+      for (const dep of version.dependencies) {
+        if (dep.dependency_type === 'required' && (dep.project_id || dep.version_id)) {
+          try {
+            await install({
+              source: 'modrinth',
+              id: dep.project_id,
+              versionId: dep.version_id,
+              mcVersion: mod.mcVersion,
+              loader: mod.loader,
+              gameDir: rootDir,
+              _isDependency: true
+            });
+          } catch (depErr) {
+            console.warn('[mods] Auto dependency install skipped:', depErr.message);
+          }
+        }
+      }
+    }
   } else if (mod.source === 'curseforge') {
     const resolved = await resolveCurseForgeDownload({ projectId: mod.id, fileId: mod.fileId, mcVersion: mod.mcVersion, loader: mod.loader, type: 'mod' });
     fileUrl = resolved.url;
@@ -137,6 +158,18 @@ async function install(mod) {
   }
 
   await fsp.mkdir(targetDir, { recursive: true });
+
+  // Remove existing older duplicate file of the same mod if registered
+  try {
+    const existing = await InstallState.list(rootDir, 'mods');
+    const prev = existing.find(x => x.id === mod.id || (mod.slug && x.slug === mod.slug));
+    if (prev && prev.fileName && prev.fileName !== fileName) {
+      const oldPath = path.join(targetDir, prev.fileName);
+      if (fs.existsSync(oldPath)) await fsp.unlink(oldPath).catch(() => {});
+      await InstallState.remove(rootDir, 'mods', prev.fileName);
+    }
+  } catch {}
+
   const outPath = path.join(targetDir, fileName);
   await Downloads.start({
     id: `mod-${mod.source}-${mod.id}`,
@@ -156,8 +189,8 @@ async function install(mod) {
       const targetMc = String(mod.mcVersion || '').trim();
 
       if (targetLoader && targetLoader !== 'vanilla') {
-        if (inspection.loader !== targetLoader) {
-          warning = `Установлен ${inspection.loader.toUpperCase()}-мод в профиль ${targetLoader.toUpperCase()}! Игра скорее всего вылетит при запуске.`;
+        if (inspection.loader !== targetLoader && !(targetLoader === 'neoforge' && inspection.loader === 'forge')) {
+          warning = `Установлен ${inspection.loader.toUpperCase()}-мод в профиль ${targetLoader.toUpperCase()}! Игра может вылететь при запуске.`;
         }
       }
 
@@ -217,6 +250,20 @@ async function inspectModJar(filePath) {
       } catch {}
     }
 
+    if (zip.file('META-INF/neoforge.mods.toml')) {
+      try {
+        const text = await zip.file('META-INF/neoforge.mods.toml').async('text');
+        const modIdMatch = text.match(/modId\s*=\s*["']([^"']+)["']/i);
+        const nameMatch = text.match(/displayName\s*=\s*["']([^"']+)["']/i);
+        return {
+          loader: 'neoforge',
+          id: modIdMatch ? modIdMatch[1] : 'unknown',
+          name: nameMatch ? nameMatch[1] : 'NeoForge Mod',
+          mcVersion: null
+        };
+      } catch {}
+    }
+
     if (zip.file('META-INF/mods.toml')) {
       try {
         const text = await zip.file('META-INF/mods.toml').async('text');
@@ -256,8 +303,23 @@ async function remove(mod) {
   const rootDir = mod.gameDir || mod.rootDir || defaultRoot();
   const p = path.join(modsDir(rootDir), mod.fileName);
   if (fs.existsSync(p)) await fsp.unlink(p);
+  const disabledP = `${p}.disabled`;
+  if (fs.existsSync(disabledP)) await fsp.unlink(disabledP).catch(() => {});
   await InstallState.remove(rootDir, 'mods', mod.fileName);
   return true;
+}
+
+async function toggle(mod) {
+  const rootDir = mod.gameDir || mod.rootDir || defaultRoot();
+  const dir = modsDir(rootDir);
+  const fileName = mod.fileName;
+  const currentPath = path.join(dir, fileName);
+  if (!fs.existsSync(currentPath)) throw new Error('Файл мода не найден: ' + fileName);
+  const isCurrentlyDisabled = fileName.endsWith('.disabled');
+  const newName = isCurrentlyDisabled ? fileName.replace(/\.disabled$/, '') : `${fileName}.disabled`;
+  const newPath = path.join(dir, newName);
+  await fsp.rename(currentPath, newPath);
+  return { ok: true, oldName: fileName, newName, enabled: isCurrentlyDisabled };
 }
 
 async function listInstalled(rootDir) {
@@ -265,18 +327,22 @@ async function listInstalled(rootDir) {
   const registry = await InstallState.list(rootDir, 'mods');
   if (!fs.existsSync(dir)) return registry;
   const files = await fsp.readdir(dir);
-  const physical = files.filter(f => f.endsWith('.jar')).map(f => {
-    const found = registry.find(x => String(x.fileName || '').toLowerCase() === f.toLowerCase()) || {};
+  const physical = files.filter(f => f.endsWith('.jar') || f.endsWith('.jar.disabled')).map(f => {
+    const isEnabled = !f.endsWith('.disabled');
+    const cleanName = f.replace(/\.disabled$/i, '');
+    const found = registry.find(x => String(x.fileName || '').toLowerCase() === cleanName.toLowerCase() || String(x.fileName || '').toLowerCase() === f.toLowerCase()) || {};
     return {
       ...found,
       fileName: f,
+      cleanName,
+      enabled: isEnabled,
       size: fs.statSync(path.join(dir, f)).size,
       path: path.join(dir, f),
       rootDir: rootDir || defaultRoot()
     };
   });
-  const extras = registry.filter(x => !physical.some(p => String(p.fileName || '').toLowerCase() === String(x.fileName || '').toLowerCase()));
+  const extras = registry.filter(x => !physical.some(p => String(p.fileName || '').toLowerCase() === String(x.fileName || '').toLowerCase() || String(p.cleanName || '').toLowerCase() === String(x.fileName || '').toLowerCase()));
   return [...physical, ...extras];
 }
 
-module.exports = { search, getById, install, remove, listInstalled };
+module.exports = { search, getById, install, remove, toggle, listInstalled };

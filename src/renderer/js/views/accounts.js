@@ -149,14 +149,51 @@ window.Views.accounts = {
   async addEly() {
     const body = document.createElement('div');
     body.innerHTML = `
-      <p class="modal-hint">Введите данные Ely.by. Пароль нужен только один раз для получения токена и не сохраняется.</p>
+      <div style="margin-bottom: 16px;">
+        <button class="btn primary" id="btn-ely-web-auth" style="width: 100%; justify-content: center; height: 44px; font-size: 14px; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Войти через сайт Ely.by
+        </button>
+        <small style="display: block; margin-top: 8px; color: var(--text-2); font-size: 11px; text-align: center; line-height: 1.4;">
+          Рекомендуется: откроется официальная страница входа Ely.by. Авторизуйтесь там, и аккаунт автоматически синхронизируется с лаунчером.
+        </small>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--text-2); font-size: 11px;">
+        <hr style="flex:1; border:0; border-top:1px solid rgba(255,255,255,0.08);">
+        <span>ИЛИ ВХОД ПО ЛОГИНУ И ПАРОЛЮ</span>
+        <hr style="flex:1; border:0; border-top:1px solid rgba(255,255,255,0.08);">
+      </div>
+
       <input class="input" id="ely-login" placeholder="Email или ник Ely.by" autocomplete="username">
       <input class="input" id="ely-pass" type="password" placeholder="Пароль Ely.by" autocomplete="current-password">
       <input class="input" id="ely-totp" placeholder="2FA код, если включён (необязательно)">
-      <div class="modal-status card">Шифрование включено</div>`;
+      <div class="modal-status card" id="ely-status">Шифрование включено</div>`;
     const footer = document.createElement('div');
     footer.innerHTML = `<button class="btn ghost btn-cancel">Отмена</button><button class="btn primary btn-ok">Добавить Ely.by</button>`;
-    const inst = Modal.open({ title: 'Вход через Ely.by', body, footer });
+    const inst = Modal.open({ title: 'Вход в аккаунт Ely.by', body, footer });
+
+    const btnWeb = body.querySelector('#btn-ely-web-auth');
+    btnWeb.onclick = async () => {
+      const originalHtml = btnWeb.innerHTML;
+      btnWeb.disabled = true;
+      btnWeb.innerHTML = '<span class="spinner"></span> Ожидание авторизации на сайте…';
+      const statusEl = body.querySelector('#ely-status');
+      statusEl.innerHTML = '<span class="spinner"></span> Окно входа Ely.by открыто. Выполните вход на сайте…';
+      try {
+        await window.api.invoke('accounts:start-ely-oauth');
+        Toast.success('Аккаунт Ely.by синхронизирован!');
+        inst.close();
+        await this.refresh();
+        window.App.refreshUserCard();
+      } catch (err) {
+        btnWeb.disabled = false;
+        btnWeb.innerHTML = originalHtml;
+        statusEl.textContent = err.message || String(err);
+        Toast.error('Ошибка входа через сайт Ely.by', err.message);
+      }
+    };
+
     footer.querySelector('.btn-cancel').onclick = () => inst.close();
     footer.querySelector('.btn-ok').onclick = async () => {
       try {

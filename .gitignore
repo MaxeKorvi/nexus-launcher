@@ -10,3 +10,4 @@ yarn-debug.log*
 yarn-error.log*
 installer-ui/payload/*.zip
 *.bak
+news-cache.json

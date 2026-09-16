@@ -18,6 +18,7 @@ const Accounts = require('./accounts');
 const Java = require('./java');
 const Versions = require('./versions');
 const Downloads = require('./downloads');
+const CrashDiagnostics = require('./crash-diagnostics');
 const { osName, archBits, parseMavenCoordinate, ruleMatches, isAllowed, versionTuple, minecraftVersionFromMeta, isLegacyForge, libraryIdentity } = require('./shared');
 
 let childProc = null;
@@ -219,7 +220,7 @@ function sanitizeArgs(args) {
   return out;
 }
 
-function createCleanEnv() {
+function createCleanEnv(settings = {}) {
   const clean = { ...process.env };
   const removeKeys = [
     'ELECTRON_RUN_AS_NODE', 'ELECTRON_NO_ATTACH_CONSOLE',
@@ -229,6 +230,21 @@ function createCleanEnv() {
   for (const key of removeKeys) {
     delete clean[key];
   }
+
+  const gpu = settings.gpuPreference || 'dedicated';
+  if (gpu === 'dedicated') {
+    // Force high-performance dedicated GPU (NVIDIA / AMD)
+    clean.SHIM_MCCOMPAT = '0x800000001';
+    clean.__NV_PRIME_RENDER_OFFLOAD = '1';
+    clean.__GLX_VENDOR_LIBRARY_NAME = 'nvidia';
+    clean.DRI_PRIME = '1';
+  } else if (gpu === 'integrated') {
+    // Force power-saving integrated GPU / CPU graphics
+    clean.SHIM_MCCOMPAT = '0x0';
+    clean.__NV_PRIME_RENDER_OFFLOAD = '0';
+    clean.DRI_PRIME = '0';
+  }
+
   return clean;
 }
 
@@ -288,10 +304,9 @@ function sanitizeJvmArgsForJava(args, javaMajor) {
 }
 
 function normalizeSkinSystem(system) {
-  const s = String(system || 'tlskincape').toLowerCase();
+  const s = String(system || 'ely').toLowerCase();
   if (['ely', 'ely.by', 'elyby'].includes(s)) return 'ely';
-  if (['none', 'off', 'disabled', 'nothing', 'ничего'].includes(s)) return 'none';
-  return 'tlskincape';
+  return 'none';
 }
 
 async function resolveAccount(accountId) {
@@ -457,16 +472,53 @@ function buildLaunchArgs({ settings, vmeta, versionId, gameDir, versionDir, acco
   ];
 }
 
-async function start({ versionId, accountId, modpackPath }) {
+async function start({ versionId, accountId, modpackPath, instanceId, instanceDir }) {
   if (childProc) {
     appendLog('[launcher] Already running.');
     return { ok: false, error: 'already_running' };
   }
 
   const settings = Settings.getAll();
-  const gameDir = await resolveGameDir(versionId, modpackPath);
+  let instanceMeta = null;
+  if (instanceId) {
+    try {
+      const Instances = require('./instances');
+      instanceMeta = await Instances.get(instanceId);
+      if (instanceMeta) {
+        await Instances.updateLastPlayed(instanceId);
+        instanceDir = instanceMeta.rootDir || instanceMeta.path;
+      }
+    } catch {}
+  }
+  const gameDir = await resolveGameDir(versionId, instanceDir || modpackPath);
+
+  // Prefer loader profile (Forge / Fabric / NeoForge) if present in this game directory
+  let targetVersionId = versionId;
+  const installMetaFile = path.join(gameDir, 'nexus-install.json');
+  if (fs.existsSync(installMetaFile)) {
+    try {
+      const im = JSON.parse(await fsp.readFile(installMetaFile, 'utf8'));
+      if (im.versionId && fs.existsSync(path.join(gameDir, 'versions', im.versionId, `${im.versionId}.json`))) {
+        targetVersionId = im.versionId;
+      } else if (im.id && fs.existsSync(path.join(gameDir, 'versions', im.id, `${im.id}.json`))) {
+        targetVersionId = im.id;
+      }
+    } catch {}
+  }
+  if (targetVersionId === versionId) {
+    const vDir = path.join(gameDir, 'versions');
+    if (fs.existsSync(vDir)) {
+      try {
+        const subdirs = fs.readdirSync(vDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
+        const loaderSub = subdirs.find(n => n !== versionId && fs.existsSync(path.join(vDir, n, `${n}.json`)));
+        if (loaderSub) targetVersionId = loaderSub;
+      } catch {}
+    }
+  }
+  versionId = targetVersionId;
+
   appendLog('');
-  appendLog(`[launcher] ===== Запуск ${versionId} =====`);
+  appendLog(`[launcher] ===== Запуск ${versionId}${instanceMeta ? ` [Инстанс: ${instanceMeta.name}]` : ''} =====`);
 
   let vmeta = null;
   let loadError = null;
@@ -497,23 +549,27 @@ async function start({ versionId, accountId, modpackPath }) {
     const jar = await ensureAuthlibInjector();
     skinAgent = `-javaagent:${jar}=ely.by`;
     appendLog('[launcher] Система скинов: Ely.by. Authlib-injector включён.');
-  } else if (skinSystem === 'tlskincape') {
-    appendLog('[launcher] Система скинов: TLSkinCape. Мод TLSkinCape включён, CustomSkinLoader отключён.');
   } else {
-    appendLog('[launcher] Система скинов: отключена. Скин-моды отключены.');
+    appendLog('[launcher] Система скинов: отключена. Скин-моды не используются.');
   }
   const effectiveSettings = JSON.parse(JSON.stringify(settings));
   if (selectedJava.arch && /(?:x86|i[3-6]86)$/.test(selectedJava.arch) && Number(effectiveSettings.java.maxHeap) > 1536) {
     effectiveSettings.java.maxHeap = 1536;
     appendLog('[launcher] Для 32-битной Java память ограничена до 1536 MB.');
   }
+  if (instanceMeta) {
+    if (instanceMeta.maxHeap) effectiveSettings.java.maxHeap = instanceMeta.maxHeap;
+    if (instanceMeta.jvmArgs) effectiveSettings.java.jvmArgs = instanceMeta.jvmArgs;
+  }
   const args = buildLaunchArgs({ settings: effectiveSettings, vmeta, versionId, gameDir, versionDir, account, skinAgent, javaMajor: selectedJava.version });
 
+  const gpuLabel = settings.gpuPreference === 'integrated' ? 'Процессор (встроенная графика)' : (settings.gpuPreference === 'auto' ? 'Автоопределение ОС' : 'Дискретная видеокарта (высокая производительность)');
+  appendLog(`[launcher] Графический адаптер: ${gpuLabel}`);
   appendLog(`[launcher] Using Java ${selectedJava.version}: ${javaPath}`);
   appendLog('[launcher] Spawning: ' + javaPath + ' ' + sanitizeArgs(args).join(' '));
 
   const recentStdErr = [];
-  childProc = spawn(javaPath, args, { cwd: gameDir, env: createCleanEnv() });
+  childProc = spawn(javaPath, args, { cwd: gameDir, env: createCleanEnv(settings) });
 
   childProc.stdout.on('data', (d) => appendLog(d.toString().trim()));
   childProc.stderr.on('data', (d) => {
@@ -523,29 +579,42 @@ async function start({ versionId, accountId, modpackPath }) {
     if (recentStdErr.length > 20) recentStdErr.shift();
     appendLog('[stderr] ' + line);
   });
-  childProc.on('exit', (code) => {
+  childProc.on('exit', async (code) => {
     appendLog(`[launcher] Process exited with code ${code}`);
     let error;
-    if (Number(code) === 1) {
-      const details = recentStdErr.join(' | ');
-      if (/URLClassLoader/i.test(details) && /launchwrapper/i.test(details)) {
-        error = 'Старый Forge был запущен на Java 9+. Для него требуется Java 8. Лаунчер попробует автоматически переключить Java при следующем запуске.';
-      } else if (/UnsupportedClassVersionError/i.test(details)) {
-        error = 'Выбрана слишком старая Java для этой версии Minecraft. Выполните «Проверить файлы» и запустите снова.';
-      } else if (/ClassNotFoundException|Could not find or load main class/i.test(details)) {
-        error = 'Не найдена библиотека загрузчика. Нажмите «Проверить файлы», чтобы полностью восстановить профиль.';
-      } else {
-        error = details || 'Minecraft завершился с кодом 1 без текста ошибки. Откройте консоль для полной диагностики.';
+    let diagnostic = null;
+
+    if (Number(code) !== 0) {
+      try {
+        diagnostic = await CrashDiagnostics.analyzeCrash(gameDir, code, recentStdErr);
+        if (diagnostic) {
+          appendLog(`[launcher] ДИАГНОСТИКА: ${diagnostic.title} — ${diagnostic.reason}`);
+          error = diagnostic.reason;
+        }
+      } catch (e) {
+        appendLog(`[launcher] Ошибка анализа краша: ${e.message}`);
       }
-      if (!recentStdErr.length) appendLog('[launcher] HINT: Код 1 без вывода. Проверьте Java, библиотеки загрузчика и совместимость модов.');
+
+      if (!error) {
+        const details = recentStdErr.join(' | ');
+        if (/URLClassLoader/i.test(details) && /launchwrapper/i.test(details)) {
+          error = 'Старый Forge был запущен на Java 9+. Для него требуется Java 8. Лаунчер попробует автоматически переключить Java при следующем запуске.';
+        } else if (/UnsupportedClassVersionError/i.test(details)) {
+          error = 'Выбрана слишком старая Java для этой версии Minecraft. Выполните «Проверить файлы» и запустите снова.';
+        } else if (/ClassNotFoundException|Could not find or load main class/i.test(details)) {
+          error = 'Не найдена библиотека загрузчика. Нажмите «Проверить файлы», чтобы полностью восстановить профиль.';
+        } else {
+          error = details || 'Minecraft завершился с ошибкой без текста. Откройте консоль для полной диагностики.';
+        }
+      }
     }
     childProc = null;
-    emit('launcher:stopped', { code, error });
+    emit('launcher:stopped', { code, error, diagnostic });
   });
   childProc.on('error', (err) => {
     appendLog('[launcher] ERROR: ' + err.message);
     childProc = null;
-    emit('launcher:stopped', { code: -1, error: err.message });
+    emit('launcher:stopped', { code: -1, error: err.message, diagnostic: null });
   });
 
   return { ok: true, pid: childProc.pid, versionId, javaVersion: selectedJava.version, javaPath };

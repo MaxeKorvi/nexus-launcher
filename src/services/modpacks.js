@@ -15,7 +15,7 @@ const { app } = require('electron');
 const JSZip = require('jszip');
 const Downloads = require('./downloads');
 const Settings = require('./settings');
-const { getCurseForgeApiKey, curseForgeErrorMessage } = require('./curseforge-auth');
+const { getCurseForgeApiKey, curseForgeErrorMessage, FALLBACK_CF_KEY } = require('./curseforge-auth');
 const Versions = require('./versions');
 const {
   MODRINTH,
@@ -266,7 +266,7 @@ async function getCurseForgeDetails(pack) {
     };
   }
 
-  const headers = { 'x-api-key': apiKey };
+  let headers = { 'x-api-key': apiKey };
   let modData, filesData;
   try {
     [{ data: modData }, { data: filesData }] = await Promise.all([
@@ -278,14 +278,37 @@ async function getCurseForgeDetails(pack) {
       })
     ]);
   } catch (err) {
-    return {
-      ...pack,
-      source: 'curseforge',
-      description: curseForgeErrorMessage(err),
-      screenshots: [],
-      versions: [],
-      error: curseForgeErrorMessage(err)
-    };
+    if ((err.response && (err.response.status === 401 || err.response.status === 403)) && apiKey !== FALLBACK_CF_KEY) {
+      try {
+        headers = { 'x-api-key': FALLBACK_CF_KEY };
+        [{ data: modData }, { data: filesData }] = await Promise.all([
+          axios.get(`https://api.curseforge.com/v1/mods/${encodeURIComponent(pack.id)}`, { headers, timeout: timeoutMs() }),
+          axios.get(`https://api.curseforge.com/v1/mods/${encodeURIComponent(pack.id)}/files`, {
+            headers,
+            timeout: timeoutMs(),
+            params: { pageSize: 50, index: 0 }
+          })
+        ]);
+      } catch (err2) {
+        return {
+          ...pack,
+          source: 'curseforge',
+          description: curseForgeErrorMessage(err2),
+          screenshots: [],
+          versions: [],
+          error: curseForgeErrorMessage(err2)
+        };
+      }
+    } else {
+      return {
+        ...pack,
+        source: 'curseforge',
+        description: curseForgeErrorMessage(err),
+        screenshots: [],
+        versions: [],
+        error: curseForgeErrorMessage(err)
+      };
+    }
   }
 
   const project = modData.data || {};
@@ -514,7 +537,36 @@ async function importZip(zipPath) {
     }
     await Promise.all(jobs);
   }
-  if (type === 'curseforge') warnings.push('CurseForge ZIP: overrides импортированы; если архив не содержит файлы модов, они должны быть скачаны через CurseForge API.');
+  if (type === 'curseforge' && Array.isArray(manifest.files) && manifest.files.length) {
+    const modsFolder = path.join(dest, 'mods');
+    await fsp.mkdir(modsFolder, { recursive: true });
+    const cfFiles = manifest.files.filter(f => f && (f.projectID || f.projectId) && (f.fileID || f.fileId));
+    const batchSize = 5;
+    for (let i = 0; i < cfFiles.length; i += batchSize) {
+      const chunk = cfFiles.slice(i, i + batchSize);
+      await Promise.all(chunk.map(async f => {
+        const pId = f.projectID || f.projectId;
+        const fId = f.fileID || f.fileId;
+        try {
+          const resolved = await resolveCurseForgeDownload({ projectId: pId, fileId: fId, type: 'mod' });
+          if (resolved && resolved.url) {
+            const fileName = resolved.fileName || `cf-${pId}-${fId}.jar`;
+            await Downloads.start({
+              id: `cfmod-${sanitizeName(name)}-${pId}-${fId}`,
+              label: fileName,
+              url: resolved.url,
+              urls: resolved.urls,
+              path: path.join(modsFolder, fileName),
+              size: resolved.fileSize || 0,
+              kind: 'mod'
+            });
+          }
+        } catch (err) {
+          warnings.push(`Не удалось скачать CurseForge мод ${pId}:${fId}: ${err.message}`);
+        }
+      }));
+    }
+  }
 
   const runtime = await installRuntime(dest, manifest, type);
   warnings.push(...(runtime.warnings || []));
@@ -535,9 +587,27 @@ async function importZip(zipPath) {
   return { ok: true, ...meta };
 }
 
-async function exportPack(outputPath) {
+async function exportPack(packNameOrPath) {
+  let packDir = packNameOrPath;
+  if (!packDir || !path.isAbsolute(packDir)) {
+    const candidate = path.join(modpacksDir(), packNameOrPath || '');
+    if (fs.existsSync(candidate)) packDir = candidate;
+    else packDir = baseGameDir();
+  }
+  let meta = {};
+  const metaPath = path.join(packDir, 'nexus-modpack.json');
+  const installMetaPath = path.join(packDir, 'nexus-install.json');
+  if (fs.existsSync(metaPath)) {
+    try { meta = JSON.parse(await fsp.readFile(metaPath, 'utf8')); } catch {}
+  } else if (fs.existsSync(installMetaPath)) {
+    try { meta = JSON.parse(await fsp.readFile(installMetaPath, 'utf8')); } catch {}
+  }
+  const mcVersion = meta.minecraft || meta.versionId || '1.20.1';
+  const loader = meta.loader || 'fabric';
+  const loaderVersion = meta.loaderVersion || (loader === 'fabric' ? '0.15.11' : '');
+
   const zip = new JSZip();
-  const modsPath = path.join(baseGameDir(), 'mods');
+  const modsPath = path.join(packDir, 'mods');
   const files = [];
   if (fs.existsSync(modsPath)) {
     const list = await fsp.readdir(modsPath);
@@ -549,16 +619,21 @@ async function exportPack(outputPath) {
       }
     }
   }
+  const packName = sanitizeName(meta.name || path.basename(packDir));
   const manifest = {
     formatVersion: 1,
     game: 'minecraft',
-    versionId: '1.20.1',
-    name: path.basename(outputPath.replace(/\.mrpack$/i, '')),
+    versionId: mcVersion,
+    name: packName,
     files,
-    dependencies: { minecraft: '1.20.1', 'fabric-loader': '0.15.11' }
+    dependencies: {
+      minecraft: mcVersion,
+      ...(loader && loader !== 'vanilla' ? { [`${loader}-loader`]: loaderVersion || '*' } : {})
+    }
   };
   zip.file('modrinth.index.json', JSON.stringify(manifest, null, 2));
-  const out = outputPath.endsWith('.mrpack') ? outputPath : `${outputPath}.mrpack`;
+  const outDir = path.join(app.getPath('home'), 'Desktop');
+  const out = path.join(outDir, `${packName}.mrpack`);
   await fsp.mkdir(path.dirname(out), { recursive: true });
   const buf = await zip.generateAsync({ type: 'nodebuffer' });
   await fsp.writeFile(out, buf);

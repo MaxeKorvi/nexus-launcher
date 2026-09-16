@@ -44,6 +44,29 @@ function createMainWindow() {
   const w = Math.min(1280, Math.max(1000, Math.floor(screenW * 0.78)));
   const h = Math.min(800, Math.max(640, Math.floor(screenH * 0.82)));
 
+  const splashStartTime = Date.now();
+  let splashWindow = new BrowserWindow({
+    width: 440,
+    height: 270,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    center: true,
+    show: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    icon: path.join(__dirname, '..', 'renderer', 'assets', 'nexus-logo.png'),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  splashWindow.loadFile(path.join(__dirname, '..', 'renderer', 'splash.html'));
+  splashWindow.once('ready-to-show', () => {
+    if (splashWindow && !splashWindow.isDestroyed()) splashWindow.show();
+  });
+
   mainWindow = new BrowserWindow({
     width: w,
     height: h,
@@ -82,9 +105,20 @@ function createMainWindow() {
   );
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-    // Fade+scale entrance handled by CSS in renderer
-    mainWindow.webContents.send('window:ready', { isWayland, isFlatpak });
+    const elapsed = Date.now() - splashStartTime;
+    const minSplashDuration = 1600;
+    const remaining = Math.max(0, minSplashDuration - elapsed);
+
+    setTimeout(() => {
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.close();
+        splashWindow = null;
+      }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+        mainWindow.webContents.send('window:ready', { isWayland, isFlatpak });
+      }
+    }, remaining);
   });
 
   // Open external links in browser (e.g. Minecraft.net news)
@@ -171,24 +205,31 @@ ipcMain.handle('shell:open-external', (_e, link) => {
   if (!isSafeExternalUrl(link)) throw new Error('Blocked unsafe external URL');
   return shell.openExternal(link);
 });
-ipcMain.handle('shell:open-path', (_e, p) => {
-  const resolved = path.resolve(String(p));
+function isAllowedPath(resolved) {
   const home = app.getPath('home');
   const userData = app.getPath('userData');
   const nexusRoot = path.resolve(String(process.env.SystemDrive || 'C:') + path.sep, 'NexusLauncher');
-  const allowed = [home, userData, nexusRoot].some(root => resolved === root || resolved.startsWith(root + path.sep));
-  if (!allowed) {
+  let gameFolder = '', modpacksFolder = '';
+  try {
+    const s = require('../services/settings').getAll();
+    gameFolder = s.gameFolder ? path.resolve(s.gameFolder) : '';
+    modpacksFolder = s.modpacksFolder ? path.resolve(s.modpacksFolder) : '';
+  } catch {}
+  return [home, userData, nexusRoot, gameFolder, modpacksFolder]
+    .filter(Boolean)
+    .some(root => resolved === root || resolved.startsWith(root + path.sep));
+}
+
+ipcMain.handle('shell:open-path', (_e, p) => {
+  const resolved = path.resolve(String(p));
+  if (!isAllowedPath(resolved)) {
     throw new Error('Blocked unsafe path access');
   }
   return shell.openPath(resolved);
 });
 ipcMain.handle('shell:show-in-folder', (_e, p) => {
   const resolved = path.resolve(String(p));
-  const home = app.getPath('home');
-  const userData = app.getPath('userData');
-  const nexusRoot = path.resolve(String(process.env.SystemDrive || 'C:') + path.sep, 'NexusLauncher');
-  const allowed = [home, userData, nexusRoot].some(root => resolved === root || resolved.startsWith(root + path.sep));
-  if (!allowed) {
+  if (!isAllowedPath(resolved)) {
     throw new Error('Blocked unsafe path access');
   }
   return shell.showItemInFolder(resolved);

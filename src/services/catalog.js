@@ -1,7 +1,7 @@
 'use strict';
 
 const axios = require('axios');
-const { getCurseForgeApiKey, curseForgeErrorMessage } = require('./curseforge-auth');
+const { getCurseForgeApiKey, curseForgeErrorMessage, FALLBACK_CF_KEY } = require('./curseforge-auth');
 const { createHttpsAgent } = require('./shared');
 
 const MODRINTH = 'https://api.modrinth.com/v2';
@@ -81,6 +81,8 @@ function normalizeText(value) {
 function normalizeLoader(loader) {
   const v = String(loader || '').toLowerCase();
   if (!v || v === 'any' || v === 'all' || v === 'vanilla' || v === 'none') return '';
+  if (v === 'forgeoptifine' || v === 'forge_optifine' || v === 'forge-optifine') return 'forge';
+  if (v === 'fabriciris' || v === 'fabric_iris' || v === 'fabric-iris' || v === 'iris') return 'fabric';
   return v;
 }
 
@@ -281,7 +283,15 @@ async function searchCurseForge({ query = '', type = 'mod', mcVersion = '', load
   try {
     ({ data } = await client({ 'x-api-key': apiKey }).get(`${CURSEFORGE}/mods/search`, { params }));
   } catch (err) {
-    return { source: 'curseforge', total: 0, hits: [], error: curseForgeErrorMessage(err) };
+    if ((err.response && (err.response.status === 401 || err.response.status === 403)) && apiKey !== FALLBACK_CF_KEY) {
+      try {
+        ({ data } = await client({ 'x-api-key': FALLBACK_CF_KEY }).get(`${CURSEFORGE}/mods/search`, { params }));
+      } catch (err2) {
+        return { source: 'curseforge', total: 0, hits: [], error: curseForgeErrorMessage(err2) };
+      }
+    } else {
+      return { source: 'curseforge', total: 0, hits: [], error: curseForgeErrorMessage(err) };
+    }
   }
   const hits = (data.data || []).map(m => ({
     id: m.id,
@@ -300,8 +310,8 @@ async function searchCurseForge({ query = '', type = 'mod', mcVersion = '', load
 }
 
 async function resolveCurseForgeDownload({ projectId, fileId, mcVersion = '', loader = '', type = 'mod' }) {
-  const apiKey = getCurseForgeApiKey();
-  if (!apiKey) throw new Error('Для установки из CurseForge нужна переменная CF_API_KEY. Можно создать launcher-source/.env с этой строкой.');
+  let apiKey = getCurseForgeApiKey();
+  if (!apiKey) apiKey = FALLBACK_CF_KEY;
   let target = fileId ? null : null;
   try {
     if (!fileId) {
@@ -318,7 +328,24 @@ async function resolveCurseForgeDownload({ projectId, fileId, mcVersion = '', lo
       target = data.data;
     }
   } catch (err) {
-    throw new Error(curseForgeErrorMessage(err));
+    if ((err.response && (err.response.status === 401 || err.response.status === 403)) && apiKey !== FALLBACK_CF_KEY) {
+      apiKey = FALLBACK_CF_KEY;
+      if (!fileId) {
+        const { data } = await client({ 'x-api-key': apiKey }).get(`${CURSEFORGE}/mods/${projectId}/files`, {
+          params: { gameVersion: mcVersion || undefined, modLoaderType: curseForgeLoaderType(loader) || undefined, pageSize: 50 }
+        });
+        const files = data.data || [];
+        target = files.find(f => f.isAvailable && f.downloadUrl)
+          || files.find(f => f.isAvailable && /(release|stable)/i.test(String(f.releaseType)))
+          || files.find(f => f.isAvailable)
+          || files[0];
+      } else {
+        const { data } = await client({ 'x-api-key': apiKey }).get(`${CURSEFORGE}/mods/${projectId}/files/${fileId}`);
+        target = data.data;
+      }
+    } else {
+      throw new Error(curseForgeErrorMessage(err));
+    }
   }
   if (!target || !target.downloadUrl) throw new Error('Не удалось получить файл CurseForge для установки.');
   return {

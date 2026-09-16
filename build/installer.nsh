@@ -7,7 +7,7 @@
 !include WinMessages.nsh
 !include nsDialogs.nsh
 
-BrandingText "Nexus Launcher — Release 2026.1.0"
+BrandingText "Nexus Launcher — Release 2026.1.1"
 
 Var hasExistingInstallation
 Var existingInstallDir
@@ -27,7 +27,7 @@ Var NexusDialog
     !define MUI_WELCOMEPAGE_TITLE "Добро пожаловать в Nexus Launcher"
   !endif
   !ifndef MUI_WELCOMEPAGE_TEXT
-    !define MUI_WELCOMEPAGE_TEXT "Установщик подготовит Nexus Launcher — Release 2026.1.0.$\r$\n$\r$\nВерсии Minecraft будут храниться отдельно в C:\NexusLauncher\nexus-versions.$\r$\n$\r$\nНажмите «Далее», чтобы продолжить."
+    !define MUI_WELCOMEPAGE_TEXT "Установщик подготовит Nexus Launcher — Release 2026.1.1.$\r$\n$\r$\nВерсии Minecraft будут храниться отдельно в C:\NexusLauncher\nexus-versions.$\r$\n$\r$\nНажмите «Далее», чтобы продолжить."
   !endif
 !macroend
 

@@ -1,6 +1,6 @@
-# Nexus Launcher — Release 2026.1.0
+# Nexus Launcher — Release 2026.1.1
 
-## Изменения в Release 2026.1.0
+## Изменения в Release 2026.1.1
 
 - **Безопасность**:
   - Все внешние HTML-данные и новости экранируются с помощью `escapeHtml()`.

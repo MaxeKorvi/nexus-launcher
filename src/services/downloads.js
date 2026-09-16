@@ -15,8 +15,22 @@ const path = require('path');
 const { BrowserWindow } = require('electron');
 const crypto = require('crypto');
 
+const http = require('http');
 const Settings = require('./settings');
 const { createHttpsAgent, sleep } = require('./shared');
+
+const sharedHttpsAgent = createHttpsAgent({
+  keepAlive: true,
+  insecure: process.env.NEXUS_INSECURE_TLS === '1'
+});
+const sharedHttpAgent = new http.Agent({ keepAlive: true, timeout: 60000 });
+
+function isUserFacing(item) {
+  if (!item) return false;
+  if (item.internal) return false;
+  const kind = String(item.kind || '').toLowerCase();
+  return !['asset', 'library', 'asset-index', 'loader', 'client', 'natives'].includes(kind);
+}
 
 function maxConcurrency() {
   // Keep the queue responsive. Huge parallel asset downloads can freeze Electron
@@ -536,12 +550,17 @@ function rejectWaiters(id, err) {
 }
 
 async function fileAlreadyValid(item) {
-  if (!fs.existsSync(item.path)) return false;
-  const st = fs.statSync(item.path);
-  if (st.size === 0) return false;
-  if (item.size && st.size !== item.size) return false;
-  if (item.sha1) return await sha1File(item.path) === item.sha1;
-  return true;
+  try {
+    if (!fs.existsSync(item.path)) return false;
+    const st = await fsp.stat(item.path);
+    if (st.size === 0) return false;
+    if (item.size && st.size !== item.size) return false;
+    if (item.kind === 'asset' || item.kind === 'library' || item.fastCheck) return true;
+    if (item.sha1) return await sha1File(item.path) === item.sha1;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function finalizePartDownload(partPath, item) {
@@ -575,7 +594,7 @@ async function axiosStreamDownload(url, partPath, item, state, cancelSource) {
     maxRedirects: 10,
       httpsAgent: createHttpsAgent({ keepAlive: false, insecure: process.env.NEXUS_INSECURE_TLS === '1' }),
     headers: {
-      'User-Agent': archiveLikeDownload(item) ? BROWSER_UA : 'NexusLauncher/1.1.6',
+      'User-Agent': BROWSER_UA,
       'Accept': archiveLikeDownload(item) ? 'application/zip,application/java-archive,application/octet-stream,*/*' : '*/*',
       'Connection': 'close'
     },
@@ -738,17 +757,19 @@ async function singleAttempt(item, attempt, totalAttempts, cancelSource, state, 
   const partPath = `${item.path}.part`;
   try { if (fs.existsSync(partPath)) await fsp.unlink(partPath); } catch {}
 
-  emit('downloads:progress', {
-    id: item.id,
-    label: prettyId(item),
-    kind: item.kind,
-    url,
-    attempt,
-    attempts: totalAttempts,
-    received: 0,
-    total: item.size || 0,
-    path: item.path
-  });
+  if (isUserFacing(item)) {
+    emit('downloads:progress', {
+      id: item.id,
+      label: prettyId(item),
+      kind: item.kind,
+      url,
+      attempt,
+      attempts: totalAttempts,
+      received: 0,
+      total: item.size || 0,
+      path: item.path
+    });
+  }
 
   if (isGoogleDriveUrl(url)) {
     await googleDriveStreamDownload(url, partPath, item, state, cancelSource);
@@ -765,11 +786,13 @@ async function singleAttempt(item, attempt, totalAttempts, cancelSource, state, 
   const writer = fs.createWriteStream(partPath, { flags: 'w' });
 
   const headers = {
-    'User-Agent': archiveLikeDownload(item) ? BROWSER_UA : 'NexusLauncher/1.1.6',
+    'User-Agent': BROWSER_UA,
     'Accept': archiveLikeDownload(item) ? 'application/zip,application/java-archive,application/octet-stream,*/*' : '*/*',
-    'Connection': 'close'
+    'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
+    'Connection': 'keep-alive'
   };
 
+  const isHttps = String(url).startsWith('https');
   const resp = await axios({
     method: 'get',
     url,
@@ -777,7 +800,8 @@ async function singleAttempt(item, attempt, totalAttempts, cancelSource, state, 
     cancelToken: cancelSource.token,
     timeout: networkTimeoutMs(),
     maxRedirects: 10,
-    httpsAgent: createHttpsAgent({ keepAlive: false, insecure: process.env.NEXUS_INSECURE_TLS === '1' }),
+    httpsAgent: isHttps ? sharedHttpsAgent : undefined,
+    httpAgent: !isHttps ? sharedHttpAgent : undefined,
     headers,
     decompress: true,
     validateStatus: status => status >= 200 && status < 300
@@ -792,24 +816,26 @@ async function singleAttempt(item, attempt, totalAttempts, cancelSource, state, 
   let lastEmit = 0;
   resp.data.on('data', chunk => {
     state.received += chunk.length;
-    const now = Date.now();
-    if (now - lastEmit > 250) {
-      lastEmit = now;
-      const elapsed = Math.max(0.001, (now - state.startedAt) / 1000);
-      const speed = state.received / elapsed;
-      const eta = state.total > 0 ? Math.max(0, (state.total - state.received) / Math.max(speed, 1)) : 0;
-      emit('downloads:progress', {
-        id: item.id,
-        label: prettyId(item),
-        kind: item.kind,
-        attempt,
-        attempts: totalAttempts,
-        received: state.received,
-        total: state.total,
-        speed,
-        eta,
-        path: item.path
-      });
+    if (isUserFacing(item)) {
+      const now = Date.now();
+      if (now - lastEmit > 250) {
+        lastEmit = now;
+        const elapsed = Math.max(0.001, (now - state.startedAt) / 1000);
+        const speed = state.received / elapsed;
+        const eta = state.total > 0 ? Math.max(0, (state.total - state.received) / Math.max(speed, 1)) : 0;
+        emit('downloads:progress', {
+          id: item.id,
+          label: prettyId(item),
+          kind: item.kind,
+          attempt,
+          attempts: totalAttempts,
+          received: state.received,
+          total: state.total,
+          speed,
+          eta,
+          path: item.path
+        });
+      }
     }
   });
 
@@ -851,7 +877,9 @@ async function runDownload(item) {
     if (await fileAlreadyValid(item)) {
       active.delete(item.id);
       addCompleted(item, 'skipped');
-      emit('downloads:done', { id: item.id, label: prettyId(item), path: item.path, skipped: true });
+      if (isUserFacing(item)) {
+        emit('downloads:done', { id: item.id, label: prettyId(item), path: item.path, skipped: true });
+      }
       resolveWaiters(item.id, { ok: true, path: item.path, skipped: true });
       scheduleNext();
       return;
@@ -874,7 +902,9 @@ async function runDownload(item) {
           await singleAttempt(item, attempt, attempts, cancelSource, state, url);
           active.delete(item.id);
           addCompleted(item, 'done');
-          emit('downloads:done', { id: item.id, label: prettyId(item), path: item.path });
+          if (isUserFacing(item)) {
+            emit('downloads:done', { id: item.id, label: prettyId(item), path: item.path });
+          }
           resolveWaiters(item.id, { ok: true, path: item.path });
           scheduleNext();
           return;
@@ -989,10 +1019,45 @@ async function cancel(id) {
   return { ok: true };
 }
 
-function list() {
+async function cancelAll() {
+  const ids = Array.from(new Set([
+    ...Array.from(active.keys()),
+    ...queue.map(q => q.id),
+    ...Array.from(pausedItems.keys())
+  ]));
+  for (const id of ids) {
+    try { await cancel(id); } catch {}
+  }
+  return { ok: true, cancelled: ids.length };
+}
+
+async function cancelGroup(predicate) {
+  const idsToCancel = [];
+  for (const [id, s] of active.entries()) {
+    if (predicate(s.item, id)) idsToCancel.push(id);
+  }
+  for (const q of queue) {
+    if (predicate(q, q.id)) idsToCancel.push(q.id);
+  }
+  for (const [id, item] of pausedItems.entries()) {
+    if (predicate(item, id)) idsToCancel.push(id);
+  }
+  for (const id of idsToCancel) {
+    try { await cancel(id); } catch {}
+  }
+  return { ok: true, cancelled: idsToCancel.length };
+}
+
+function list(opts = {}) {
+  const allowInternal = opts && opts.all === true;
+  const qList = allowInternal ? queue : queue.filter(isUserFacing);
+  const aList = allowInternal ? Array.from(active.entries()) : Array.from(active.entries()).filter(([_, s]) => isUserFacing(s.item));
+  const cList = allowInternal ? completed : completed.filter(c => isUserFacing(c.item));
+  const pList = allowInternal ? Array.from(pausedItems.values()) : Array.from(pausedItems.values()).filter(isUserFacing);
+
   return {
-    queue: queue.map(q => ({ id: q.id, label: prettyId(q), url: q.url, path: q.path, size: q.size, sha1: q.sha1, kind: q.kind })),
-    active: Array.from(active.entries()).map(([id, s]) => ({
+    queue: qList.map(q => ({ id: q.id, label: prettyId(q), url: q.url, path: q.path, size: q.size, sha1: q.sha1, kind: q.kind })),
+    active: aList.map(([id, s]) => ({
       id,
       label: prettyId(s.item),
       kind: s.item.kind,
@@ -1005,8 +1070,8 @@ function list() {
       attempt: s.attempt,
       attempts: s.attempts
     })),
-    completed: completed.slice(0, 30),
-    paused: Array.from(pausedItems.values()).map(q => ({ id: q.id, label: prettyId(q), path: q.path, size: q.size, kind: q.kind }))
+    completed: cList.slice(0, 30),
+    paused: pList.map(q => ({ id: q.id, label: prettyId(q), path: q.path, size: q.size, kind: q.kind }))
   };
 }
 
@@ -1018,7 +1083,7 @@ function clearCompleted() {
 
 function setWindow() {}
 
-module.exports = { start, pause, resume, cancel, list, clearCompleted, setWindow };
+module.exports = { start, pause, resume, cancel, cancelAll, cancelGroup, list, clearCompleted, setWindow };
 if (process.env.NODE_ENV === 'test') {
   module.exports.__testing = { detectArchiveFormat, isHtmlHead, extractGoogleDriveId, expandDownloadUrls };
 }

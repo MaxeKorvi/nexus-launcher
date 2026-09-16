@@ -15,6 +15,7 @@ window.Views = window.Views || {};
     vanilla: 'Vanilla',
     fabric: 'Fabric',
     forge: 'Forge',
+    forgeoptifine: 'Forge + OptiFine',
     quilt: 'Quilt',
     neoforge: 'NeoForge'
   };
@@ -39,9 +40,9 @@ window.Views = window.Views || {};
             <div>
               <div class="eyebrow">Nexus Versions</div>
               <h1>Менеджер версий Minecraft</h1>
-              <p>Лаунчер проверяет совместимость загрузчика с конкретной версией Minecraft и не даст поставить Fabric, Forge, Quilt или NeoForge там, где загрузчика нет.</p>
+              <p>Лаунчер проверяет совместимость загрузчика с конкретной версией Minecraft и не даст поставить Fabric, Forge, OptiFine, Quilt или NeoForge там, где загрузчика нет.</p>
             </div>
-            <div class="hero-badge" id="loader-status-badge">Vanilla · Fabric · Forge · Quilt · NeoForge</div>
+            <div class="hero-badge" id="loader-status-badge">Vanilla · Fabric · Forge · OptiFine · Quilt · NeoForge</div>
           </div>
 
           <div class="toolbar version-toolbar">
@@ -50,6 +51,7 @@ window.Views = window.Views || {};
               <option value="vanilla" ${this.loader === 'vanilla' ? 'selected' : ''}>Vanilla</option>
               <option value="fabric" ${this.loader === 'fabric' ? 'selected' : ''}>Fabric</option>
               <option value="forge" ${this.loader === 'forge' ? 'selected' : ''}>Forge</option>
+              <option value="forgeoptifine" ${this.loader === 'forgeoptifine' ? 'selected' : ''}>Forge + OptiFine</option>
               <option value="quilt" ${this.loader === 'quilt' ? 'selected' : ''}>Quilt</option>
               <option value="neoforge" ${this.loader === 'neoforge' ? 'selected' : ''}>NeoForge</option>
             </select>
@@ -166,6 +168,8 @@ window.Views = window.Views || {};
       return `<span class="pill-mini ok">${esc(LOADER_LABELS[this.loader])}${version}</span>`;
     },
 
+    selectedRowId: null,
+
     renderList() {
       const el = document.getElementById('v-list');
       if (!el) return;
@@ -173,53 +177,179 @@ window.Views = window.Views || {};
       const count = document.getElementById('v-count');
       if (count) count.textContent = `— ${list.length} из ${this.allVersions.length}`;
       if (!list.length) { el.innerHTML = '<div class="empty-state">Нет версий по фильтру</div>'; return; }
+
+      if (!this.selectedRowId || !list.some(v => v.id === this.selectedRowId)) {
+        this.selectedRowId = list[0].id;
+      }
+
+      const activeInfo = this.loaderInfoFor(this.selectedRowId);
+      const activeDisabled = activeInfo.checking || !activeInfo.available;
+      const activeLoaderName = this.loader === 'vanilla' ? 'Vanilla' : LOADER_LABELS[this.loader];
+
       el.innerHTML = `
+        <div class="version-action-card" id="v-action-card">
+          <div class="vac-info">
+            <div class="vac-title">⚡ Выбрана версия: <b>${esc(this.selectedRowId)}</b> <span class="pill-mini ok">${esc(activeLoaderName)}</span></div>
+            <div class="vac-sub">Кликните «Установить», нажмите на кнопку ниже или сделайте двойной клик по строке</div>
+          </div>
+          <div class="vac-actions">
+            <button class="btn primary compact-btn" id="vac-install-btn" ${activeDisabled ? 'disabled' : ''}>
+              ⚡ Установить ${esc(this.selectedRowId)}
+            </button>
+          </div>
+        </div>
+
         <table class="table versions-table">
-          <thead><tr><th>Версия</th><th>Тип</th><th>Дата</th><th>Загрузчик</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Версия</th>
+              <th>Загрузчик</th>
+              <th style="text-align: right; min-width: 100px;">Действие</th>
+            </tr>
+          </thead>
           <tbody>
             ${list.map(v => {
               const info = this.loaderInfoFor(v.id);
               const disabled = info.checking || !info.available;
-              const text = info.checking ? 'Проверка…' : (info.available ? 'Установить' : 'Недоступно');
+              const text = info.checking ? '…' : (info.available ? 'Установить' : 'Недоступно');
+              const isSelected = this.selectedRowId === v.id;
+              const dateStr = v.releaseTime ? new Date(v.releaseTime).toLocaleDateString('ru-RU') : '';
               return `
-                <tr data-id="${esc(v.id)}" class="${disabled ? 'unsupported-loader' : ''}">
-                  <td><b>${esc(v.id)}</b></td>
-                  <td><span class="pill-mini">${esc(v.type)}</span></td>
-                  <td>${v.releaseTime ? new Date(v.releaseTime).toLocaleDateString('ru-RU') : '—'}</td>
+                <tr data-row-id="${esc(v.id)}" class="${isSelected ? 'active-version-row' : ''} ${disabled ? 'unsupported-loader' : ''}">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <b>${esc(v.id)}</b>
+                      <span class="pill-mini">${esc(v.type)}</span>
+                    </div>
+                    ${dateStr ? `<small style="color: var(--text-2); font-size: 11px;">Релиз: ${esc(dateStr)}</small>` : ''}
+                  </td>
                   <td>${this.loaderCell(v.id)}</td>
-                  <td><button class="btn ${disabled ? 'ghost' : 'primary'} compact-btn" data-install="${esc(v.id)}" ${disabled ? 'disabled' : ''}>${text}</button></td>
+                  <td style="text-align: right;">
+                    <button class="btn ${disabled ? 'ghost' : 'primary'} compact-btn" data-install="${esc(v.id)}" ${disabled ? 'disabled' : ''}>${text}</button>
+                  </td>
                 </tr>`;
             }).join('')}
           </tbody>
         </table>`;
-      el.querySelectorAll('[data-install]').forEach(b => b.onclick = async () => this.installVersion(b.dataset.install, b));
+
+      // Row click to select & update top banner
+      el.querySelectorAll('tr[data-row-id]').forEach(tr => {
+        tr.onclick = (e) => {
+          if (e.target.closest('[data-install]')) return;
+          this.selectedRowId = tr.dataset.rowId;
+          this.renderList();
+        };
+        tr.ondblclick = () => {
+          this.selectedRowId = tr.dataset.rowId;
+          this.installVersion(tr.dataset.rowId);
+        };
+      });
+
+      const topInstallBtn = document.getElementById('vac-install-btn');
+      if (topInstallBtn) {
+        topInstallBtn.onclick = () => this.installVersion(this.selectedRowId, topInstallBtn);
+      }
+
+      el.querySelectorAll('[data-install]').forEach(b => {
+        b.onclick = async (e) => {
+          e.stopPropagation();
+          await this.installVersion(b.dataset.install, b);
+        };
+      });
     },
 
-    async installVersion(id, button) {
+    async installVersion(id, button = null) {
       const info = this.loaderInfoFor(id);
       if (this.loader !== 'vanilla' && (!info || !info.available)) {
         Toast.error('Загрузчик недоступен', `${LOADER_LABELS[this.loader]} не найден для Minecraft ${id}`);
         return;
       }
-      button.disabled = true;
-      button.textContent = 'Ставлю…';
-      Toast.info('Установка', `${id} · ${this.loader === 'vanilla' ? 'Vanilla' : LOADER_LABELS[this.loader]}`);
+
+      const settings = Store.get('settings') || {};
+      let customDirName = null;
+      if (settings.askVersionFolderName) {
+        const defaultDir = this.loader === 'vanilla'
+          ? `${id}-Vanilla`
+          : `${id}-${LOADER_LABELS[this.loader] || this.loader}`.replace(/\s+/g, '-');
+        customDirName = await new Promise(resolve => {
+          const body = document.createElement('div');
+          body.innerHTML = `
+            <p style="margin-bottom: 12px; color: var(--text-2);">Укажите название папки для установки версии <b>${esc(id)}</b>:</p>
+            <input class="input" id="modal-folder-name-input" value="${esc(defaultDir)}" style="width: 100%;">
+          `;
+          const footer = document.createElement('div');
+          footer.style.display = 'flex';
+          footer.style.justifyContent = 'flex-end';
+          footer.style.gap = '8px';
+          footer.innerHTML = `
+            <button class="btn ghost" id="mfn-cancel">Отмена</button>
+            <button class="btn primary" id="mfn-ok">Установить</button>
+          `;
+          const inst = Modal.open({ title: 'Имя папки версии', body, footer });
+          const input = body.querySelector('#modal-folder-name-input');
+          footer.querySelector('#mfn-cancel').onclick = () => { inst.close(); resolve(null); };
+          footer.querySelector('#mfn-ok').onclick = () => {
+            const val = input.value.trim();
+            inst.close();
+            resolve(val || defaultDir);
+          };
+          input.onkeydown = (e) => {
+            if (e.key === 'Enter') footer.querySelector('#mfn-ok').click();
+          };
+          setTimeout(() => input.focus(), 50);
+        });
+        if (!customDirName) return;
+      }
+
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Ставлю…';
+      }
+
+      // Auto-select immediately
+      Store.set('selectedVersion', id);
+      Store.set('selectedModpack', null);
+      Store.set('installingVersion', id);
+      const bVer = document.getElementById('bottom-version');
+      if (bVer) bVer.textContent = id;
+      if (window.App && typeof window.App.updateHomeProfile === 'function') {
+        window.App.updateHomeProfile();
+      }
+
+      Toast.info('Установка началась', `${id} · ${this.loader === 'vanilla' ? 'Vanilla' : LOADER_LABELS[this.loader]}`);
       try {
-        const payload = this.loader === 'vanilla' ? id : { versionId: id, loader: this.loader, loaderVersion: info.version || null };
+        const payload = this.loader === 'vanilla'
+          ? { versionId: id, customDirName }
+          : { versionId: id, loader: this.loader, loaderVersion: info.version || null, customDirName };
         const result = await window.api.invoke('versions:install', payload);
         const selectedId = (result && (result.versionId || result.id)) || id;
         Store.set('selectedVersion', selectedId);
         Store.set('selectedModpack', null);
         Store.set('selectedInstallPath', result && (result.rootDir || result.path));
-        document.getElementById('bottom-version').textContent = selectedId;
+        if (bVer) bVer.textContent = selectedId;
         Toast.success('Версия установлена', selectedId);
         await this.renderInstalled();
         window.App.updateSelectedFolderHint && window.App.updateSelectedFolderHint();
-      } catch (e) { Toast.error('Ошибка установки', e.message); }
-      finally {
-        button.disabled = false;
-        const infoNow = this.loaderInfoFor(id);
-        button.textContent = infoNow && infoNow.available ? 'Установить' : 'Недоступно';
+        if (window.App && typeof window.App.updateHomeProfile === 'function') {
+          window.App.updateHomeProfile();
+        }
+
+        if (Store.get('queueLaunchAfterInstall')) {
+          Store.set('queueLaunchAfterInstall', false);
+          Toast.info('Автозапуск', `Запуск Minecraft ${selectedId}…`);
+          if (window.App && typeof window.App.launch === 'function') {
+            await window.App.launch();
+          }
+        }
+      } catch (e) {
+        Toast.error('Ошибка установки', e.message);
+      } finally {
+        Store.set('installingVersion', null);
+        if (button) {
+          button.disabled = false;
+          const infoNow = this.loaderInfoFor(id);
+          button.textContent = infoNow && infoNow.available ? 'Установить' : 'Недоступно';
+        }
       }
     },
 
@@ -247,7 +377,7 @@ window.Views = window.Views || {};
               <div class="install-actions">
                 <button class="btn primary compact-btn" data-use="${esc(v.id)}" data-path="${esc(v.path || '')}" data-modpack="${v.kind === 'modpack' ? '1' : ''}" data-name="${esc(title)}">Выбрать</button>
                 <button class="btn outline compact-btn" data-folder="${esc(v.path || '')}">Папка</button>
-                <button class="btn ghost compact-btn" data-del="${esc(v.id)}" data-path="${esc(v.path || '')}">Удалить</button>
+                <button class="btn ghost compact-btn" data-del="${esc(v.id)}" data-path="${esc(v.path || '')}" data-name="${esc(title)}">Удалить</button>
               </div>
             </div>`;
         }).join('');
@@ -262,14 +392,32 @@ window.Views = window.Views || {};
         });
         el.querySelectorAll('[data-folder]').forEach(b => b.onclick = () => b.dataset.folder && window.api.shell.openPath(b.dataset.folder));
         el.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+          const verName = b.dataset.name || b.dataset.del;
           Modal.confirm({
             title: 'Удалить установку?',
-            message: `Будет удалена папка: ${b.dataset.path || b.dataset.del}`,
+            message: `Будет удалена версия: ${verName}`,
             okText: 'Удалить',
             onOk: async () => {
-              await window.api.invoke('versions:remove', b.dataset.del, b.dataset.path || null);
-              Toast.info('Удалено');
-              this.renderInstalled();
+              try {
+                await window.api.invoke('versions:remove', b.dataset.del, b.dataset.path || null);
+                if (Store.get('selectedVersion') === b.dataset.del || Store.get('selectedInstallPath') === b.dataset.path) {
+                  Store.set('selectedVersion', '—');
+                  Store.set('selectedInstallPath', null);
+                  Store.set('selectedModpack', null);
+                  const bVer = document.getElementById('bottom-version');
+                  if (bVer) bVer.textContent = '—';
+                }
+                Toast.info('Версия удалена', verName);
+                await this.renderInstalled();
+                if (window.App && typeof window.App.updateHomeProfile === 'function') {
+                  window.App.updateHomeProfile();
+                }
+                if (window.App && typeof window.App.updateSelectedFolderHint === 'function') {
+                  window.App.updateSelectedFolderHint();
+                }
+              } catch (err) {
+                Toast.error('Ошибка при удалении', err.message || String(err));
+              }
             }
           });
         });

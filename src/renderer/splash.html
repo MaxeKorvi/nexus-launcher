@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Nexus Launcher</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .splash-card {
+      position: relative;
+      width: 440px;
+      height: 270px;
+      border-radius: 20px;
+      background: radial-gradient(circle at 50% 20%, rgba(255, 121, 0, 0.12), transparent 70%), rgba(10, 10, 13, 0.94);
+      border: 1px solid rgba(255, 121, 0, 0.3);
+      box-shadow: 0 25px 65px rgba(0, 0, 0, 0.8), 0 0 45px rgba(255, 121, 0, 0.2);
+      backdrop-filter: blur(28px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      color: #fff;
+      overflow: hidden;
+    }
+    .ambient-glow {
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 121, 0, 0.22) 0%, transparent 70%);
+      top: 15px;
+      filter: blur(20px);
+      pointer-events: none;
+      animation: pulseGlow 3s ease-in-out infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { transform: scale(0.9); opacity: 0.6; }
+      100% { transform: scale(1.15); opacity: 1; }
+    }
+    .logo-wrapper {
+      position: relative;
+      width: 78px;
+      height: 78px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: floatLogo 3.5s ease-in-out infinite alternate;
+    }
+    @keyframes floatLogo {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-4px); }
+    }
+    .logo-img {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(255, 121, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .brand-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 4px;
+    }
+    .brand-title span {
+      background: linear-gradient(135deg, #ff7900, #ffaa33);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .version-tag {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .progress-track {
+      width: 280px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .progress-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff5500, #ff9900, #ffbb33);
+      border-radius: 99px;
+      box-shadow: 0 0 12px rgba(255, 121, 0, 0.8);
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .status-text {
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.65);
+      letter-spacing: 0.02em;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .status-text.fade {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+  </style>
+</head>
+<body>
+  <div class="splash-card">
+    <div class="ambient-glow"></div>
+    <div class="logo-wrapper">
+      <img class="logo-img" src="assets/nexus-logo.png" alt="Nexus">
+    </div>
+    <div class="brand-title">Nexus <span>Launcher</span></div>
+    <div class="version-tag">Release 2026.1.1</div>
+    <div class="progress-track">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="status-text" id="status-text">Инициализация ядра лаунчера…</div>
+  </div>
+
+  <script>
+    const steps = [
+      { progress: 20, text: 'Инициализация ядра системы…', delay: 200 },
+      { progress: 45, text: 'Проверка файлов конфигурации…', delay: 450 },
+      { progress: 70, text: 'Синхронизация профилей и служб…', delay: 450 },
+      { progress: 90, text: 'Загрузка интерфейса…', delay: 350 },
+      { progress: 100, text: 'Запуск Nexus Launcher', delay: 300 }
+    ];
+
+    const bar = document.getElementById('progress-bar');
+    const status = document.getElementById('status-text');
+
+    let curStep = 0;
+    function runNextStep() {
+      if (curStep >= steps.length) return;
+      const s = steps[curStep];
+      bar.style.width = s.progress + '%';
+      status.classList.add('fade');
+      setTimeout(() => {
+        status.textContent = s.text;
+        status.classList.remove('fade');
+      }, 150);
+      curStep++;
+      if (curStep < steps.length) {
+        setTimeout(runNextStep, s.delay);
+      }
+    }
+    setTimeout(runNextStep, 100);
+  </script>
+</body>
+</html>

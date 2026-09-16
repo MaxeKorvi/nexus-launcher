@@ -15,6 +15,10 @@ window.Views.library = {
     c.innerHTML = `
       <div class="view library-view">
         <div class="library-tabs">
+          <button class="tab-item" data-tab="instances" style="padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-2); font-weight: 600; font-size: 13px; transition: all 200ms ease; border: 1px solid transparent; background: transparent; display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Профили
+          </button>
           <button class="tab-item" data-tab="modpacks" style="padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-2); font-weight: 600; font-size: 13px; transition: all 200ms ease; border: 1px solid transparent; background: transparent; display: flex; align-items: center; gap: 6px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Сборки
@@ -22,6 +26,10 @@ window.Views.library = {
           <button class="tab-item" data-tab="mods" style="padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-2); font-weight: 600; font-size: 13px; transition: all 200ms ease; border: 1px solid transparent; background: transparent; display: flex; align-items: center; gap: 6px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             Моды
+          </button>
+          <button class="tab-item" data-tab="worlds" style="padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-2); font-weight: 600; font-size: 13px; transition: all 200ms ease; border: 1px solid transparent; background: transparent; display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Миры
           </button>
           <button class="tab-item" data-tab="maps" style="padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-2); font-weight: 600; font-size: 13px; transition: all 200ms ease; border: 1px solid transparent; background: transparent; display: flex; align-items: center; gap: 6px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
