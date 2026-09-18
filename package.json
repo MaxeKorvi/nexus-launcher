@@ -76,6 +76,7 @@
       "legalTrademarks": "Nexus Launcher"
     },
     "nsis": {
+      "artifactName": "Nexus Launcher Setup ${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
@@ -95,6 +96,12 @@
       "runAfterFinish": true,
       "installerLanguages": ["ru_RU", "en_US"],
       "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Nexus-Launcher-Portable-${version}-x86.${ext}"
+    },
+    "appImage": {
+      "artifactName": "Nexus-Launcher-${version}-${arch}.${ext}"
     }
   }
 }

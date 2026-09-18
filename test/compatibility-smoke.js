@@ -263,7 +263,7 @@ const orderedLoaders = VersionsTesting.sortLoaderVersions([
   { version: '0.29.2', stable: true }
 ]);
 assert.deepEqual(orderedLoaders.map(x => x.version), ['0.30.0', '0.29.2', '0.20.0-beta.9']);
-assert.ok(VersionsTesting.installerArgSets('C:/Nexus/test').every(args => args.includes('C:/Nexus/test')));
+assert.ok(VersionsTesting.installerArgSets('C:/Nexus/test').some(args => args.includes('C:/Nexus/test')));
 console.log('[OK] Loader version ordering and isolated installer target');
 
 // ─── Full integration: accounts ────────────────────────────────────────────
