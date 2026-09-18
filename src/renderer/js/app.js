@@ -631,9 +631,13 @@ window.App = {
     if (heroBtnCheck) { heroBtnCheck.disabled = true; heroBtnCheck.textContent = 'Проверка…'; }
     try {
       const selectedModpack = Store.get('selectedModpack');
-      const result = await window.api.invoke('versions:repair', selectedModpack
-        ? { versionId, gameDir: selectedModpack.path }
-        : { versionId, gameDir: Store.get('selectedInstallPath') || null });
+      let gameDir = selectedModpack ? selectedModpack.path : (Store.get('selectedInstallPath') || null);
+      if (!gameDir) {
+        const installedList = Store.get('installedVersions') || [];
+        const found = installedList.find(x => x.id === versionId || x.profileId === versionId || x.versionId === versionId || x.minecraft === versionId);
+        if (found) gameDir = found.rootDir || found.path;
+      }
+      const result = await window.api.invoke('versions:repair', { versionId, gameDir });
       if (result && result.versionId && result.versionId !== versionId) {
         Store.set('selectedVersion', result.versionId);
         document.getElementById('bottom-version').textContent = result.versionId;
@@ -656,20 +660,19 @@ window.App = {
   },
 
   async openSelectedVersionFolder() {
-    const selected = Store.get('selectedVersion');
-    let folder = Store.get('selectedInstallPath');
-    if (!folder) {
-      try {
-        const paths = await window.api.invoke('versions:get-storage-paths', selected || null);
-        folder = selected ? (paths.selected || paths.all) : paths.all;
-      } catch {}
+    const selectedModpack = Store.get('selectedModpack');
+    let targetPath = selectedModpack ? selectedModpack.path : (Store.get('selectedInstallPath') || null);
+    const versionId = Store.get('selectedVersion');
+    if (!targetPath && versionId && versionId !== '—') {
+      const paths = await window.api.invoke('versions:get-storage-paths', versionId);
+      targetPath = paths && paths.selected;
     }
-    if (!folder) return Toast.error('Папка не найдена', 'Сначала выберите установленную версию');
-    try {
-      const error = await window.api.shell.openPath(folder);
-      if (error) throw new Error(error);
-    } catch (error) {
-      Toast.error('Не удалось открыть папку', error.message || String(error));
+    if (!targetPath) {
+      const settings = Store.get('settings') || {};
+      targetPath = settings.gameFolder;
+    }
+    if (targetPath) {
+      window.api.send('shell:open-path', targetPath);
     }
   },
 
@@ -682,7 +685,7 @@ window.App = {
     }
 
     const activeInstance = Store.get('activeInstance');
-    const versionId = (activeInstance && activeInstance.mcVersion) || Store.get('selectedVersion') || document.getElementById('bottom-version').textContent;
+    let versionId = (activeInstance && (activeInstance.versionId || activeInstance.profileId || activeInstance.mcVersion)) || Store.get('selectedVersion') || document.getElementById('bottom-version').textContent;
     const accounts = Store.get('accounts') || [];
     const active = accounts.find(a => a.active) || accounts[0];
     if (!active) {
@@ -696,20 +699,44 @@ window.App = {
       return;
     }
     if (Store.get('isLaunching')) return;
-    Toast.info('Запуск', `Minecraft ${versionId}${activeInstance ? ` (${activeInstance.name})` : ''}…`);
-    this.navigate('console');
-    Store.set('isLaunching', true);
-    this.updateHomeProfile();
+
     try {
       const selectedModpack = Store.get('selectedModpack');
+      let modpackPath = selectedModpack ? selectedModpack.path : (activeInstance ? (activeInstance.rootDir || activeInstance.path) : (Store.get('selectedInstallPath') || null));
+      const installedList = Store.get('installedVersions') || [];
+      
+      let found = installedList.find(x => x.id === versionId || x.profileId === versionId || x.versionId === versionId);
+      if (!found && modpackPath) {
+        found = installedList.find(x => (x.rootDir && x.rootDir === modpackPath) || (x.path && x.path === modpackPath));
+      }
+      if (!found) {
+        found = installedList.find(x => x.loader && x.loader !== 'vanilla' && (x.minecraft === versionId || (x.id && x.id.includes(versionId))));
+      }
+      if (!found) {
+        found = installedList.find(x => x.minecraft === versionId);
+      }
+
+      let targetVersionId = versionId;
+      if (found) {
+        if (!modpackPath) modpackPath = found.rootDir || found.path;
+        if (found.loader && found.loader !== 'vanilla') {
+          targetVersionId = found.profileId || found.versionId || found.id || targetVersionId;
+        }
+      }
+
+      Toast.info('Запуск', `Minecraft ${targetVersionId}${activeInstance ? ` (${activeInstance.name})` : ''}…`);
+      this.navigate('console');
+      Store.set('isLaunching', true);
+      this.updateHomeProfile();
+
       const result = await window.api.invoke('launch:start', {
-        versionId,
+        versionId: targetVersionId,
         accountId: active.id,
         instanceId: activeInstance ? activeInstance.id : null,
-        modpackPath: selectedModpack ? selectedModpack.path : (activeInstance ? activeInstance.rootDir : (Store.get('selectedInstallPath') || null))
+        modpackPath
       });
       if (!result || result.ok === false) throw new Error('Minecraft уже запущен');
-      if (result.versionId && result.versionId !== versionId) {
+      if (result.versionId && result.versionId !== targetVersionId) {
         Store.set('selectedVersion', result.versionId);
         document.getElementById('bottom-version').textContent = result.versionId;
       }
@@ -724,7 +751,7 @@ window.App = {
 
   updateHomeProfile() {
     const activeInstance = Store.get('activeInstance');
-    const selectedVersion = (activeInstance && activeInstance.mcVersion) || Store.get('selectedVersion') || '—';
+    const selectedVersion = (activeInstance && (activeInstance.versionId || activeInstance.profileId || activeInstance.mcVersion)) || Store.get('selectedVersion') || '—';
     const selectedModpack = Store.get('selectedModpack');
     
     // Update bottom bar

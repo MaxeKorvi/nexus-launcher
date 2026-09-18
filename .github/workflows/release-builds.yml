@@ -7,13 +7,16 @@ on:
         description: Existing GitHub release tag
         required: true
         default: "2026.1.1"
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
-  appimage:
-    runs-on: ubuntu-22.04
+  windows-installer:
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,12 +27,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - name: Build AppImage x86_64
-        run: npx electron-builder --linux AppImage --x64 --publish never --config.artifactName="Nexus-Launcher-${{ inputs.release_tag }}-x86_64.\${ext}"
-      - name: Upload AppImage to release
+      - name: Build Windows Installer (NSIS)
+        shell: cmd
+        run: npx electron-builder --win nsis --x64 --publish never --config.artifactName="Nexus Launcher Setup ${{ inputs.release_tag || '2026.1.1' }}.\${ext}"
+      - name: Upload Installer to release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.release_tag }}" "dist/Nexus-Launcher-${{ inputs.release_tag }}-x86_64.AppImage" --clobber
+        run: gh release upload "${{ inputs.release_tag || '2026.1.1' }}" "dist/Nexus Launcher Setup ${{ inputs.release_tag || '2026.1.1' }}.exe" --clobber
 
   portable-x86:
     runs-on: windows-2022
@@ -45,10 +50,29 @@ jobs:
       - run: npm test
       - name: Build Windows Portable x86
         shell: cmd
-        run: npx electron-builder --win portable --ia32 --publish never --config.artifactName="Nexus-Launcher-Portable-${{ inputs.release_tag }}-x86.\${ext}"
+        run: npx electron-builder --win portable --ia32 --publish never --config.artifactName="Nexus-Launcher-Portable-${{ inputs.release_tag || '2026.1.1' }}-x86.\${ext}"
       - name: Upload Portable x86 to release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.release_tag }}" "dist/Nexus-Launcher-Portable-${{ inputs.release_tag }}-x86.exe" --clobber
+        run: gh release upload "${{ inputs.release_tag || '2026.1.1' }}" "dist/Nexus-Launcher-Portable-${{ inputs.release_tag || '2026.1.1' }}-x86.exe" --clobber
+
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build AppImage x86_64
+        run: npx electron-builder --linux AppImage --x64 --publish never --config.artifactName="Nexus-Launcher-${{ inputs.release_tag || '2026.1.1' }}-x86_64.\${ext}"
+      - name: Upload AppImage to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.release_tag || '2026.1.1' }}" "dist/Nexus-Launcher-${{ inputs.release_tag || '2026.1.1' }}-x86_64.AppImage" --clobber
 

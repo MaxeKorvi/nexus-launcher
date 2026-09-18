@@ -64,9 +64,18 @@ async function ensureAuthlibInjector() {
 }
 
 async function resolveGameDir(versionId, optsGameDir) {
-  if (optsGameDir) return optsGameDir;
+  if (optsGameDir && fs.existsSync(optsGameDir)) return optsGameDir;
   const installed = await Versions.getInstalled();
-  const found = installed.find(x => x.id === versionId || x.profileId === versionId || x.versionId === versionId);
+  // 1. Exact match
+  let found = installed.find(x => x.id === versionId || x.profileId === versionId || x.versionId === versionId);
+  // 2. If base Minecraft version was passed (e.g. '1.20.1'), find the installed modded profile
+  if (!found) {
+    found = installed.find(x => x.loader && x.loader !== 'vanilla' && (x.minecraft === versionId || (x.id && x.id.includes(versionId))));
+  }
+  // 3. Fallback match by minecraft version or displayName
+  if (!found) {
+    found = installed.find(x => x.minecraft === versionId || (x.displayName && x.displayName.includes(versionId)));
+  }
   return (found && found.rootDir) || (found && found.path) || Settings.getAll().gameFolder;
 }
 
@@ -340,9 +349,14 @@ async function resolveAccount(accountId) {
     }
   } else if (acc.type === 'ely') {
     const realToken = await Accounts.getAccessToken(acc.id);
-    if (!realToken) throw new Error('Ely.by-токен истёк или недоступен. Войдите в Ely.by заново.');
-    accessToken = realToken;
-    userType = 'mojang';
+    if (realToken) {
+      accessToken = realToken;
+      userType = 'mojang';
+    } else {
+      accessToken = '0';
+      userType = 'legacy';
+      appendLog('[launcher] Ely.by-токен не найден или истёк. Запуск в режиме скин-системы Ely.by (для онлайн-серверов войдите заново).');
+    }
   } else {
     userType = 'legacy';
   }
@@ -438,6 +452,15 @@ function buildLaunchArgs({ settings, vmeta, versionId, gameDir, versionDir, acco
     // (minecraft + _1._xx_x modules) and fail with ResolutionException.
     const jvmVars = { ...vars, version_name: jarVersion };
     const jvm = sanitizeJvmArgsForJava(resolveMojangArgs(vmeta.arguments.jvm || [], jvmVars, features), javaMajor);
+
+    // Ensure -cp and classpath are included in JVM args if not present
+    if (!jvm.includes('-cp') && !jvm.includes('-classpath')) {
+      jvm.push('-cp', classpath);
+    }
+    if (!jvm.some(arg => typeof arg === 'string' && arg.startsWith('-Djava.library.path='))) {
+      jvm.unshift(`-Djava.library.path=${nativesDir}`);
+    }
+
     const game = resolveMojangArgs(vmeta.arguments.game || [], vars, features);
     if (settings.resolution.fullscreen && !game.includes('--fullscreen')) game.push('--fullscreen');
     return [...memoryArgs, ...presetArgs, ...customJvmArgs, ...skinJvmArgs, ...jvm, resolveMainClass(vmeta, versionId), ...game];
@@ -492,9 +515,11 @@ async function start({ versionId, accountId, modpackPath, instanceId, instanceDi
   }
   const gameDir = await resolveGameDir(versionId, instanceDir || modpackPath);
 
-  // Prefer loader profile (Forge / Fabric / NeoForge) if present in this game directory
+  // Prefer loader profile (Forge / Fabric / NeoForge / Quilt) if present in this game directory
   let targetVersionId = versionId;
   const installMetaFile = path.join(gameDir, 'nexus-install.json');
+  const instanceMetaFile = path.join(gameDir, 'nexus-instance.json');
+
   if (fs.existsSync(installMetaFile)) {
     try {
       const im = JSON.parse(await fsp.readFile(installMetaFile, 'utf8'));
@@ -504,16 +529,28 @@ async function start({ versionId, accountId, modpackPath, instanceId, instanceDi
         targetVersionId = im.id;
       }
     } catch {}
+  } else if (fs.existsSync(instanceMetaFile)) {
+    try {
+      const im = JSON.parse(await fsp.readFile(instanceMetaFile, 'utf8'));
+      if (im.versionId && fs.existsSync(path.join(gameDir, 'versions', im.versionId, `${im.versionId}.json`))) {
+        targetVersionId = im.versionId;
+      } else if (im.id && fs.existsSync(path.join(gameDir, 'versions', im.id, `${im.id}.json`))) {
+        targetVersionId = im.id;
+      }
+    } catch {}
   }
-  if (targetVersionId === versionId) {
-    const vDir = path.join(gameDir, 'versions');
-    if (fs.existsSync(vDir)) {
-      try {
-        const subdirs = fs.readdirSync(vDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
-        const loaderSub = subdirs.find(n => n !== versionId && fs.existsSync(path.join(vDir, n, `${n}.json`)));
-        if (loaderSub) targetVersionId = loaderSub;
-      } catch {}
-    }
+
+  const vDir = path.join(gameDir, 'versions');
+  if (fs.existsSync(vDir)) {
+    try {
+      const subdirs = fs.readdirSync(vDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
+      // Prefer loader subfolder (Fabric, Forge, Quilt, NeoForge) over plain vanilla
+      const loaderSub = subdirs.find(n => n !== versionId && /(?:fabric|forge|quilt|neoforge)/i.test(n) && fs.existsSync(path.join(vDir, n, `${n}.json`)))
+        || subdirs.find(n => n !== versionId && fs.existsSync(path.join(vDir, n, `${n}.json`)));
+      if (loaderSub && (targetVersionId === versionId || !/(?:fabric|forge|quilt|neoforge)/i.test(targetVersionId))) {
+        targetVersionId = loaderSub;
+      }
+    } catch {}
   }
   versionId = targetVersionId;
 

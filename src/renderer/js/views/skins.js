@@ -327,7 +327,11 @@ window.Views.skins = {
             imageBuffer: Array.from(new Uint8Array(this.selectedFileBuffer)),
             variant
           });
-          Toast.success('Успешно', (res && res.message) || 'Скин обновлён!');
+          if (res && res.warning) {
+            Toast.warning('Скин в лаунчере', res.message);
+          } else {
+            Toast.success('Успешно', (res && res.message) || 'Скин обновлён!');
+          }
           this.selectedFile = null;
           this.selectedFileBuffer = null;
           await this.renderAsync();

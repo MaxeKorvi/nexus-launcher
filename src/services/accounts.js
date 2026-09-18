@@ -369,68 +369,33 @@ async function loginElyWeb() {
             if (window.__nexus_ely_hooked) return;
             window.__nexus_ely_hooked = true;
 
-            function handlePayload(obj) {
-              if (!obj || typeof obj !== 'object') return;
-              if (obj.user && obj.user.username) {
-                window.__nexus_ely_user = {
-                  username: obj.user.username,
-                  id: obj.user.id,
-                  email: obj.user.email || null,
-                  token: obj.token || null
-                };
-              } else if (obj.username && (obj.id || obj.uuid)) {
-                window.__nexus_ely_user = {
-                  username: obj.username,
-                  id: obj.id || obj.uuid,
-                  email: obj.email || null,
-                  token: obj.token || null
-                };
-              }
-            }
-
-            const _origFetch = window.fetch;
-            if (_origFetch) {
-              window.fetch = async function(...args) {
-                const res = await _origFetch.apply(this, args);
-                try {
-                  const clone = res.clone();
-                  clone.json().then(handlePayload).catch(() => {});
-                } catch (e) {}
-                return res;
-              };
-            }
-
-            const _origOpen = XMLHttpRequest.prototype.open;
-            const _origSend = XMLHttpRequest.prototype.send;
-            XMLHttpRequest.prototype.open = function(m, u) {
-              this.__reqUrl = u;
-              return _origOpen.apply(this, arguments);
-            };
-            XMLHttpRequest.prototype.send = function() {
-              this.addEventListener('load', function() {
-                try {
-                  const text = this.responseText;
-                  if (text && text.trim().startsWith('{')) {
-                    const parsed = JSON.parse(text);
-                    handlePayload(parsed);
+            let foundToken = (window.__nexus_ely_user && window.__nexus_ely_user.token) || null;
+            if (!foundToken) {
+              try {
+                for (let i = 0; i < localStorage.length; i++) {
+                  const k = localStorage.key(i);
+                  const v = localStorage.getItem(k);
+                  if (!v) continue;
+                  if (v.length > 30 && /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(v.trim())) {
+                    foundToken = v.trim();
+                    break;
                   }
-                } catch (e) {}
-              });
-              return _origSend.apply(this, arguments);
-            };
-          })();
-        `);
-      } catch (e) {}
-    };
+                  try {
+                    const obj = JSON.parse(v);
+                    if (obj && typeof obj === 'object') {
+                      const candidate = obj.token || obj.accessToken || obj.access_token || (obj.user && (obj.user.token || obj.user.access_token));
+                      if (candidate && typeof candidate === 'string' && candidate.length > 20) {
+                        foundToken = candidate.trim();
+                        break;
+                      }
+                    }
+                  } catch {}
+                }
+              } catch {}
+            }
 
-    const checkUserInfo = async () => {
-      if (completed || authWin.isDestroyed()) return;
-      try {
-        await injectHook();
-
-        const info = await authWin.webContents.executeJavaScript(`
-          (() => {
             if (window.__nexus_ely_user && window.__nexus_ely_user.username) {
+              window.__nexus_ely_user.token = foundToken || window.__nexus_ely_user.token || null;
               return window.__nexus_ely_user;
             }
 
@@ -447,7 +412,7 @@ async function loginElyWeb() {
               if (el && el.textContent && el.textContent.trim()) {
                 const u = el.textContent.trim();
                 if (/^[a-zA-Z0-9_]{3,16}$/.test(u)) {
-                  return { username: u };
+                  return { username: u, token: foundToken };
                 }
               }
             }
@@ -507,6 +472,7 @@ async function loginElyWeb() {
 
           await saveToken(account.id, 'ely', {
             type: 'web_session',
+            accessToken: info.token || null,
             user: { id: info.id || uuid, username: info.username, email: info.email }
           });
 
@@ -530,23 +496,21 @@ async function loginElyWeb() {
       }
     };
 
+    const checkUserInfo = injectHook;
     authWin.loadURL('https://account.ely.by/login');
 
     pollInterval = setInterval(checkUserInfo, 1000);
 
     authWin.webContents.on('did-finish-load', () => {
       injectHook();
-      checkUserInfo();
     });
 
     authWin.webContents.on('did-navigate', () => {
       injectHook();
-      checkUserInfo();
     });
 
     authWin.webContents.on('did-navigate-in-page', () => {
       injectHook();
-      checkUserInfo();
     });
 
     authWin.on('closed', () => {
@@ -812,23 +776,19 @@ async function getAccessToken(id) {
   if (!acc) return null;
   if (acc.type === 'ely') {
     const tok = await loadToken(id, 'ely');
-    if (!tok || !tok.accessToken) return null;
-    try {
-      const refreshed = await refreshElyToken(tok);
-      await saveToken(id, 'ely', refreshed);
-      return refreshed.accessToken;
-    } catch {
-      return tok.accessToken;
-    }
+    return tok ? tok.accessToken : null;
   }
-  if (acc.type !== 'microsoft') return '0';
+  if (acc.type === 'local' || acc.type === 'tlauncher') {
+    return '0';
+  }
+  if (acc.type !== 'microsoft') return null;
 
   const tok = await loadToken(id, 'microsoft');
   if (!tok) return null;
-  if (tok.accessToken && tok.expiresAt && tok.expiresAt > Date.now() + 5 * 60 * 1000) {
+
+  if (tok.expiresAt && Date.now() < tok.expiresAt - 60000) {
     return tok.accessToken;
   }
-  if (!tok.refreshToken) return null;
 
   try {
     const refreshed = await refreshMicrosoftOAuth(tok.refreshToken);
@@ -870,13 +830,62 @@ async function startElyOAuth() {
   return { status: 'manual_yggdrasil', authServer: 'https://authserver.ely.by', message: 'Введите логин Ely.by. Пароль не сохраняется; хранится только зашифрованный токен.' };
 }
 
+async function uploadSkinToElyApi(accessToken, buf, variant = 'classic') {
+  try {
+    const boundary = '----NexusElySkinUpload' + Date.now().toString(16);
+    const modelVal = variant === 'slim' ? 'slim' : 'default';
+
+    const pre = Buffer.from(
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="model"\r\n\r\n` +
+      `${modelVal}\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="skin"; filename="skin.png"\r\n` +
+      `Content-Type: image/png\r\n\r\n`
+    );
+    const post = Buffer.from(`\r\n--${boundary}--\r\n`);
+    const payload = Buffer.concat([pre, buf, post]);
+
+    const resp = await axios.post('https://account.ely.by/api/account/skin', payload, {
+      timeout: 25000,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      validateStatus: s => [200, 204, 400, 401, 403].includes(s)
+    });
+
+    if (resp.status === 200 || resp.status === 204) {
+      return { ok: true, message: 'Скин успешно обновлён на сайте Ely.by!' };
+    }
+    if (resp.status === 401) {
+      return { ok: false, unauthorized: true, error: 'Токен авторизации Ely.by истёк.' };
+    }
+    if (resp.status === 400) {
+      const msg = resp.data && (resp.data.message || resp.data.error || 'Неверный формат изображения (требуется PNG 64x32 или 64x64).');
+      return { ok: false, error: msg };
+    }
+    if (resp.status === 403) {
+      return { ok: false, error: 'Нет прав для изменения профиля Ely.by.' };
+    }
+    return { ok: false, error: `Ely.by вернул статус ${resp.status}` };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
 async function uploadSkinToElyWeb(buf, variant) {
   return new Promise((resolve) => {
     let win = null;
     let settled = false;
+    let timer = null;
+    let pollInterval = null;
+
     const finish = (result) => {
       if (settled) return;
       settled = true;
+      if (timer) clearTimeout(timer);
+      if (pollInterval) clearInterval(pollInterval);
       if (win) {
         try { win.destroy(); } catch {}
         win = null;
@@ -887,36 +896,72 @@ async function uploadSkinToElyWeb(buf, variant) {
     try {
       win = new BrowserWindow({
         show: false,
-        width: 800,
-        height: 600,
+        width: 540,
+        height: 720,
+        title: 'Ely.by — Вход для загрузки скина',
+        autoHideMenuBar: true,
+        backgroundColor: '#0c0d10',
         webPreferences: {
           partition: 'persist:ely_web_session',
           contextIsolation: false
         }
       });
 
-      const timer = setTimeout(() => {
-        finish({ ok: false, error: 'timeout', message: 'Сайт Ely.by не ответил вовремя. Скин сохранён локально.' });
-      }, 30000);
+      timer = setTimeout(() => {
+        finish({ ok: false, error: 'timeout', message: 'Сайт Ely.by не ответил вовремя.' });
+      }, 90000);
 
-      win.loadURL('https://ely.by/skin').catch(err => {
-        clearTimeout(timer);
-        finish({ ok: false, error: err.message, message: 'Не удалось загрузить страницу Ely.by.' });
-      });
+      const b64 = buf.toString('base64');
+      const modelVal = variant === 'slim' ? 'slim' : 'default';
 
-      win.webContents.on('did-finish-load', async () => {
+      let isAttempting = false;
+      const tryUploadInPage = async () => {
+        if (settled || isAttempting || !win || win.isDestroyed()) return;
+        isAttempting = true;
         try {
-          const b64 = buf.toString('base64');
+          const currentUrl = (win.webContents && !win.webContents.isDestroyed() && win.webContents.getURL()) || '';
+          if (currentUrl.includes('/login')) {
+            if (!win.isVisible()) {
+              win.show();
+              win.focus();
+            }
+          }
+
           const res = await win.webContents.executeJavaScript(`
             (async () => {
               try {
-                const user = (window.alight && window.alight.service && window.alight.service.currentUser) ||
-                             (window.app && window.app.user);
-                if (!user || !user.id) {
-                  return { ok: false, error: 'not_logged_in', message: 'Сессия Ely.by на сайте не активна. Войдите через «Вход через сайт Ely.by» для синхронизации.' };
+                // 1. Search for token in localStorage and sessionStorage
+                let token = null;
+                const storages = [window.localStorage, window.sessionStorage];
+                for (const st of storages) {
+                  if (!st) continue;
+                  try {
+                    for (let i = 0; i < st.length; i++) {
+                      const k = st.key(i);
+                      const v = st.getItem(k);
+                      if (!v) continue;
+                      if (v.length > 30 && /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(v.trim())) {
+                        token = v.trim();
+                        break;
+                      }
+                      try {
+                        const parsed = JSON.parse(v);
+                        if (parsed && typeof parsed === 'object') {
+                          const cand = parsed.token || parsed.accessToken || parsed.access_token || (parsed.user && (parsed.user.token || parsed.user.access_token));
+                          if (cand && typeof cand === 'string' && cand.length > 20) {
+                            token = cand.trim();
+                            break;
+                          }
+                        }
+                      } catch {}
+                    }
+                  } catch {}
+                  if (token) break;
                 }
 
-                const byteCharacters = atob('${b64}');
+                // 2. Prepare binary blob
+                const b64 = '${b64}';
+                const byteCharacters = atob(b64);
                 const byteNumbers = new Array(byteCharacters.length);
                 for (let i = 0; i < byteCharacters.length; i++) {
                   byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -924,44 +969,95 @@ async function uploadSkinToElyWeb(buf, variant) {
                 const byteArray = new Uint8Array(byteNumbers);
                 const blob = new Blob([byteArray], { type: 'image/png' });
 
+                // 3. Prepare FormData
                 const formData = new FormData();
-                formData.append('file', blob, 'skin.png');
+                formData.append('skin', blob, 'skin.png');
+                formData.append('model', '${modelVal}');
 
-                const uploadResp = await fetch('/skins/upload', {
+                const headers = {};
+                if (token) {
+                  headers['Authorization'] = 'Bearer ' + token;
+                }
+                const metaCsrf = document.querySelector('meta[name="csrf-token"]') || document.querySelector('meta[name="csrf"]');
+                if (metaCsrf && metaCsrf.content) {
+                  headers['X-CSRF-Token'] = metaCsrf.content;
+                }
+
+                // 4. Send upload request to Ely.by
+                const resp = await fetch('/api/account/skin', {
                   method: 'POST',
+                  headers: headers,
                   body: formData,
-                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                  credentials: 'include'
                 });
 
-                const data = await uploadResp.json();
-                if (data.error && !data.error.includes('success')) {
-                  return { ok: false, error: data.error, message: data.text || 'Ошибка загрузки скина на сайт Ely.by' };
+                if (resp.status === 200 || resp.status === 204) {
+                  return { ok: true, status: resp.status, token: token };
                 }
 
-                const skinId = data.extra && data.extra.id;
-                if (skinId) {
-                  await fetch('/skins/wear', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/x-www-form-urlencoded',
-                      'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: 'skinId=' + encodeURIComponent(skinId)
-                  }).catch(() => {});
+                if (resp.status === 401 || resp.status === 403) {
+                  return { ok: false, unauthorized: true, status: resp.status };
                 }
 
-                return { ok: true, message: data.text || 'Скин успешно обновлён на сайте Ely.by!' };
+                const errText = await resp.text();
+                let parsed = null;
+                try { parsed = JSON.parse(errText); } catch {}
+                const msg = (parsed && (parsed.message || parsed.error)) || errText;
+                return { ok: false, status: resp.status, error: msg || ('Ошибка ' + resp.status) };
               } catch (err) {
                 return { ok: false, error: err.message };
               }
             })()
           `);
-          clearTimeout(timer);
-          finish(res);
+
+          if (res && res.ok) {
+            finish(res);
+            return;
+          }
+
+          if (res && res.unauthorized) {
+            // If session expired or unauthorized, show the login window to user
+            if (!win.isDestroyed()) {
+              const url = win.webContents.getURL() || '';
+              if (!win.isVisible()) {
+                win.show();
+                win.focus();
+              }
+              if (!url.includes('/login')) {
+                win.loadURL('https://account.ely.by/login').catch(() => {});
+              }
+            }
+          } else if (res && res.error && !res.unauthorized) {
+            finish(res);
+            return;
+          }
         } catch (e) {
-          clearTimeout(timer);
-          finish({ ok: false, error: e.message });
+          // Retry on next event
+        } finally {
+          isAttempting = false;
         }
+      };
+
+      pollInterval = setInterval(tryUploadInPage, 1200);
+
+      win.loadURL('https://account.ely.by').catch(err => {
+        finish({ ok: false, error: err.message, message: 'Не удалось подключиться к account.ely.by' });
+      });
+
+      win.webContents.on('did-finish-load', () => {
+        setTimeout(tryUploadInPage, 400);
+      });
+
+      win.webContents.on('did-navigate', () => {
+        setTimeout(tryUploadInPage, 500);
+      });
+
+      win.webContents.on('did-navigate-in-page', () => {
+        setTimeout(tryUploadInPage, 500);
+      });
+
+      win.on('closed', () => {
+        finish({ ok: false, error: 'auth_closed', message: 'Окно авторизации Ely.by закрыто.' });
       });
     } catch (err) {
       finish({ ok: false, error: err.message });
@@ -1044,21 +1140,72 @@ async function changeSkin(accountId, { imageBuffer, variant = 'classic', skinUrl
       saveAllAccounts(updated);
 
       if (acc.type === 'ely') {
-        const elyWebRes = await uploadSkinToElyWeb(buf, variant);
-        if (elyWebRes && elyWebRes.ok) {
+        let token = await getAccessToken(accountId);
+        let elyRes = null;
+        if (token && token !== '0') {
+          elyRes = await uploadSkinToElyApi(token, buf, variant);
+          if (!elyRes.ok && elyRes.unauthorized) {
+            const tok = await loadToken(accountId, 'ely');
+            if (tok && tok.accessToken) {
+              try {
+                const refreshed = await refreshElyToken(tok);
+                await saveToken(accountId, 'ely', refreshed);
+                token = refreshed.accessToken;
+                elyRes = await uploadSkinToElyApi(token, buf, variant);
+              } catch {}
+            }
+          }
+        }
+
+        if (!elyRes || !elyRes.ok) {
+          const elyWebRes = await uploadSkinToElyWeb(buf, variant);
+          if (elyWebRes && elyWebRes.ok) {
+            elyRes = { ok: true };
+            if (elyWebRes.token) {
+              const tok = (await loadToken(accountId, 'ely')) || {};
+              await saveToken(accountId, 'ely', { ...tok, accessToken: elyWebRes.token });
+            }
+          } else {
+            if (!elyRes || elyRes.unauthorized) {
+              elyRes = elyWebRes;
+            }
+          }
+        }
+
+        if (elyRes && elyRes.ok) {
+          let updatedSkinUrl = null;
+          try {
+            if (acc.uuid) {
+              const tex = await fetchElyProfileTextures(acc.uuid);
+              if (tex && tex.skin) {
+                const accs = getAllAccounts().map(a => a.id === accountId ? { ...a, skin: tex.skin } : a);
+                saveAllAccounts(accs);
+                updatedSkinUrl = tex.skin;
+              }
+            }
+            if (!updatedSkinUrl) {
+              const sUrl = `https://skin.ely.by/usernames/${encodeURIComponent(acc.nickname)}`;
+              const sRes = await axios.get(sUrl, { timeout: 8000, headers: { Accept: 'application/json' }, validateStatus: s => s === 200 });
+              if (sRes.data && (sRes.data.skinUrl || sRes.data.url)) {
+                const u = (sRes.data.skinUrl || sRes.data.url).replace(/^http:\/\//, 'https://');
+                const accs = getAllAccounts().map(a => a.id === accountId ? { ...a, skin: u } : a);
+                saveAllAccounts(accs);
+                updatedSkinUrl = u;
+              }
+            }
+          } catch {}
           return {
             ok: true,
+            skin: updatedSkinUrl || dataUrl,
             message: 'Скин успешно установлен в лаунчере и на сайте Ely.by!'
           };
-        } else if (elyWebRes && elyWebRes.message) {
-          return {
-            ok: true,
-            message: `Скин сохранён в лаунчере. (${elyWebRes.message})`
-          };
         }
+
+        const detail = (elyRes && (elyRes.message || elyRes.error)) || 'Не удалось связаться с сервером скинов Ely.by';
         return {
           ok: true,
-          message: 'Скин успешно установлен в лаунчере!'
+          warning: true,
+          message: `Скин сохранён в лаунчере. На сайте Ely.by: ${detail}`
         };
       }
 

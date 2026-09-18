@@ -553,9 +553,13 @@ async function getInstalled(root) {
       const rootDir = path.join(iso, e.name);
       let meta = {};
       try { meta = JSON.parse(await fsp.readFile(path.join(rootDir, 'nexus-install.json'), 'utf8')); } catch {}
+      if (!meta.id && !meta.versionId) {
+        try { meta = JSON.parse(await fsp.readFile(path.join(rootDir, 'nexus-instance.json'), 'utf8')); } catch {}
+      }
       const scanned = await scanVersionJsons(rootDir, meta);
-      const primaryId = meta.id || meta.versionId || (scanned[0] && scanned[0].id) || e.name;
-      const primary = scanned.find(x => x.id === primaryId) || scanned[0] || { id: primaryId };
+      const loaderProfile = scanned.find(x => x.loader && x.loader !== 'vanilla') || scanned.find(x => /(?:fabric|forge|quilt|neoforge)/i.test(x.id));
+      const primaryId = meta.id || meta.versionId || (loaderProfile && loaderProfile.id) || (scanned[0] && scanned[0].id) || e.name;
+      const primary = scanned.find(x => x.id === primaryId) || loaderProfile || scanned[0] || { id: primaryId };
       out.push({ ...primary, ...meta, id: primaryId, profileId: primaryId, path: rootDir, rootDir, kind: meta.kind || 'version' });
     }
   }
@@ -1035,12 +1039,13 @@ async function installerJavaCandidates(mcVersion) {
 }
 
 function installerArgSets(gameDir) {
-  // Never omit gameDir: recent NeoForge installers ignore cwd and silently use
-  // the user's shared .minecraft folder when no path is supplied. Nexus would
-  // then report success but be unable to find or launch the installed profile.
+  // Forge installers historically do not accept an argument to --installClient and install
+  // into cwd / launcher_profiles.json directory. NeoForge and some installers accept path.
   return [
     ['--installClient', gameDir],
-    ['--install-client', gameDir]
+    ['--installClient'],
+    ['--install-client', gameDir],
+    ['--install-client']
   ];
 }
 
@@ -1624,8 +1629,24 @@ async function repairMissingProfileLibraries(missing, rootDir) {
  * This is used both by the launch pre-check and by the "Проверить файлы" button.
  */
 async function repair(versionId, opts = {}) {
-  const rootDir = opts.gameDir || opts.rootDir || instanceDir(versionId);
+  let rootDir = opts.gameDir || opts.rootDir;
+  if (!rootDir) {
+    try {
+      const installed = await getInstalled();
+      const found = installed.find(x => x.id === versionId || x.profileId === versionId || x.versionId === versionId || x.minecraft === versionId);
+      if (found) rootDir = found.rootDir || found.path;
+    } catch {}
+  }
+  if (!rootDir) rootDir = instanceDir(versionId);
+
   const installMeta = await readInstallMeta(rootDir);
+  if (installMeta && installMeta.loader && installMeta.loader !== 'vanilla') {
+    const candidate = installMeta.versionId || installMeta.id;
+    if (candidate && fs.existsSync(path.join(versionsDir(rootDir), candidate, `${candidate}.json`))) {
+      versionId = candidate;
+    }
+  }
+
   let chain;
 
   try {
