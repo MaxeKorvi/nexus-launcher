@@ -30,6 +30,14 @@ if errorlevel 1 (
 )
 set "GIT_OPTS=-c http.proxy= -c https.proxy="
 
+set "NODE=node"
+where node >nul 2>&1
+if errorlevel 1 (
+    if exist "C:\Program Files\nodejs\node.exe" (
+        set "NODE=C:\Program Files\nodejs\node.exe"
+    )
+)
+
 echo [1/3] Adding changes to git...
 "%GIT%" %GIT_OPTS% add .
 
@@ -49,13 +57,6 @@ if errorlevel 1 (
 ) else (
     echo.
     echo [5/5] Updating and deploying Netlify project...
-    set "NODE=node"
-    where node >nul 2>&1
-    if errorlevel 1 (
-        if exist "C:\Program Files\nodejs\node.exe" (
-            set "NODE=C:\Program Files\nodejs\node.exe"
-        )
-    )
     "%NODE%" update-netlify.js
 
     echo.
