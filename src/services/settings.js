@@ -67,6 +67,7 @@ const DEFAULTS = {
   skinSystem: 'ely',    // ely | none
   gpuPreference: 'dedicated', // dedicated | integrated | auto
   customAccentColor: '#ff8c1a',
+  lastSelectedVersion: null,
   consoleFontSize: 12,
   consoleFontFamily: 'monospace',
   consoleAutoScroll: true,
@@ -115,6 +116,12 @@ function getAll() {
 }
 
 function set(key, val) {
+  if (typeof key === 'object' && key !== null) {
+    for (const [k, v] of Object.entries(key)) {
+      set(k, v);
+    }
+    return true;
+  }
   // Не даём старому renderer/API включить несуществующую отправку статистики.
   if (key === 'telemetry') {
     store.set(key, false);

@@ -12,8 +12,8 @@
     <!-- ═══ Custom title bar (spec §2.1) ═══ -->
     <div class="titlebar">
       <div class="title">
-        <img class="brand-logo" src="assets/nexus-logo.png" alt="Nexus Launcher">
-        <div class="brand-wordmark"><strong>Nexus</strong><span>Launcher 2026.1.1</span></div>
+        <img class="brand-logo" src="assets/icon.png" onerror="this.src='../../icon.png'" alt="Nexus Launcher">
+        <div class="brand-wordmark"><strong>Nexus</strong><span>Launcher 2026.1.2</span></div>
       </div>
       <div class="controls">
         <button id="btn-min" title="Свернуть">
@@ -39,26 +39,22 @@
     <main class="content">
       <!-- Left side panel: Navigation -->
       <aside class="left-panel" id="left-panel">
-        <div class="nav-list" id="nav-list" style="display: flex; flex-direction: column; height: 100%;">
+        <div class="nav-list" id="nav-list">
           <button class="nav-item active" data-view="home" data-tip="Главная">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>
             <span class="nav-text">Главная</span>
-          </button>
-          <button class="nav-item" data-view="library" data-tip="Библиотека">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            <span class="nav-text">Библиотека</span>
           </button>
           <button class="nav-item" data-view="servers" id="nav-servers" data-tip="Серверы">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
             <span class="nav-text">Серверы</span>
           </button>
-          <button class="nav-item" data-view="skins" id="nav-skins" data-tip="Скин" style="display:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span class="nav-text">Скин</span>
+          <button class="nav-item" data-view="library" data-tip="Библиотека">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <span class="nav-text">Библиотека</span>
           </button>
-          <button class="nav-item" data-view="console" data-tip="Консоль" style="margin-top: auto;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
-            <span class="nav-text">Консоль</span>
+          <button class="nav-item" data-view="skins" id="nav-skins" data-tip="Скины">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="nav-text">Скины</span>
           </button>
           <button class="nav-item" data-view="themes" data-tip="Темы">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="16" cy="10" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg>
@@ -67,6 +63,18 @@
           <button class="nav-item" data-view="settings" data-tip="Настройки">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span class="nav-text">Настройки</span>
+          </button>
+        </div>
+
+        <!-- Concept user pill at bottom of left panel -->
+        <div class="sidebar-user-pill" id="sidebar-user-pill" title="Профиль игрока">
+          <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name" id="sidebar-user-name">Гость</div>
+            <div class="sidebar-user-status" id="sidebar-user-status">● В сети</div>
+          </div>
+          <button class="sidebar-user-settings" id="sidebar-user-settings" title="Аккаунты и настройки профиля">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
         </div>
       </aside>
@@ -133,7 +141,7 @@
           </div>
         </div>
 
-        <div class="downloads-panel" id="downloads-panel">
+        <div class="downloads-panel" id="downloads-panel" style="display: none;">
           <div class="downloads-panel-head" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-soft); margin-bottom: 10px;">
             <h3 style="font-size: 14px; font-weight: 700; color: var(--text);">Загрузки</h3>
             <div style="display: flex; gap: 4px;">
@@ -150,26 +158,25 @@
 
     <!-- ═══ Bottom bar (spec §2 lower panel) ═══ -->
     <footer class="bottom-bar">
-      <div class="left">
-        <div class="account-select" id="account-select" data-tip="Сменить аккаунт">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
-            <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>
-          </svg>
-          <div>
-            <div class="label">Аккаунт</div>
-            <div class="value" id="bottom-account">—</div>
+      <div class="bottom-bar-left">
+        <div class="version-select" id="version-select" data-tip="Сменить версию Minecraft">
+          <div class="vs-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
           </div>
-        </div>
-        <div class="version-select" id="version-select" data-tip="Сменить версию">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
-            <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/>
-          </svg>
-          <div>
-            <div class="label">Версия</div>
-            <div class="value" id="bottom-version">—</div>
+          <div class="vs-text">
+            <span class="vs-label">ВЕРСИЯ ИГРЫ</span>
+            <span class="vs-value" id="bottom-version">—</span>
+          </div>
+          <div class="vs-chevron">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
       </div>
+
       <!-- Version installation progress bar between version selector and action buttons -->
       <div class="version-install-progress hidden" id="version-install-progress">
         <div class="vip-meta">
@@ -181,12 +188,19 @@
           <div class="vip-fill" id="vip-fill" style="width: 0%;"></div>
         </div>
       </div>
-      <div class="right">
-        <button class="btn outline folder-btn" id="btn-open-version-folder" data-tip="Открыть папку выбранной версии">Папка</button>
-        <button class="btn outline" id="btn-force-update" data-tip="Проверить файлы версии">Проверить файлы</button>
-        <button class="btn primary play" id="btn-play">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          Играть
+
+      <div class="bottom-bar-right">
+        <button class="btn outline folder-btn" id="btn-open-version-folder" data-tip="Открыть папку выбранной версии">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Папка
+        </button>
+        <button class="btn outline" id="btn-force-update" data-tip="Проверить целостность файлов">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          Проверить файлы
+        </button>
+        <button class="btn primary play glow-pulse" id="btn-play">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+          <span>ИГРАТЬ</span>
         </button>
       </div>
     </footer>

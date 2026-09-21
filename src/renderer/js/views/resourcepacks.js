@@ -25,6 +25,35 @@ window.Views = window.Views || {};
     });
   }
 
+  function checkMinecraftInsideDisclaimer(item, onConfirm) {
+    const isMcInside = item && (item.source === 'minecraft-inside' || (item.url && item.url.includes('minecraft-inside.ru')));
+    if (!isMcInside) {
+      onConfirm();
+      return;
+    }
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div style="font-size:13px;line-height:1.6;color:var(--text-1);">
+        <p style="margin-top:0;"><strong>Внимание:</strong> Вы собираетесь установить контент из источника <strong>Minecraft Inside</strong>.</p>
+        <div style="background:rgba(255,180,0,0.1);border-left:3px solid #ffb400;padding:10px 12px;border-radius:4px;margin:12px 0;color:var(--text-1);font-size:12px;">
+          Файлы на сторонних ресурсах загружаются авторами ресурспаков. Nexus Launcher рекомендует убедиться в безопасности контента перед запуском.
+        </div>
+        <p style="color:var(--text-2);font-size:12px;margin-bottom:0;">Желаете продолжить установку?</p>
+      </div>
+    `;
+    const footer = document.createElement('div');
+    footer.innerHTML = `
+      <button class="btn primary" id="mc-inside-continue">Продолжить</button>
+      <button class="btn outline" id="mc-inside-cancel">Отмена</button>
+    `;
+    const modal = Modal.open({ title: 'Предупреждение источника', body, footer, size: 'normal' });
+    footer.querySelector('#mc-inside-cancel').onclick = () => modal.close();
+    footer.querySelector('#mc-inside-continue').onclick = () => {
+      modal.close();
+      onConfirm();
+    };
+  }
+
   window.Views.resourcepacks = {
     query: '',
     page: 0,
@@ -147,6 +176,91 @@ window.Views = window.Views || {};
       el.textContent = `Каталог ограничен выбранной версией Minecraft: ${this.mcVersion || '—'}. Установка пойдёт сюда: ${rootDir}/resourcepacks`;
     },
 
+    showPreview(pack) {
+      const body = document.createElement('div');
+      body.style.display = 'flex';
+      body.style.flexDirection = 'column';
+      body.style.gap = '14px';
+
+      const header = `
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:64px;height:64px;border-radius:10px;background:var(--bg-2);background-size:cover;background-position:center;flex-shrink:0;${pack.icon ? `background-image:url('${pack.icon}')` : ''}"></div>
+          <div style="flex:1;min-width:0;">
+            <h3 style="margin:0 0 4px;font-size:17px;color:var(--text-0);">${esc(pack.title || '')}</h3>
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">
+              Автор: <strong>${esc(pack.author || '—')}</strong> · Источник: <span class="badge" style="font-size:11px;padding:2px 6px;">${esc(sourceLabel(pack.source))}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-2);">
+              ${pack.downloads ? `<span>⬇ ${Number(pack.downloads).toLocaleString('ru-RU')} скачиваний</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const desc = `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;color:var(--text-1);max-height:220px;overflow-y:auto;white-space:pre-wrap;">
+          ${esc(pack.description || 'Описание отсутствует.')}
+        </div>
+      `;
+
+      const versions = pack.mcVersions && pack.mcVersions.length ? `
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:6px;">Поддерживаемые версии Minecraft:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:80px;overflow-y:auto;">
+            ${pack.mcVersions.map(v => `<span style="background:var(--bg-2);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px;color:var(--text-1);">${esc(v)}</span>`).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      body.innerHTML = header + desc + versions;
+
+      const footer = document.createElement('div');
+      footer.style.display = 'flex';
+      footer.style.gap = '10px';
+      footer.style.justifyContent = 'flex-end';
+      footer.innerHTML = `
+        ${pack.url ? `<button class="btn outline" id="modal-preview-site">Открыть сайт в браузере</button>` : ''}
+        <button class="btn primary" id="modal-preview-install">Установить</button>
+        <button class="btn ghost" id="modal-preview-close">Закрыть</button>
+      `;
+
+      const modal = Modal.open({
+        title: esc(pack.title || 'Подробнее'),
+        body,
+        footer,
+        size: 'large'
+      });
+
+      const siteBtn = footer.querySelector('#modal-preview-site');
+      if (siteBtn && pack.url) {
+        siteBtn.onclick = () => window.api.shell.openExternal(pack.url);
+      }
+      footer.querySelector('#modal-preview-close').onclick = () => modal.close();
+      footer.querySelector('#modal-preview-install').onclick = () => {
+        modal.close();
+        this.installPack(pack);
+      };
+    },
+
+    async installPack(item) {
+      const target = this.currentTarget();
+      if (!target) { Toast.error('Нет версии', 'Сначала установите и выберите версию Minecraft.'); return; }
+      checkMinecraftInsideDisclaimer(item, async () => {
+        const rootDir = target.rootDir || target.path;
+        try {
+          await window.api.invoke('resourcepacks:install', {
+            ...item,
+            rootDir,
+            gameDir: rootDir,
+            mcVersion: target.minecraft || target.id || this.mcVersion,
+            loader: target.loader && target.loader !== 'vanilla' ? target.loader : ''
+          });
+          Toast.success('Ресурспак установлен', `${rootDir}/resourcepacks`);
+          this.search();
+        } catch (e) { Toast.error('Ошибка', e.message); }
+      });
+    },
+
     async search() {
       this.updateContext();
       const list = document.getElementById('rp-list');
@@ -187,28 +301,12 @@ window.Views = window.Views || {};
             </div>
             <div class="actions">
               <button class="btn ${already ? 'ghost' : 'primary'}" style="padding:6px 14px;font-size:12px;" data-install="${idx}" ${hasTarget && !already ? '' : 'disabled'}>${already ? 'Установлено' : 'Установить'}</button>
-              ${item.url ? `<a href="${item.url}" class="btn ghost" style="padding:6px 14px;font-size:12px;text-decoration:none;" data-external>Подробнее</a>` : ''}
+              <button class="btn ghost" style="padding:6px 14px;font-size:12px;" data-preview="${idx}">Подробнее</button>
             </div>
           </div>`;
         }).join('');
-        list.querySelectorAll('[data-install]').forEach(b => b.onclick = async () => {
-          const item = r.hits[Number(b.dataset.install)];
-          const target = this.currentTarget();
-          if (!target) { Toast.error('Нет версии', 'Сначала установите и выберите версию Minecraft.'); return; }
-          const rootDir = target.rootDir || target.path;
-          try {
-            await window.api.invoke('resourcepacks:install', {
-              ...item,
-              rootDir,
-              gameDir: rootDir,
-              mcVersion: target.minecraft || target.id || this.mcVersion,
-              loader: target.loader && target.loader !== 'vanilla' ? target.loader : ''
-            });
-            Toast.success('Ресурспак установлен', `${rootDir}/resourcepacks`);
-            this.search();
-          } catch (e) { Toast.error('Ошибка', e.message); }
-        });
-        list.querySelectorAll('[data-external]').forEach(a => a.onclick = (e) => { e.preventDefault(); window.api.shell.openExternal(a.href); });
+        list.querySelectorAll('[data-install]').forEach(b => b.onclick = () => this.installPack(r.hits[Number(b.dataset.install)]));
+        list.querySelectorAll('[data-preview]').forEach(b => b.onclick = () => this.showPreview(r.hits[Number(b.dataset.preview)]));
       } catch (e) { list.innerHTML = `<div class="empty-state">Ошибка: ${esc(e.message)}</div>`; }
     },
 

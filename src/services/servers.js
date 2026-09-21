@@ -25,9 +25,11 @@ const serversFilePath = () => path.join(defaultGameDir(), 'nexus-servers.json');
 
 const DEFAULT_SERVERS = [
   { id: 'hypixel', name: 'Hypixel Network', address: 'mc.hypixel.net' },
-  { id: 'cubecraft', name: 'CubeCraft Games', address: 'play.cubecraft.net' },
+  { id: 'mineblaze', name: 'MineBlaze', address: 'play.mineblaze.ru' },
+  { id: 'funtime', name: 'Funtime', address: 'mc.funtime.su' },
   { id: 'reallyworld', name: 'ReallyWorld', address: 'mc.reallyworld.ru' },
-  { id: 'mineblaze', name: 'MineBlaze', address: 'play.mineblaze.ru' }
+  { id: 'cubecraft', name: 'CubeCraft Games', address: 'play.cubecraft.net' },
+  { id: 'workshop47', name: 'Мастерская 47', address: 'mc.workshop47.pro' }
 ];
 
 function writeVarInt(value) {
@@ -154,7 +156,7 @@ async function pingHttpFallback(address) {
   const startTime = Date.now();
   const res = await axios.get(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(address)}`, {
     timeout: 3500,
-    headers: { 'User-Agent': 'NexusLauncher/2026.1.1' }
+    headers: { 'User-Agent': 'NexusLauncher/2026.1.2' }
   });
   const data = res.data;
   const latency = Date.now() - startTime;
@@ -215,6 +217,9 @@ async function list() {
       }
     }
   } catch {}
+  servers = servers.filter(s => s.id !== 'lololoshka' && s.id !== 'vimeworld');
+  const w47 = servers.find(s => s.id === 'workshop47');
+  if (w47) w47.address = 'mc.workshop47.pro';
   return servers;
 }
 

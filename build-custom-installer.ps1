@@ -16,5 +16,5 @@ Write-Host "==> [3/3] Building custom installer UI..." -ForegroundColor Cyan
 Remove-Item -Path "dist\custom-installer\*" -Recurse -Force -ErrorAction SilentlyContinue
 powershell -Command "Set-Location installer-ui; & '$nodePath' ..\node_modules\electron-builder\cli.js --win"
 
-Copy-Item -Path "dist\custom-installer\Nexus Launcher Setup 2026.1.1.exe" -Destination "dist\Nexus Launcher Setup 2026.1.1.exe" -Force
-Write-Host "==> [SUCCESS] Modern installer built at: dist\Nexus Launcher Setup 2026.1.1.exe" -ForegroundColor Green
+Copy-Item -Path "dist\custom-installer\Nexus Launcher Setup 2026.1.2.exe" -Destination "dist\Nexus Launcher Setup 2026.1.2.exe" -Force
+Write-Host "==> [SUCCESS] Modern installer built at: dist\Nexus Launcher Setup 2026.1.2.exe" -ForegroundColor Green

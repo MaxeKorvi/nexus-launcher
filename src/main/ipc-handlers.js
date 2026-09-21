@@ -8,6 +8,35 @@
 
 const { ipcMain } = require('electron');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+// Ensure wallpapers from 'фоны' are synced to assets/backgrounds
+try {
+  const root = path.join(__dirname, '..', '..');
+  const fonyDir = path.join(root, 'фоны');
+  const targetBgDir = path.join(__dirname, '..', 'renderer', 'assets', 'backgrounds');
+  if (fs.existsSync(fonyDir)) {
+    fs.mkdirSync(targetBgDir, { recursive: true });
+    const wallpaperMap = [
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_43 (1).png', dst: 'bg-valley.png' },
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_44 (2).png', dst: 'bg-sakura.png' },
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_44 (3).png', dst: 'bg-forge.png' },
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_44 (4).png', dst: 'bg-aurora.png' },
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_45 (5).png', dst: 'bg-end.png' },
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_45 (6).png', dst: 'bg-desert.png' },
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_45 (7).png', dst: 'bg-bastion.png' },
+      { src: 'ChatGPT Image 21 сент. 2026 г., 10_19_45 (8).png', dst: 'bg-skylands.png' }
+    ];
+    for (const item of wallpaperMap) {
+      const srcPath = path.join(fonyDir, item.src);
+      const dstPath = path.join(targetBgDir, item.dst);
+      if (fs.existsSync(srcPath) && (!fs.existsSync(dstPath) || fs.statSync(srcPath).mtimeMs > fs.statSync(dstPath).mtimeMs)) {
+        try { fs.copyFileSync(srcPath, dstPath); } catch {}
+      }
+    }
+  }
+} catch {}
 
 // ─── Accounts service (Microsoft OAuth, Ely.by, Local) ───────
 const Accounts = require('../services/accounts');
@@ -144,6 +173,7 @@ ipcMain.handle('worlds:backup', (_e, worldName, rootDir, note) => Worlds.backup(
 ipcMain.handle('worlds:list-backups', (_e, rootDir) => Worlds.listBackups(rootDir));
 ipcMain.handle('worlds:restore', (_e, backupFile, rootDir, targetName) => Worlds.restore(backupFile, rootDir, targetName));
 ipcMain.handle('worlds:delete-backup', (_e, backupFile, rootDir) => Worlds.deleteBackup(backupFile, rootDir));
+ipcMain.handle('worlds:import', (_e, { sourcePath, rootDir, password }) => Worlds.importWorld(sourcePath, rootDir, password));
 
 // ─── Servers & Ping Monitor (TCP SLP + mcstatus fallback) ─────────────────────
 const Servers = require('../services/servers');

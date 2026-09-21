@@ -107,6 +107,7 @@ const ALLOWED_CHANNELS = {
   'worlds:list-backups': (rootDir) => ipcRenderer.invoke('worlds:list-backups', rootDir),
   'worlds:restore': (backupFile, rootDir, targetName) => ipcRenderer.invoke('worlds:restore', backupFile, rootDir, targetName),
   'worlds:delete-backup': (backupFile, rootDir) => ipcRenderer.invoke('worlds:delete-backup', backupFile, rootDir),
+  'worlds:import': (data) => ipcRenderer.invoke('worlds:import', data),
 
   // Servers
   'servers:list': () => ipcRenderer.invoke('servers:list'),

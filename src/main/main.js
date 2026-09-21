@@ -4,6 +4,9 @@ const { app, BrowserWindow, ipcMain, shell, session, nativeTheme, Menu, Tray, cl
 const path = require('path');
 const url = require('url');
 
+const fs = require('fs');
+const settings = require('../services/settings');
+
 // Detect session type: Wayland vs X11
 const isWayland = process.env.XDG_SESSION_TYPE === 'wayland' || !!process.env.WAYLAND_DISPLAY;
 const isFlatpak = !!process.env.FLATPAK_ID;
@@ -25,9 +28,22 @@ let manualMaximized = false;
 let restoreBounds = null;
 app.isQuitting = false;
 
+function getLauncherIconPath() {
+  const assetIcon = path.join(__dirname, '..', 'renderer', 'assets', 'icon.png');
+  const rootIcon = path.join(__dirname, '..', '..', 'icon.png');
+  try {
+    if (fs.existsSync(rootIcon) && !fs.existsSync(assetIcon)) {
+      fs.copyFileSync(rootIcon, assetIcon);
+    }
+  } catch {}
+  if (fs.existsSync(assetIcon)) return assetIcon;
+  if (fs.existsSync(rootIcon)) return rootIcon;
+  return path.join(__dirname, '..', 'renderer', 'assets', 'nexus-logo.png');
+}
+
 function ensureTray() {
   if (tray) return tray;
-  const iconPath = path.join(__dirname, '..', 'renderer', 'assets', 'nexus-logo.png');
+  const iconPath = getLauncherIconPath();
   tray = new Tray(iconPath);
   tray.setToolTip('Nexus Launcher');
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -35,14 +51,40 @@ function ensureTray() {
     { type: 'separator' },
     { label: 'Выход', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
-  tray.on('double-click', () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } });
+  tray.on('double-click', () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); if (mainWindow.isMinimized()) mainWindow.restore(); } });
+  tray.on('click', () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); if (mainWindow.isMinimized()) mainWindow.restore(); } });
   return tray;
 }
 
 function createMainWindow() {
   const { width: screenW, height: screenH } = require('electron').screen.getPrimaryDisplay().workAreaSize;
-  const w = Math.min(1280, Math.max(1000, Math.floor(screenW * 0.78)));
-  const h = Math.min(800, Math.max(640, Math.floor(screenH * 0.82)));
+  const w = Math.min(1500, Math.max(1080, Math.floor(screenW * 0.78)));
+  const h = Math.min(940, Math.max(680, Math.floor(screenH * 0.86)));
+
+  const appIcon = getLauncherIconPath();
+
+  // Read theme settings for dynamic splash screen color
+  let themeAccent = '#00e676';
+  try {
+    const s = settings.get();
+    const THEME_ACCENTS = {
+      emerald: '#00e676',
+      amethyst: '#a855f7',
+      sunset: '#f97316',
+      ice: '#38bdf8',
+      cosmos: '#6366f1',
+      minimal: '#10b981',
+      amoled: '#00e676',
+      neon: '#00e5ff',
+      dracula: '#bd93f9',
+      nord: '#88c0d0',
+      cyberpunk: '#fcee0a',
+      crimson: '#ff3366',
+      amber: '#ffb300'
+    };
+    const customAccent = s.customAccentColor || (s.customTheme && s.customTheme.accent);
+    themeAccent = customAccent || THEME_ACCENTS[s.theme] || '#00e676';
+  } catch {}
 
   const splashStartTime = Date.now();
   let splashWindow = new BrowserWindow({
@@ -55,14 +97,19 @@ function createMainWindow() {
     show: false,
     skipTaskbar: true,
     alwaysOnTop: true,
-    icon: path.join(__dirname, '..', 'renderer', 'assets', 'nexus-logo.png'),
+    icon: appIcon,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
     }
   });
 
-  splashWindow.loadFile(path.join(__dirname, '..', 'renderer', 'splash.html'));
+  splashWindow.loadFile(path.join(__dirname, '..', 'renderer', 'splash.html'), {
+    query: {
+      accent: themeAccent,
+      version: app.getVersion() || '2026.1.2'
+    }
+  });
   splashWindow.once('ready-to-show', () => {
     if (splashWindow && !splashWindow.isDestroyed()) splashWindow.show();
   });
@@ -79,7 +126,7 @@ function createMainWindow() {
     titleBarStyle: 'hidden',
     titleBarOverlay: false,
     show: false,
-    icon: path.join(__dirname, '..', 'renderer', 'assets', 'nexus-logo.png'),
+    icon: appIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

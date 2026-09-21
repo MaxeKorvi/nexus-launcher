@@ -31,6 +31,35 @@ window.Views = window.Views || {};
     });
   }
 
+  function checkMinecraftInsideDisclaimer(item, onConfirm) {
+    const isMcInside = item && (item.source === 'minecraft-inside' || (item.url && item.url.includes('minecraft-inside.ru')));
+    if (!isMcInside) {
+      onConfirm();
+      return;
+    }
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div style="font-size:13px;line-height:1.6;color:var(--text-1);">
+        <p style="margin-top:0;"><strong>Внимание:</strong> Вы собираетесь установить контент из источника <strong>Minecraft Inside</strong>.</p>
+        <div style="background:rgba(255,180,0,0.1);border-left:3px solid #ffb400;padding:10px 12px;border-radius:4px;margin:12px 0;color:var(--text-1);font-size:12px;">
+          Файлы на сторонних ресурсах загружаются авторами модификаций. Nexus Launcher рекомендует убедиться в безопасности контента перед запуском.
+        </div>
+        <p style="color:var(--text-2);font-size:12px;margin-bottom:0;">Желаете продолжить установку?</p>
+      </div>
+    `;
+    const footer = document.createElement('div');
+    footer.innerHTML = `
+      <button class="btn primary" id="mc-inside-continue">Продолжить</button>
+      <button class="btn outline" id="mc-inside-cancel">Отмена</button>
+    `;
+    const modal = Modal.open({ title: 'Предупреждение источника', body, footer, size: 'normal' });
+    footer.querySelector('#mc-inside-cancel').onclick = () => modal.close();
+    footer.querySelector('#mc-inside-continue').onclick = () => {
+      modal.close();
+      onConfirm();
+    };
+  }
+
   window.Views.mods = {
     query: '',
     page: 0,
@@ -259,32 +288,101 @@ window.Views = window.Views || {};
 
       footer.querySelector('#mod-install-ok').onclick = async () => {
         const target = targets.find(v => targetKey(v) === selectTarget.value) || current;
-        this.applyTarget(target, true);
-        const rootDir = target.rootDir || target.path;
-        let versionId = undefined;
-        const fileSelect = body.querySelector('#mod-file-version');
-        if (fileSelect && versionList[Number(fileSelect.value)]) versionId = versionList[Number(fileSelect.value)].id;
+        checkMinecraftInsideDisclaimer(mod, async () => {
+          this.applyTarget(target, true);
+          const rootDir = target.rootDir || target.path;
+          let versionId = undefined;
+          const fileSelect = body.querySelector('#mod-file-version');
+          if (fileSelect && versionList[Number(fileSelect.value)]) versionId = versionList[Number(fileSelect.value)].id;
 
-        Toast.info('Установка', `${mod.title || 'Мод'} → ${rootDir}/mods`);
-        try {
-          const result = await window.api.invoke('mods:install', {
-            ...mod,
-            versionId,
-            mcVersion: target.minecraft || target.id || this.mcVersion,
-            loader: target.loader && target.loader !== 'vanilla' ? target.loader : '',
-            rootDir,
-            gameDir: rootDir
-          });
-          if (result && result.warning) {
-            Toast.show({ title: 'Внимание!', message: result.warning, type: 'error', duration: 8000 });
-          } else {
-            Toast.success('Мод установлен', `${rootDir}/mods`);
+          Toast.info('Установка', `${mod.title || 'Мод'} → ${rootDir}/mods`);
+          try {
+            const result = await window.api.invoke('mods:install', {
+              ...mod,
+              versionId,
+              mcVersion: target.minecraft || target.id || this.mcVersion,
+              loader: target.loader && target.loader !== 'vanilla' ? target.loader : '',
+              rootDir,
+              gameDir: rootDir
+            });
+            if (result && result.warning) {
+              Toast.show({ title: 'Внимание!', message: result.warning, type: 'error', duration: 8000 });
+            } else {
+              Toast.success('Мод установлен', `${rootDir}/mods`);
+            }
+            modal.close();
+            this.search();
+          } catch (e) {
+            Toast.error('Ошибка', e.message);
           }
-          modal.close();
-          this.search();
-        } catch (e) {
-          Toast.error('Ошибка', e.message);
-        }
+        });
+      };
+    },
+
+    showPreview(mod) {
+      const body = document.createElement('div');
+      body.style.display = 'flex';
+      body.style.flexDirection = 'column';
+      body.style.gap = '14px';
+
+      const header = `
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:64px;height:64px;border-radius:10px;background:var(--bg-2);background-size:cover;background-position:center;flex-shrink:0;${mod.icon ? `background-image:url('${mod.icon}')` : ''}"></div>
+          <div style="flex:1;min-width:0;">
+            <h3 style="margin:0 0 4px;font-size:17px;color:var(--text-0);">${escapeHtml(mod.title || '')}</h3>
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">
+              Автор: <strong>${escapeHtml(mod.author || '—')}</strong> · Источник: <span class="badge" style="font-size:11px;padding:2px 6px;">${escapeHtml(sourceLabel(mod.source))}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-2);">
+              ${mod.downloads ? `<span>⬇ ${Number(mod.downloads).toLocaleString('ru-RU')} скачиваний</span>` : ''}
+              ${mod.loader ? `<span>⚙ ${escapeHtml(mod.loader)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const desc = `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;color:var(--text-1);max-height:220px;overflow-y:auto;white-space:pre-wrap;">
+          ${escapeHtml(mod.description || 'Описание отсутствует.')}
+        </div>
+      `;
+
+      const versions = mod.mcVersions && mod.mcVersions.length ? `
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:6px;">Поддерживаемые версии Minecraft:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:80px;overflow-y:auto;">
+            ${mod.mcVersions.map(v => `<span style="background:var(--bg-2);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px;color:var(--text-1);">${escapeHtml(v)}</span>`).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      body.innerHTML = header + desc + versions;
+
+      const footer = document.createElement('div');
+      footer.style.display = 'flex';
+      footer.style.gap = '10px';
+      footer.style.justifyContent = 'flex-end';
+      footer.innerHTML = `
+        ${mod.url ? `<button class="btn outline" id="modal-preview-site">Открыть сайт в браузере</button>` : ''}
+        <button class="btn primary" id="modal-preview-install">Установить</button>
+        <button class="btn ghost" id="modal-preview-close">Закрыть</button>
+      `;
+
+      const modal = Modal.open({
+        title: escapeHtml(mod.title || 'Подробнее'),
+        body,
+        footer,
+        size: 'large'
+      });
+
+      const siteBtn = footer.querySelector('#modal-preview-site');
+      if (siteBtn && mod.url) {
+        siteBtn.onclick = () => window.api.shell.openExternal(mod.url);
+      }
+      footer.querySelector('#modal-preview-close').onclick = () => modal.close();
+      footer.querySelector('#modal-preview-install').onclick = () => {
+        modal.close();
+        this.showInstallDialog(mod);
       };
     },
 
@@ -330,15 +428,13 @@ window.Views = window.Views || {};
             </div>
             <div class="actions">
               <button class="btn ${already ? 'ghost' : 'primary'}" style="padding:6px 14px;font-size:12px;" data-install="${idx}" ${hasTarget && !already ? '' : 'disabled'}>${already ? 'Установлено' : 'Выбрать и установить'}</button>
-              ${m.url ? `<a href="${m.url}" class="btn ghost" style="padding:6px 14px;font-size:12px;text-decoration:none;" data-external>Подробнее</a>` : ''}
+              <button class="btn ghost" style="padding:6px 14px;font-size:12px;" data-preview="${idx}">Подробнее</button>
             </div>
           </div>
         `;
         }).join('');
         list.querySelectorAll('[data-install]').forEach(b => b.onclick = () => this.showInstallDialog(r.hits[Number(b.dataset.install)]));
-        list.querySelectorAll('[data-external]').forEach(a => a.onclick = (e) => {
-          e.preventDefault(); window.api.shell.openExternal(a.href);
-        });
+        list.querySelectorAll('[data-preview]').forEach(b => b.onclick = () => this.showPreview(r.hits[Number(b.dataset.preview)]));
       } catch (e) {
         list.innerHTML = `<div class="empty-state">Ошибка: ${escapeHtml(e.message)}</div>`;
       }

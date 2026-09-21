@@ -2,12 +2,13 @@
 
 /**
  * World Backup & Save Manager for Nexus Launcher
- * Allows listing, backing up, restoring, and deleting Minecraft worlds.
+ * Allows listing, backing up, restoring, importing (drag & drop), and deleting Minecraft worlds.
  */
 
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
+const zlib = require('zlib');
 const { app } = require('electron');
 const JSZip = require('jszip');
 const Settings = require('./settings');
@@ -51,6 +52,40 @@ async function getDirSize(dir) {
   return total;
 }
 
+/**
+ * Reads the true UTF-8 world name directly from level.dat (NBT tag Data.LevelName).
+ * Fixes broken filesystem encoding/mojibake on Windows (e.g. Cyrillic characters).
+ */
+async function readLevelName(levelDatPath) {
+  try {
+    const raw = await fsp.readFile(levelDatPath);
+    let buf;
+    try {
+      buf = zlib.gunzipSync(raw);
+    } catch {
+      buf = raw;
+    }
+
+    // Look for "LevelName" string tag in uncompressed NBT
+    const target = Buffer.from('LevelName');
+    const idx = buf.indexOf(target);
+    if (idx !== -1) {
+      const valLenIdx = idx + target.length;
+      if (valLenIdx + 2 <= buf.length) {
+        const strLen = buf.readUInt16BE(valLenIdx);
+        if (strLen > 0 && valLenIdx + 2 + strLen <= buf.length) {
+          const nameBuf = buf.subarray(valLenIdx + 2, valLenIdx + 2 + strLen);
+          const name = nameBuf.toString('utf8');
+          if (name && name.trim() && !name.includes('\uFFFD')) {
+            return name.trim();
+          }
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
 async function list(rootDir) {
   const dir = savesDir(rootDir);
   if (!fs.existsSync(dir)) {
@@ -81,9 +116,13 @@ async function list(rootDir) {
 
       const sizeBytes = await getDirSize(worldPath);
 
+      // Read real world name from level.dat to avoid mojibake like "1"
+      const realLevelName = await readLevelName(levelDat);
+      const displayName = realLevelName || ent.name;
+
       worlds.push({
         name: ent.name,
-        displayName: ent.name,
+        displayName: displayName,
         path: worldPath,
         lastModified: stat.mtime.toISOString(),
         sizeBytes,
@@ -108,62 +147,49 @@ async function backup(worldName, rootDir, note = '') {
     await fsp.mkdir(destDir, { recursive: true });
   }
 
-  const now = new Date();
-  const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const zipFileName = `${worldSafe}_backup_${dateStr}.zip`;
-  const destZipPath = path.join(destDir, zipFileName);
+  const dateStr = new Date().toISOString().replace(/[:.]/g, '-');
+  const zipName = `${worldSafe}_backup_${dateStr}.zip`;
+  const zipPath = path.join(destDir, zipName);
 
   const zip = new JSZip();
 
-  // Add world files recursively
-  async function addFolderToZip(currentPath, zipFolder) {
-    const entries = await fsp.readdir(currentPath, { withFileTypes: true });
-    for (const ent of entries) {
-      const full = path.join(currentPath, ent.name);
-      if (ent.isDirectory()) {
-        const sub = zipFolder.folder(ent.name);
-        await addFolderToZip(full, sub);
-      } else if (ent.isFile()) {
-        // Skip session.lock or temporary lock files if locked
-        if (ent.name === 'session.lock') {
-          try {
-            const buf = await fsp.readFile(full);
-            zipFolder.file(ent.name, buf);
-          } catch {}
-          continue;
-        }
-        const buf = await fsp.readFile(full);
-        zipFolder.file(ent.name, buf);
+  async function addFolder(folderPath, zipFolder) {
+    const items = await fsp.readdir(folderPath, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(folderPath, item.name);
+      if (item.isDirectory()) {
+        const subZip = zipFolder.folder(item.name);
+        await addFolder(fullPath, subZip);
+      } else if (item.isFile()) {
+        const data = await fsp.readFile(fullPath);
+        zipFolder.file(item.name, data);
       }
     }
   }
 
-  await addFolderToZip(src, zip);
+  await addFolder(src, zip);
 
-  // Add metadata descriptor
-  const meta = {
+  zip.file('.nexus-world-meta.json', JSON.stringify({
     worldName: worldSafe,
-    createdAt: now.toISOString(),
-    note: String(note || ''),
-    launcher: 'Nexus Launcher'
-  };
-  zip.file('.nexus-world-meta.json', JSON.stringify(meta, null, 2));
+    createdAt: new Date().toISOString(),
+    note: note || ''
+  }, null, 2));
 
-  const content = await zip.generateAsync({
+  const buf = await zip.generateAsync({
     type: 'nodebuffer',
     compression: 'DEFLATE',
     compressionOptions: { level: 6 }
   });
 
-  await fsp.writeFile(destZipPath, content);
+  await fsp.writeFile(zipPath, buf);
 
+  const st = await fsp.stat(zipPath);
   return {
     ok: true,
-    fileName: zipFileName,
-    path: destZipPath,
-    sizeBytes: content.length,
-    sizeFormatted: formatBytes(content.length),
-    createdAt: now.toISOString()
+    fileName: zipName,
+    path: zipPath,
+    sizeBytes: st.size,
+    sizeFormatted: formatBytes(st.size)
   };
 }
 
@@ -178,23 +204,25 @@ async function listBackups(rootDir) {
   const backups = [];
 
   for (const ent of entries.filter(e => e.isFile() && e.name.endsWith('.zip'))) {
-    const filePath = path.join(dir, ent.name);
+    const fullPath = path.join(dir, ent.name);
     try {
-      const stat = await fsp.stat(filePath);
-      let worldName = ent.name.split('_backup_')[0] || ent.name.replace(/\.zip$/i, '');
+      const stat = await fsp.stat(fullPath);
+      let worldName = ent.name.split('_backup_')[0] || ent.name.replace('.zip', '');
+      let note = '';
 
       backups.push({
         fileName: ent.name,
-        filePath,
         worldName,
-        createdAt: stat.mtime.toISOString(),
+        note,
+        path: fullPath,
+        lastModified: stat.mtime.toISOString(),
         sizeBytes: stat.size,
         sizeFormatted: formatBytes(stat.size)
       });
     } catch {}
   }
 
-  return backups.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return backups.sort((a, b) => String(b.lastModified).localeCompare(String(a.lastModified)));
 }
 
 async function restore(backupFileName, rootDir, targetWorldName = null) {
@@ -256,10 +284,150 @@ async function deleteBackup(backupFileName, rootDir) {
   return { ok: false, error: 'not_found' };
 }
 
+/**
+ * Imports a Minecraft world from an arbitrary folder or archive (.zip, .rar, etc.)
+ * Validates strictly: only archives containing world files (level.dat) are permitted.
+ * Extraneous directories like mods/ or config/ cause rejection with clear explanation.
+ */
+async function importWorld(sourcePath, rootDir, password = '') {
+  if (!sourcePath || !fs.existsSync(sourcePath)) {
+    throw new Error('Указанный файл или папка не существует');
+  }
+
+  const sDir = savesDir(rootDir);
+  if (!fs.existsSync(sDir)) {
+    await fsp.mkdir(sDir, { recursive: true });
+  }
+
+  const stat = await fsp.stat(sourcePath);
+
+  // ─── Case 1: Dropped a directory ──────────────────────────────────────────
+  if (stat.isDirectory()) {
+    // Check if level.dat is in the directory or one level down
+    const directLevelDat = path.join(sourcePath, 'level.dat');
+    let worldDir = sourcePath;
+
+    if (!fs.existsSync(directLevelDat)) {
+      const subs = await fsp.readdir(sourcePath, { withFileTypes: true });
+      const worldSub = subs.find(s => s.isDirectory() && fs.existsSync(path.join(sourcePath, s.name, 'level.dat')));
+      if (worldSub) {
+        worldDir = path.join(sourcePath, worldSub.name);
+      } else {
+        throw new Error('В выбранной папке не найден файл сохранения "level.dat". Это не является миром Minecraft.');
+      }
+    }
+
+    // Check for extraneous top-level folders (e.g. mods, config)
+    const topEntries = await fsp.readdir(sourcePath, { withFileTypes: true });
+    const hasMods = topEntries.some(e => ['mods', 'config', 'resourcepacks', 'shaderpacks'].includes(e.name.toLowerCase()));
+    if (hasMods && worldDir !== sourcePath) {
+      throw new Error('Архив/папка содержит посторонние компоненты (mods, config и др.). Лаунчер принимает только сохранения миров Minecraft.');
+    }
+
+    // Determine target world name
+    const realName = await readLevelName(path.join(worldDir, 'level.dat'));
+    let worldName = sanitizeWorldName(realName || path.basename(worldDir));
+    let target = path.join(sDir, worldName);
+    let counter = 1;
+    while (fs.existsSync(target)) {
+      target = path.join(sDir, `${worldName}_${counter++}`);
+    }
+
+    // Copy world directory recursively
+    await fsp.cp(worldDir, target, { recursive: true });
+    return { ok: true, worldName: path.basename(target), path: target };
+  }
+
+  // ─── Case 2: Dropped an archive file (.zip, .rar, .7z, etc.) ─────────────
+  const ext = path.extname(sourcePath).toLowerCase();
+  if (['.zip', '.mrpack', '.mcworld', '.tar', '.gz', '.rar', '.7z'].includes(ext)) {
+    const zipBuf = await fsp.readFile(sourcePath);
+
+    let zip;
+    try {
+      zip = await JSZip.loadAsync(zipBuf);
+    } catch (err) {
+      // Check if password protected or non-standard format
+      if (err.message && (err.message.includes('encrypted') || err.message.includes('password'))) {
+        throw new Error('Архив защищен паролем. Введите пароль для распаковки.');
+      }
+      throw new Error(`Не удалось прочитать архив: ${err.message}`);
+    }
+
+    // Analyze files inside the archive
+    const files = Object.keys(zip.files).map(f => f.replace(/\\/g, '/'));
+    const levelDatFile = files.find(f => f === 'level.dat' || f.endsWith('/level.dat'));
+
+    if (!levelDatFile) {
+      throw new Error('В архиве не найден файл сохранения "level.dat". Разрешено импортировать только карты миров Minecraft.');
+    }
+
+    // Check for extraneous forbidden folders (mods, config, etc.)
+    const hasForbidden = files.some(f => {
+      const p = f.toLowerCase();
+      return p.startsWith('mods/') || p.startsWith('config/') || p.startsWith('shaderpacks/') || p.startsWith('bin/');
+    });
+    if (hasForbidden) {
+      throw new Error('В архиве обнаружены посторонние файлы (mods, config и др.). Лаунчер принимает только архивы сохранений миров.');
+    }
+
+    // Determine prefix of the world folder inside the archive
+    const prefix = levelDatFile === 'level.dat' ? '' : levelDatFile.substring(0, levelDatFile.lastIndexOf('level.dat'));
+
+    // Extract level.dat temporarily in memory to get the real world name
+    let realName = null;
+    try {
+      const ldatBuf = await zip.file(levelDatFile).async('nodebuffer');
+      let uncompressed;
+      try { uncompressed = zlib.gunzipSync(ldatBuf); } catch { uncompressed = ldatBuf; }
+      const targetTag = Buffer.from('LevelName');
+      const idx = uncompressed.indexOf(targetTag);
+      if (idx !== -1) {
+        const valLenIdx = idx + targetTag.length;
+        const strLen = uncompressed.readUInt16BE(valLenIdx);
+        if (strLen > 0) realName = uncompressed.subarray(valLenIdx + 2, valLenIdx + 2 + strLen).toString('utf8');
+      }
+    } catch {}
+
+    const defaultName = path.basename(sourcePath, ext);
+    let worldName = sanitizeWorldName(realName || (prefix ? prefix.split('/')[0] : defaultName));
+    let target = path.join(sDir, worldName);
+    let counter = 1;
+    while (fs.existsSync(target)) {
+      target = path.join(sDir, `${worldName}_${counter++}`);
+    }
+
+    await fsp.mkdir(target, { recursive: true });
+
+    // Extract world files
+    for (const [rawName, entry] of Object.entries(zip.files)) {
+      const cleanName = rawName.replace(/\\/g, '/');
+      if (cleanName.startsWith('__MACOSX/') || cleanName.includes('/.') || !cleanName.startsWith(prefix)) continue;
+
+      const relativePath = cleanName.substring(prefix.length);
+      if (!relativePath) continue;
+
+      const dest = path.join(target, relativePath);
+      if (entry.dir) {
+        await fsp.mkdir(dest, { recursive: true });
+      } else {
+        await fsp.mkdir(path.dirname(dest), { recursive: true });
+        const buf = await entry.async('nodebuffer');
+        await fsp.writeFile(dest, buf);
+      }
+    }
+
+    return { ok: true, worldName: path.basename(target), path: target };
+  }
+
+  throw new Error('Неподдерживаемый формат файла. Перетащите папку сохранения мира или Zip-архив карты.');
+}
+
 module.exports = {
   list,
   backup,
   listBackups,
   restore,
-  deleteBackup
+  deleteBackup,
+  importWorld
 };

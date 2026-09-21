@@ -1,6 +1,117 @@
-/* =========================================================================
- * App entry — router, init, UI event wiring
- * ========================================================================= */
+const THEME_PALETTES = {
+  valley: {
+    accent: '#10b981',
+    accentHi: '#34d399',
+    bg: '#050d09',
+    card: 'rgba(10, 26, 17, 0.85)',
+    text: '#f0fdf4',
+    image: 'assets/backgrounds/bg-valley.png'
+  },
+  sakura: {
+    accent: '#f472b6',
+    accentHi: '#fb7185',
+    bg: '#0d050a',
+    card: 'rgba(28, 12, 22, 0.85)',
+    text: '#fdf2f8',
+    image: 'assets/backgrounds/bg-sakura.png'
+  },
+  forge: {
+    accent: '#f43f5e',
+    accentHi: '#fb7185',
+    bg: '#0d0407',
+    card: 'rgba(28, 8, 16, 0.85)',
+    text: '#fff1f2',
+    image: 'assets/backgrounds/bg-forge.png'
+  },
+  aurora: {
+    accent: '#06b6d4',
+    accentHi: '#22d3ee',
+    bg: '#030a12',
+    card: 'rgba(8, 22, 36, 0.85)',
+    text: '#ecfeff',
+    image: 'assets/backgrounds/bg-aurora.png'
+  },
+  end: {
+    accent: '#a855f7',
+    accentHi: '#c084fc',
+    bg: '#080312',
+    card: 'rgba(18, 8, 36, 0.85)',
+    text: '#faf5ff',
+    image: 'assets/backgrounds/bg-end.png'
+  },
+  desert: {
+    accent: '#f59e0b',
+    accentHi: '#fbbf24',
+    bg: '#0f0a03',
+    card: 'rgba(32, 20, 6, 0.85)',
+    text: '#fffbeb',
+    image: 'assets/backgrounds/bg-desert.png'
+  },
+  bastion: {
+    accent: '#f97316',
+    accentHi: '#fb923c',
+    bg: '#0f0502',
+    card: 'rgba(34, 12, 6, 0.85)',
+    text: '#fff7ed',
+    image: 'assets/backgrounds/bg-bastion.png'
+  },
+  skylands: {
+    accent: '#38bdf8',
+    accentHi: '#60a5fa',
+    bg: '#040b14',
+    card: 'rgba(10, 24, 42, 0.85)',
+    text: '#f0f9ff',
+    image: 'assets/backgrounds/bg-skylands.png'
+  },
+  emerald: {
+    accent: '#00e676',
+    accentHi: '#10b981',
+    bg: '#040906',
+    card: 'rgba(8, 20, 14, 0.85)',
+    text: '#f0fdf4',
+    image: 'assets/backgrounds/bg-valley.png'
+  },
+  amethyst: {
+    accent: '#a855f7',
+    accentHi: '#c084fc',
+    bg: '#07030f',
+    card: 'rgba(20, 10, 36, 0.85)',
+    text: '#faf5ff',
+    image: 'assets/backgrounds/bg-end.png'
+  },
+  sunset: {
+    accent: '#f97316',
+    accentHi: '#fb923c',
+    bg: '#0e0602',
+    card: 'rgba(32, 14, 6, 0.85)',
+    text: '#fff7ed',
+    image: 'assets/backgrounds/bg-bastion.png'
+  },
+  ice: {
+    accent: '#38bdf8',
+    accentHi: '#7dd3fc',
+    bg: '#03070f',
+    card: 'rgba(8, 18, 32, 0.85)',
+    text: '#f0f9ff',
+    image: 'assets/backgrounds/bg-aurora.png'
+  },
+  cosmos: {
+    accent: '#6366f1',
+    accentHi: '#818cf8',
+    bg: '#020309',
+    card: 'rgba(10, 12, 28, 0.85)',
+    text: '#eef2ff',
+    image: 'assets/backgrounds/bg-skylands.png'
+  },
+  minimal: {
+    accent: '#10b981',
+    accentHi: '#34d399',
+    bg: '#090a09',
+    card: 'rgba(18, 19, 18, 0.85)',
+    text: '#f3f4f6',
+    image: 'assets/backgrounds/bg-valley.png'
+  }
+};
 
 window.App = {
   currentView: null,
@@ -17,6 +128,13 @@ window.App = {
     this.bindLiquidGlass();
     this.bindVersionProgress();
     this.bindAutoScaling();
+
+    // Persist selected version across restarts
+    Store.on('selectedVersion', (ver) => {
+      if (ver && ver !== '—') {
+        window.api.invoke('settings:set', 'lastSelectedVersion', ver).catch(() => {});
+      }
+    });
 
     // Subscribe before the main process reveals the window.
     window.api.win.onReady(() => {});
@@ -40,44 +158,62 @@ window.App = {
   async applyRuntimeSettings(settings = null) {
     try {
       const s = settings || await window.api.invoke('settings:get');
-      document.body.classList.toggle('light-theme', s.theme === 'light');
-      document.body.classList.toggle('theme-glass-dark', s.theme === 'glass-dark');
-      document.body.classList.toggle('theme-acrylic', s.theme === 'acrylic');
-      document.body.classList.toggle('theme-emerald', s.theme === 'emerald');
-      document.body.classList.toggle('theme-crimson', s.theme === 'crimson');
-      document.body.classList.toggle('theme-sapphire', s.theme === 'sapphire');
-      document.body.classList.toggle('theme-amber', s.theme === 'amber');
-      document.body.classList.toggle('theme-amethyst', s.theme === 'amethyst');
-      document.body.classList.toggle('theme-custom', s.theme === 'custom');
-      document.body.classList.toggle('no-animations', s.animations === false);
+      const themeId = s.theme || 'emerald';
 
-      if (s.theme === 'custom' && s.customTheme) {
-        const ct = s.customTheme;
-        if (ct.accent) {
-          document.documentElement.style.setProperty('--accent', ct.accent);
-          document.documentElement.style.setProperty('--accent-hi', ct.accent);
-          document.documentElement.style.setProperty('--accent-glow', ct.accent + '40');
-          document.documentElement.style.setProperty('--glow', ct.accent + '25');
-          document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${ct.accent}33`);
-        }
-        if (ct.bg) document.documentElement.style.setProperty('--bg', ct.bg);
-        if (ct.card) document.documentElement.style.setProperty('--card', ct.card);
-        if (ct.text) document.documentElement.style.setProperty('--text', ct.text);
+      document.body.classList.remove(
+        'light-theme', 'theme-glass-dark', 'theme-acrylic',
+        'theme-emerald', 'theme-crimson', 'theme-sapphire', 'theme-amber',
+        'theme-amethyst', 'theme-sunset', 'theme-ice', 'theme-cosmos', 'theme-minimal', 'theme-custom'
+      );
+
+      if (themeId === 'light') document.body.classList.add('light-theme');
+      else if (themeId === 'glass-dark') document.body.classList.add('theme-glass-dark');
+      else if (themeId === 'acrylic') document.body.classList.add('theme-acrylic');
+      else if (themeId === 'custom') document.body.classList.add('theme-custom');
+      else document.body.classList.add(`theme-${themeId}`);
+
+      document.body.classList.toggle('no-animations', s.animations === false);
+      document.body.classList.toggle('no-glow', s.glowEffects === false);
+
+      if (s.interfaceStyle === 'glass') {
+        document.body.classList.add('glass-style');
+        document.body.classList.remove('matte-style');
+      } else if (s.interfaceStyle === 'matte') {
+        document.body.classList.add('matte-style');
+        document.body.classList.remove('glass-style');
       } else {
-        document.documentElement.style.removeProperty('--accent');
-        document.documentElement.style.removeProperty('--accent-hi');
-        document.documentElement.style.removeProperty('--accent-glow');
-        document.documentElement.style.removeProperty('--glow');
-        document.documentElement.style.removeProperty('--shadow-glow');
-        document.documentElement.style.removeProperty('--bg');
-        document.documentElement.style.removeProperty('--card');
-        document.documentElement.style.removeProperty('--text');
+        document.body.classList.remove('glass-style', 'matte-style');
+      }
+
+      const palette = THEME_PALETTES[themeId] || s.customTheme || null;
+      if (palette) {
+        const accent = (s.customAccentColor && themeId === 'custom') ? s.customAccentColor : palette.accent;
+        const accentHi = palette.accentHi || accent;
+        document.documentElement.style.setProperty('--accent', accent);
+        document.documentElement.style.setProperty('--accent-hi', accentHi);
+        document.documentElement.style.setProperty('--accent-glow', accent + '40');
+        document.documentElement.style.setProperty('--glow', accent + '25');
+        document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${accent}33`);
+        if (palette.bg) document.documentElement.style.setProperty('--bg', palette.bg);
+        if (palette.card) document.documentElement.style.setProperty('--card', palette.card);
+        if (palette.text) document.documentElement.style.setProperty('--text', palette.text);
+      } else if (s.customAccentColor) {
+        document.documentElement.style.setProperty('--accent', s.customAccentColor);
+        document.documentElement.style.setProperty('--accent-hi', s.customAccentColor);
       }
 
       if (s.consoleFontSize) {
         document.documentElement.style.setProperty('--console-font-size', `${s.consoleFontSize}px`);
       } else {
         document.documentElement.style.removeProperty('--console-font-size');
+      }
+
+      const bgImg = s.customBackground || (palette && palette.image);
+      if (bgImg) {
+        const centerContent = document.querySelector('.center-content');
+        if (centerContent) {
+          centerContent.style.backgroundImage = `linear-gradient(135deg, var(--glow), rgba(11,11,12,.76) 34%, rgba(4,4,5,.88)), url('${bgImg}')`;
+        }
       }
 
       if (s.consoleFontFamily) {
@@ -153,6 +289,16 @@ window.App = {
         if (target) this.navigate(target);
       };
     });
+
+    const userPill = document.getElementById('sidebar-user-pill');
+    if (userPill) userPill.onclick = () => this.navigate('accounts');
+    const userSettingsBtn = document.getElementById('sidebar-user-settings');
+    if (userSettingsBtn) {
+      userSettingsBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.navigate('accounts');
+      };
+    }
   },
 
   bindBackButton() {
@@ -176,10 +322,12 @@ window.App = {
     document.getElementById('btn-open-version-folder').onclick = folder;
     const heroBtnFolder = document.getElementById('hero-btn-folder');
     if (heroBtnFolder) heroBtnFolder.onclick = folder;
-
-    document.getElementById('account-select').onclick = () => this.navigate('accounts');
-    document.getElementById('version-select').onclick = () => this.navigate('versions');
-    document.getElementById('refresh-news').onclick = () => this.loadNews();
+    const accSelect = document.getElementById('account-select');
+    if (accSelect) accSelect.onclick = () => this.navigate('accounts');
+    const verSelect = document.getElementById('version-select');
+    if (verSelect) verSelect.onclick = () => this.navigate('versions');
+    const refNews = document.getElementById('refresh-news');
+    if (refNews) refNews.onclick = () => this.loadNews();
 
     const btnAllNews = document.getElementById('btn-all-news');
     if (btnAllNews) {
@@ -324,12 +472,23 @@ window.App = {
   },
 
   renderDownloadDrawer() {
+    const panel = document.getElementById('downloads-panel');
     const body = document.getElementById('downloads-panel-body');
     if (!body) return;
     const d = Store.get('downloads') || { active: [], queue: [], completed: [], paused: [] };
     const active = d.active || [];
     const queue = d.queue || [];
     const completed = d.completed || [];
+    const isDownloading = active.length > 0 || queue.length > 0;
+
+    if (panel) {
+      if (isDownloading || (this._downloadJustFinished && completed.length)) {
+        panel.style.display = 'block';
+      } else {
+        panel.style.display = 'none';
+      }
+    }
+
     const rows = active.length || queue.length ? [...active, ...queue.slice(0, 8)] : [];
     body.innerHTML = rows.length ? rows.map(item => {
       const received = item.received || 0;
@@ -411,6 +570,15 @@ window.App = {
     this.currentView = viewName;
     Store.set('currentView', viewName);
 
+    const mainContent = document.querySelector('main.content');
+    if (mainContent) {
+      if (viewName === 'home') {
+        mainContent.classList.remove('view-mode');
+      } else {
+        mainContent.classList.add('view-mode');
+      }
+    }
+
     // Highlight nav item
     document.querySelectorAll('.nav-item[data-view]').forEach(x => {
       x.classList.toggle('active', x.dataset.view === viewName);
@@ -432,31 +600,50 @@ window.App = {
     Store.set('accounts', accounts);
     const active = accounts.find(a => a.active) || accounts[0];
     const el = (id) => document.getElementById(id);
+    const sbAvatar = el('sidebar-user-avatar');
+    const sbName = el('sidebar-user-name');
+    const sbStatus = el('sidebar-user-status');
     if (active) {
       const avatarEl = el('user-avatar');
-      avatarEl.textContent = (active.nickname || '?').charAt(0).toUpperCase();
-      el('user-nick').textContent = active.nickname;
-      el('user-provider').textContent = active.type === 'microsoft' ? 'Microsoft аккаунт' : active.type === 'ely' ? 'Ely.by аккаунт' : 'Локальный аккаунт';
-      el('user-status').textContent = active.status === 'connected' ? '● В сети' : '● Оффлайн';
-      el('user-status').style.color = active.status === 'connected' ? 'var(--success)' : 'var(--error)';
-      el('bottom-account').textContent = active.nickname;
+      const initial = (active.nickname || '?').charAt(0).toUpperCase();
+      if (avatarEl) avatarEl.textContent = initial;
+      if (sbAvatar) sbAvatar.textContent = initial;
+      if (el('user-nick')) el('user-nick').textContent = active.nickname;
+      if (sbName) sbName.textContent = active.nickname;
+      if (el('user-provider')) el('user-provider').textContent = active.type === 'microsoft' ? 'Microsoft аккаунт' : active.type === 'ely' ? 'Ely.by аккаунт' : 'Локальный аккаунт';
+      const statusText = active.status === 'connected' ? '● В сети' : '● Оффлайн';
+      const statusColor = active.status === 'connected' ? 'var(--success)' : 'var(--error)';
+      if (el('user-status')) {
+        el('user-status').textContent = statusText;
+        el('user-status').style.color = statusColor;
+      }
+      if (sbStatus) {
+        sbStatus.textContent = statusText;
+        sbStatus.style.color = statusColor;
+      }
+      if (el('bottom-account')) el('bottom-account').textContent = active.nickname;
 
       if (active.skin) {
-        this.loadAndDisplayAvatar(active.skin, avatarEl);
+        if (avatarEl) this.loadAndDisplayAvatar(active.skin, avatarEl);
+        if (sbAvatar) this.loadAndDisplayAvatar(active.skin, sbAvatar);
       } else if (active.type === 'ely' || active.type === 'microsoft') {
         window.api.invoke('accounts:get-profile', active.id).then(p => {
           if (p && p.skin) {
             active.skin = p.skin;
-            this.loadAndDisplayAvatar(p.skin, avatarEl);
+            if (avatarEl) this.loadAndDisplayAvatar(p.skin, avatarEl);
+            if (sbAvatar) this.loadAndDisplayAvatar(p.skin, sbAvatar);
           }
         }).catch(() => {});
       }
     } else {
-      el('user-avatar').innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-      el('user-nick').textContent = 'Гость';
-      el('user-provider').textContent = 'Войдите в аккаунт';
-      el('user-status').textContent = 'Оффлайн';
-      el('bottom-account').textContent = '—';
+      if (el('user-avatar')) el('user-avatar').innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+      if (sbAvatar) sbAvatar.textContent = '?';
+      if (el('user-nick')) el('user-nick').textContent = 'Гость';
+      if (sbName) sbName.textContent = 'Гость';
+      if (el('user-provider')) el('user-provider').textContent = 'Войдите в аккаунт';
+      if (el('user-status')) el('user-status').textContent = 'Оффлайн';
+      if (sbStatus) sbStatus.textContent = 'Оффлайн';
+      if (el('bottom-account')) el('bottom-account').textContent = '—';
     }
     await this.updateSkinsNavVisibility(active);
     this.updateHomeProfile();
@@ -603,10 +790,22 @@ window.App = {
     try {
       const list = await window.api.invoke('versions:get-installed');
       Store.set('installedVersions', list);
-      if (list.length && !Store.get('selectedVersion')) {
-        document.getElementById('bottom-version').textContent = list[0].id;
-        Store.set('selectedVersion', list[0].id);
-        Store.set('selectedInstallPath', list[0].rootDir || list[0].path || null);
+      const settings = await window.api.invoke('settings:get').catch(() => ({}));
+      const savedVersion = settings.lastSelectedVersion || settings.selectedVersion;
+
+      let target = null;
+      if (savedVersion && list && list.length) {
+        target = list.find(v => v.id === savedVersion || v.profileId === savedVersion || v.versionId === savedVersion || v.minecraft === savedVersion);
+      }
+      if (!target && list && list.length) {
+        target = list[0];
+      }
+
+      if (target) {
+        Store.set('selectedVersion', target.id);
+        Store.set('selectedInstallPath', target.rootDir || target.path || null);
+        const bVer = document.getElementById('bottom-version');
+        if (bVer) bVer.textContent = target.id;
       }
       this.updateSelectedFolderHint();
     } catch {}
@@ -660,19 +859,25 @@ window.App = {
   },
 
   async openSelectedVersionFolder() {
-    const selectedModpack = Store.get('selectedModpack');
-    let targetPath = selectedModpack ? selectedModpack.path : (Store.get('selectedInstallPath') || null);
-    const versionId = Store.get('selectedVersion');
-    if (!targetPath && versionId && versionId !== '—') {
-      const paths = await window.api.invoke('versions:get-storage-paths', versionId);
-      targetPath = paths && paths.selected;
-    }
-    if (!targetPath) {
-      const settings = Store.get('settings') || {};
-      targetPath = settings.gameFolder;
-    }
-    if (targetPath) {
-      window.api.send('shell:open-path', targetPath);
+    try {
+      const selectedModpack = Store.get('selectedModpack');
+      let targetPath = selectedModpack ? selectedModpack.path : (Store.get('selectedInstallPath') || null);
+      const versionId = Store.get('selectedVersion');
+      if (!targetPath && versionId && versionId !== '—') {
+        const paths = await window.api.invoke('versions:get-storage-paths', versionId);
+        targetPath = paths && (paths.selected || paths.all);
+      }
+      if (!targetPath) {
+        const settings = await window.api.invoke('settings:get').catch(() => ({}));
+        targetPath = settings.gameFolder;
+      }
+      if (targetPath) {
+        await window.api.shell.openPath(targetPath);
+      } else {
+        Toast.error('Не удалось определить папку версии');
+      }
+    } catch (e) {
+      Toast.error('Ошибка открытия папки', e.message);
     }
   },
 

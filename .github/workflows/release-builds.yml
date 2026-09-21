@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Existing GitHub release tag
         required: true
-        default: "2026.1.1"
+        default: "2026.1.2"
   push:
     branches:
       - main
@@ -34,7 +34,10 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.release_tag || '2026.1.1' }}" "dist/Nexus Launcher Setup ${{ inputs.release_tag || '2026.1.1' }}.exe" --clobber
+        run: |
+          TAG="${{ inputs.release_tag || '2026.1.2' }}"
+          gh release view "$TAG" || gh release create "$TAG" --title "Nexus Launcher $TAG" --notes "Nexus Launcher Release $TAG"
+          gh release upload "$TAG" "dist/Nexus Launcher Setup $TAG.exe" --clobber
 
   portable-x86:
     runs-on: windows-2022
@@ -55,7 +58,10 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.release_tag || '2026.1.1' }}" "dist/Nexus-Launcher-Portable-${{ inputs.release_tag || '2026.1.1' }}-x86.exe" --clobber
+        run: |
+          TAG="${{ inputs.release_tag || '2026.1.2' }}"
+          gh release view "$TAG" || gh release create "$TAG" --title "Nexus Launcher $TAG" --notes "Nexus Launcher Release $TAG"
+          gh release upload "$TAG" "dist/Nexus-Launcher-Portable-$TAG-x86.exe" --clobber
 
   appimage:
     runs-on: ubuntu-22.04
@@ -72,7 +78,11 @@ jobs:
       - name: Build AppImage x86_64
         run: npx electron-builder --linux AppImage --x64 --publish never
       - name: Upload AppImage to release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.release_tag || '2026.1.1' }}" "dist/Nexus-Launcher-${{ inputs.release_tag || '2026.1.1' }}-x86_64.AppImage" --clobber
+        run: |
+          TAG="${{ inputs.release_tag || '2026.1.2' }}"
+          gh release view "$TAG" || gh release create "$TAG" --title "Nexus Launcher $TAG" --notes "Nexus Launcher Release $TAG"
+          gh release upload "$TAG" "dist/Nexus-Launcher-$TAG-x86_64.AppImage" --clobber
 

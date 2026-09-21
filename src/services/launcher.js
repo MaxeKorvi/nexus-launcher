@@ -608,6 +608,15 @@ async function start({ versionId, accountId, modpackPath, instanceId, instanceDi
   const recentStdErr = [];
   childProc = spawn(javaPath, args, { cwd: gameDir, env: createCleanEnv(settings) });
 
+  // Minimize launcher to tray while Minecraft is running
+  setTimeout(() => {
+    try {
+      for (const w of BrowserWindow.getAllWindows()) {
+        if (!w.isDestroyed()) w.hide();
+      }
+    } catch {}
+  }, 1200);
+
   childProc.stdout.on('data', (d) => appendLog(d.toString().trim()));
   childProc.stderr.on('data', (d) => {
     const line = d.toString().trim();
@@ -618,6 +627,18 @@ async function start({ versionId, accountId, modpackPath, instanceId, instanceDi
   });
   childProc.on('exit', async (code) => {
     appendLog(`[launcher] Process exited with code ${code}`);
+
+    // Restore launcher window from tray when Minecraft closes
+    try {
+      for (const w of BrowserWindow.getAllWindows()) {
+        if (!w.isDestroyed()) {
+          w.show();
+          w.focus();
+          if (w.isMinimized()) w.restore();
+        }
+      }
+    } catch {}
+
     let error;
     let diagnostic = null;
 
@@ -650,6 +671,18 @@ async function start({ versionId, accountId, modpackPath, instanceId, instanceDi
   });
   childProc.on('error', (err) => {
     appendLog('[launcher] ERROR: ' + err.message);
+
+    // Restore launcher window on process error
+    try {
+      for (const w of BrowserWindow.getAllWindows()) {
+        if (!w.isDestroyed()) {
+          w.show();
+          w.focus();
+          if (w.isMinimized()) w.restore();
+        }
+      }
+    } catch {}
+
     childProc = null;
     emit('launcher:stopped', { code: -1, error: err.message, diagnostic: null });
   });

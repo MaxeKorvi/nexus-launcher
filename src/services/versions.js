@@ -561,6 +561,27 @@ async function getInstalled(root) {
       const primaryId = meta.id || meta.versionId || (loaderProfile && loaderProfile.id) || (scanned[0] && scanned[0].id) || e.name;
       const primary = scanned.find(x => x.id === primaryId) || loaderProfile || scanned[0] || { id: primaryId };
       out.push({ ...primary, ...meta, id: primaryId, profileId: primaryId, path: rootDir, rootDir, kind: meta.kind || 'version' });
+
+      // Also register any vanilla base versions that were downloaded inside this instance
+      for (const item of scanned) {
+        if (item.id !== primaryId && (item.loader === 'vanilla' || item.id === meta.minecraft)) {
+          const vId = item.id || meta.minecraft;
+          if (vId && !out.some(x => x.id === vId)) {
+            out.push({
+              ...item,
+              id: vId,
+              profileId: vId,
+              displayName: `Minecraft ${vId}`,
+              title: `Minecraft ${vId}`,
+              type: item.type || 'release',
+              loader: 'vanilla',
+              path: rootDir,
+              rootDir,
+              kind: 'version'
+            });
+          }
+        }
+      }
     }
   }
 

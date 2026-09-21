@@ -1,19 +1,183 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nexus Launcher Setup</title><link rel="stylesheet" href="styles.css"></head>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nexus Launcher Setup 2026.1.2</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
 <body>
-  <div class="ambient"></div><div class="shell">
-    <header class="titlebar"><div class="brand"><img src="assets/nexus-logo.png"><div><b>Nexus</b><span>INSTALLER 2026.1.1</span></div></div><div class="window-actions"><button id="min">—</button><button id="close">×</button></div></header>
+  <div class="ambient"></div>
+  <div class="shell">
+    <header class="titlebar">
+      <div class="brand">
+        <img src="assets/icon.png" onerror="this.src='assets/nexus-logo.png'">
+        <div>
+          <b>Nexus</b>
+          <span>INSTALLER 2026.1.2</span>
+        </div>
+      </div>
+      <div class="window-title">Nexus Launcher Setup</div>
+      <div class="window-actions">
+        <button id="min" title="Свернуть">—</button>
+        <button id="close" title="Закрыть">×</button>
+      </div>
+    </header>
+
     <main>
-      <aside><div class="step active"><i>1</i><div><b>Установка</b><span>Параметры Nexus</span></div></div><div class="step"><i>2</i><div><b>Подготовка</b><span>Файлы лаунчера</span></div></div><div class="step"><i>3</i><div><b>Готово</b><span>Первый запуск</span></div></div><div class="aside-art"><span>RELEASE</span><b>2026.1.1</b><p>Быстрый и современный Minecraft Launcher</p></div></aside>
-      <section class="content"><div class="eyebrow">NEXUS LAUNCHER</div><h1>Готовы войти<br>в свой мир?</h1><p class="lead">Установите Nexus Launcher — версии Minecraft, моды и сборки будут организованы автоматически.</p>
-        <div class="install-card"><div class="card-icon">⬡</div><div class="path-block"><label>ПАПКА УСТАНОВКИ</label><div class="path-row"><input id="target" readonly><button id="browse">Обзор</button></div><small>Данные Minecraft: <strong>C:\NexusLauncher</strong></small></div></div>
-        <label class="check"><input id="desktop" type="checkbox" checked><span></span>Создать ярлык на рабочем столе</label>
-        <div class="progress-wrap hidden" id="progress-wrap"><div class="progress-head"><span id="progress-text">Подготовка…</span><b id="progress-value">0%</b></div><div class="progress"><i id="progress-bar"></i></div></div>
+      <!-- Left 4-step Sidebar (Photo 5) -->
+      <aside class="stepper-sidebar">
+        <div class="step done">
+          <i class="step-icon">✓</i>
+          <div>
+            <b>Добро пожаловать</b>
+            <span>Лицензионное соглашение</span>
+          </div>
+        </div>
+        <div class="step active">
+          <i class="step-icon">2</i>
+          <div>
+            <b>Путь установки</b>
+            <span>Выбор директории</span>
+          </div>
+        </div>
+        <div class="step">
+          <i class="step-icon">3</i>
+          <div>
+            <b>Компоненты</b>
+            <span>Java и ярлыки</span>
+          </div>
+        </div>
+        <div class="step">
+          <i class="step-icon">4</i>
+          <div>
+            <b>Установка</b>
+            <span>Распаковка файлов</span>
+          </div>
+        </div>
+
+        <div class="aside-quote">
+          <div class="quote-mark">“</div>
+          <p>Лучший способ погрузиться в мир Minecraft с комфортом и скоростью.</p>
+          <div class="quote-author">— Nexus Team · 2026.1.2</div>
+        </div>
+      </aside>
+
+      <!-- Center Setup Panel (Photo 5) -->
+      <section class="content">
+        <div class="eyebrow">УСТАНОВКА NEXUS</div>
+        <h1>Параметры установки</h1>
+        <p class="lead">Выберите расположение файлов лаунчера и дополнительные компоненты для быстрой и плавной игры.</p>
+
+        <!-- Folder Selection Card -->
+        <div class="install-card">
+          <div class="card-icon">📁</div>
+          <div class="path-block">
+            <label>ПАПКА УСТАНОВКИ</label>
+            <div class="path-row">
+              <input id="target" readonly value="C:\NexusLauncher\">
+              <button id="browse">Обзор…</button>
+            </div>
+            <!-- Storage Info Box (Photo 5) -->
+            <div class="storage-info-box">
+              <span>Требуется на диске: <strong>420 МБ</strong></span>
+              <span class="divider">|</span>
+              <span>Свободно: <strong style="color:#2ecc71;">128.4 ГБ (C:)</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Custom Checkboxes (Photo 5) -->
+        <div class="checkbox-group">
+          <label class="check">
+            <input id="desktop" type="checkbox" checked>
+            <span class="checkmark"></span>
+            <div class="check-text">
+              <b>Создать ярлык на рабочем столе</b>
+              <small>Быстрый доступ к запуску лаунчера</small>
+            </div>
+          </label>
+          <label class="check">
+            <input id="startmenu" type="checkbox" checked>
+            <span class="checkmark"></span>
+            <div class="check-text">
+              <b>Добавить в меню «Пуск»</b>
+              <small>Удобный поиск в системе Windows</small>
+            </div>
+          </label>
+          <label class="check">
+            <input id="java" type="checkbox" checked>
+            <span class="checkmark"></span>
+            <div class="check-text">
+              <b>Загрузить рекомендованную Java Runtime (Liberica 21)</b>
+              <small>Максимальный FPS и стабильность для всех версий</small>
+            </div>
+          </label>
+          <label class="check">
+            <input id="isolate" type="checkbox" checked>
+            <span class="checkmark"></span>
+            <div class="check-text">
+              <b>Создать изолированную папку для данных игры (.minecraft)</b>
+              <small>Сохранит ваши старые миры и настройки в безопасности</small>
+            </div>
+          </label>
+        </div>
+
+        <!-- Progress wrap (hidden during initial state) -->
+        <div class="progress-wrap hidden" id="progress-wrap">
+          <div class="progress-head">
+            <span id="progress-text">Установка компонентов лаунчера…</span>
+            <b id="progress-value">0%</b>
+          </div>
+          <div class="progress"><i id="progress-bar"></i></div>
+        </div>
+
         <div class="error hidden" id="error"></div>
-        <div class="actions"><button class="secondary" id="cancel">Отмена</button><button class="primary" id="install"><span>УСТАНОВИТЬ</span><i>▶</i></button></div>
+
+        <!-- Bottom Security Pill (Photo 5) -->
+        <div class="security-banner">
+          <span class="shield">🛡️</span>
+          <span>Цифровая подпись проверена · Чистая установка без стороннего ПО и рекламы</span>
+        </div>
+
+        <div class="actions">
+          <button class="secondary" id="cancel">Отмена</button>
+          <button class="primary" id="install">
+            <span>Установить лаунчер</span>
+            <i>▶</i>
+          </button>
+        </div>
       </section>
-      <aside class="preview"><div class="preview-glow"></div><div class="cube">N</div><div class="status"><span></span><div><b>Готово к установке</b><small>Windows x64 · Release 2026.1.1</small></div></div><div class="features"><div>✓ Изолированные версии</div><div>✓ Автоматическая Java</div><div>✓ Forge · Fabric · Quilt</div></div></aside>
+
+      <!-- Right Promotional Castle Banner (Photo 5) -->
+      <aside class="promo-banner">
+        <div class="promo-overlay"></div>
+        <div class="promo-content">
+          <div class="promo-logo">
+            <img src="assets/icon.png" onerror="this.src='assets/nexus-logo.png'">
+          </div>
+          <div class="promo-slogan">
+            <h2>Играй. Создавай. Развивайся.</h2>
+            <p>Твои миры. Без границ.</p>
+          </div>
+          <div class="promo-features">
+            <div><span class="check-dot">✓</span> Изолированные версии</div>
+            <div><span class="check-dot">✓</span> Автоматическая Java</div>
+            <div><span class="check-dot">✓</span> Forge · Fabric · Quilt · NeoForge</div>
+            <div><span class="check-dot">✓</span> 1-Click установка сборок</div>
+          </div>
+          <div class="promo-version-badge">
+            <span>RELEASE</span> <b>2026.1.2</b>
+          </div>
+        </div>
+      </aside>
     </main>
-    <footer><span>© 2026 Nexus Launcher</span><span>Безопасная локальная установка</span></footer>
-  </div><script src="renderer.js"></script>
-</body></html>
+
+    <footer>
+      <span>© 2026 Nexus Launcher</span>
+      <span>Безопасная локальная установка для Windows x64</span>
+    </footer>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

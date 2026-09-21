@@ -1,6 +1,6 @@
 {
   "name": "nexus-launcher-installer",
-  "version": "2026.1.1",
+  "version": "2026.1.2",
   "description": "Custom modern installer frontend for Nexus Launcher",
   "main": "main.js",
   "scripts": {
@@ -42,7 +42,7 @@
       "icon": "assets/nexus-logo.png"
     },
     "portable": {
-      "artifactName": "Nexus Launcher Setup 2026.1.1.exe",
+      "artifactName": "Nexus Launcher Setup 2026.1.2.exe",
       "requestExecutionLevel": "user"
     }
   }

@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <title>Nexus Launcher</title>
   <style>
+    :root {
+      --accent: #00e676;
+      --accent-hi: #10b981;
+      --accent-glow: rgba(0, 230, 118, 0.25);
+      --accent-border: rgba(0, 230, 118, 0.35);
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
     html, body {
       width: 100%;
@@ -20,9 +26,9 @@
       width: 440px;
       height: 270px;
       border-radius: 20px;
-      background: radial-gradient(circle at 50% 20%, rgba(255, 121, 0, 0.12), transparent 70%), rgba(10, 10, 13, 0.94);
-      border: 1px solid rgba(255, 121, 0, 0.3);
-      box-shadow: 0 25px 65px rgba(0, 0, 0, 0.8), 0 0 45px rgba(255, 121, 0, 0.2);
+      background: radial-gradient(circle at 50% 20%, var(--accent-glow), transparent 70%), rgba(9, 11, 10, 0.95);
+      border: 1px solid var(--accent-border);
+      box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 45px var(--accent-glow);
       backdrop-filter: blur(28px);
       display: flex;
       flex-direction: column;
@@ -37,7 +43,7 @@
       width: 220px;
       height: 220px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 121, 0, 0.22) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
       top: 15px;
       filter: blur(20px);
       pointer-events: none;
@@ -65,8 +71,9 @@
       width: 72px;
       height: 72px;
       border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(255, 121, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px var(--accent-glow);
+      border: 1px solid var(--accent-border);
+      object-fit: contain;
     }
     .brand-title {
       font-size: 22px;
@@ -78,15 +85,15 @@
       margin-bottom: 4px;
     }
     .brand-title span {
-      background: linear-gradient(135deg, #ff7900, #ffaa33);
+      background: linear-gradient(135deg, var(--accent), var(--accent-hi));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
     .version-tag {
-      font-size: 10px;
+      font-size: 10.5px;
       letter-spacing: 0.14em;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.5);
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.55);
       text-transform: uppercase;
       margin-bottom: 18px;
     }
@@ -105,9 +112,9 @@
       top: 0;
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, #ff5500, #ff9900, #ffbb33);
+      background: linear-gradient(90deg, var(--accent), var(--accent-hi));
       border-radius: 99px;
-      box-shadow: 0 0 12px rgba(255, 121, 0, 0.8);
+      box-shadow: 0 0 14px var(--accent);
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .status-text {
@@ -131,10 +138,10 @@
   <div class="splash-card">
     <div class="ambient-glow"></div>
     <div class="logo-wrapper">
-      <img class="logo-img" src="assets/nexus-logo.png" alt="Nexus">
+      <img class="logo-img" src="assets/icon.png" onerror="this.src='../../icon.png'" alt="Nexus">
     </div>
     <div class="brand-title">Nexus <span>Launcher</span></div>
-    <div class="version-tag">Release 2026.1.1</div>
+    <div class="version-tag" id="version-tag">Release 2026.1.2</div>
     <div class="progress-track">
       <div class="progress-bar" id="progress-bar"></div>
     </div>
@@ -142,6 +149,21 @@
   </div>
 
   <script>
+    // Apply dynamic theme accent from query
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const acc = params.get('accent') || '#00e676';
+      const ver = params.get('version') || '2026.1.2';
+      
+      document.documentElement.style.setProperty('--accent', acc);
+      document.documentElement.style.setProperty('--accent-hi', acc);
+      document.documentElement.style.setProperty('--accent-glow', acc + '35');
+      document.documentElement.style.setProperty('--accent-border', acc + '55');
+      
+      const vEl = document.getElementById('version-tag');
+      if (vEl) vEl.textContent = 'Release ' + ver;
+    } catch {}
+
     const steps = [
       { progress: 20, text: 'Инициализация ядра системы…', delay: 200 },
       { progress: 45, text: 'Проверка файлов конфигурации…', delay: 450 },
