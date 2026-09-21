@@ -13,6 +13,14 @@ if errorlevel 1 (
     goto :done
 )
 
+set "HTTP_PROXY="
+set "HTTPS_PROXY="
+set "ALL_PROXY="
+set "http_proxy="
+set "https_proxy="
+set "NO_PROXY=*"
+set "no_proxy=*"
+
 set "GIT=git"
 where git >nul 2>&1
 if errorlevel 1 (
@@ -20,19 +28,20 @@ if errorlevel 1 (
         set "GIT=C:\Program Files\Git\cmd\git.exe"
     )
 )
+set "GIT_OPTS=-c http.proxy= -c https.proxy="
 
 echo [1/3] Adding changes to git...
-"%GIT%" add .
+"%GIT%" %GIT_OPTS% add .
 
 echo [2/3] Committing changes...
-"%GIT%" commit -m "Nexus Launcher 2026.1.2: Modern Version Manager and Themes UI"
+"%GIT%" %GIT_OPTS% commit -m "Nexus Launcher 2026.1.2: Modern Version Manager and Themes UI"
 
 echo [3/4] Pushing to GitHub (origin main)...
-"%GIT%" push origin main
+"%GIT%" %GIT_OPTS% push origin main
 
 echo [4/4] Creating and pushing release tag 2026.1.2...
-"%GIT%" tag -f 2026.1.2
-"%GIT%" push origin 2026.1.2 --force
+"%GIT%" %GIT_OPTS% tag -f 2026.1.2
+"%GIT%" %GIT_OPTS% push origin 2026.1.2 --force
 
 if errorlevel 1 (
     echo.
