@@ -34,9 +34,14 @@ window.Views.profile = {
       </div>
     `;
     document.getElementById('p-skin').onclick = async () => {
-      const settings = await window.api.invoke('settings:get');
-      if (settings.skinSystem === 'none') {
-        Toast.warning('Система скинов', 'Система скинов отключена в настройках.');
+      const accounts = await window.api.invoke('accounts:list').catch(() => []);
+      const active = (accounts || []).find(a => a.active) || accounts[0];
+      if (!active || active.type !== 'microsoft') {
+        if (active && active.type === 'ely') {
+          window.api.shell.openExternal('https://ely.by/skin');
+        } else {
+          Toast.info('Скины', 'Для локальных профилей скины настраиваются через Ely.by или моды.');
+        }
         return;
       }
       window.App.navigate('skins');

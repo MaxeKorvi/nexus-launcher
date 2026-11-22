@@ -228,17 +228,27 @@ window.App = {
 
   async updateSkinsNavVisibility(activeAccount = null) {
     try {
-      const settings = await window.api.invoke('settings:get');
+      const settings = await window.api.invoke('settings:get').catch(() => ({}));
       let active = activeAccount;
       if (!active) {
-        const accounts = Store.get('accounts') || await window.api.invoke('accounts:list');
-        active = accounts.find(a => a.active) || accounts[0];
+        const accounts = Store.get('accounts') || await window.api.invoke('accounts:list').catch(() => []);
+        active = (Array.isArray(accounts) && (accounts.find(a => a.active) || accounts[0])) || null;
       }
       const navSkins = document.getElementById('nav-skins');
       if (!navSkins) return;
 
-      const isSkinAllowed = settings && settings.skinSystem !== 'none' && active && (active.type === 'ely' || active.type === 'microsoft');
-      navSkins.style.display = isSkinAllowed ? 'flex' : 'none';
+      // Вкладка скинов доступна ТОЛЬКО при лицензионной авторизации (microsoft).
+      // Если авторизован через Ely.by, оффлайн (local/tlauncher) или не авторизован - скрываем.
+      const isLicense = !!(active && active.type === 'microsoft');
+      const isSkinAllowed = settings && settings.skinSystem !== 'none' && isLicense;
+
+      if (isSkinAllowed) {
+        navSkins.classList.remove('hidden');
+        navSkins.style.setProperty('display', 'flex', 'important');
+      } else {
+        navSkins.classList.add('hidden');
+        navSkins.style.setProperty('display', 'none', 'important');
+      }
 
       if (!isSkinAllowed && this.currentView === 'skins') {
         this.navigate('home');
@@ -247,30 +257,7 @@ window.App = {
   },
 
   bindLiquidGlass() {
-    const surface = document.createElement('div');
-    surface.className = 'liquid-cursor-surface';
-    document.body.appendChild(surface);
-    let frame = 0;
-    let x = innerWidth / 2;
-    let y = innerHeight / 2;
-    let lastRipple = 0;
-    document.addEventListener('pointermove', (event) => {
-      x = event.clientX;
-      y = event.clientY;
-      if (!frame) frame = requestAnimationFrame(() => {
-        frame = 0;
-        document.body.style.setProperty('--liquid-x', `${x}px`);
-        document.body.style.setProperty('--liquid-y', `${y}px`);
-      });
-      const now = performance.now();
-      if (now - lastRipple < 90 || (!document.body.classList.contains('light-theme') && !document.body.classList.contains('theme-glass-dark'))) return;
-      lastRipple = now;
-      const ripple = document.createElement('i');
-      ripple.style.left = `${x}px`;
-      ripple.style.top = `${y}px`;
-      surface.appendChild(ripple);
-      ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
-    }, { passive: true });
+    // Liquid glass cursor ripples disabled by design specification
   },
 
   bindTitlebar() {
@@ -322,6 +309,8 @@ window.App = {
     document.getElementById('btn-open-version-folder').onclick = folder;
     const heroBtnFolder = document.getElementById('hero-btn-folder');
     if (heroBtnFolder) heroBtnFolder.onclick = folder;
+    const heroBtnVersions = document.getElementById('hero-btn-versions');
+    if (heroBtnVersions) heroBtnVersions.onclick = () => this.navigate('versions');
     const accSelect = document.getElementById('account-select');
     if (accSelect) accSelect.onclick = () => this.navigate('accounts');
     const verSelect = document.getElementById('version-select');
@@ -564,6 +553,15 @@ window.App = {
   },
 
   navigate(viewName) {
+    if (viewName === 'skins') {
+      const accounts = Store.get('accounts') || [];
+      const active = (Array.isArray(accounts) && (accounts.find(a => a.active) || accounts[0])) || null;
+      if (!active || active.type !== 'microsoft') {
+        if (window.Toast) Toast.info('Скины', 'Управление скинами через лаунчер доступно только для лицензии Microsoft.');
+        viewName = 'home';
+      }
+    }
+
     if (this.currentView && window.Views[this.currentView] && window.Views[this.currentView].destroy) {
       window.Views[this.currentView].destroy();
     }

@@ -157,42 +157,48 @@ window.Views = window.Views || {};
       c.style.display = 'block';
 
       c.innerHTML = `
-        <div class="view servers-view" style="padding: 24px 30px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;">
-          <!-- Top Header Row matching Reference Photo (Left Window) -->
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="width: 14px; height: 14px; border: 2px solid #5b8cff; border-radius: 50%; box-shadow: 0 0 10px rgba(91,140,255,0.5);"></div>
-              <h1 style="font-size: 21px; font-weight: 800; margin: 0; color: #ffffff; letter-spacing: -0.01em;">Серверы</h1>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <!-- Search box with magnifying glass -->
-              <div style="position: relative; width: 260px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input class="input" id="servers-search" placeholder="Поиск серверов..." value="${esc(this._searchTerm)}" style="width: 100%; height: 38px; padding-left: 36px; font-size: 13px; border-radius: 10px; background: rgba(0,0,0,0.32); border: 1px solid var(--border-soft);">
+        <div class="view settings-single-card servers-view" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+          <!-- Top Header Row -->
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Мониторинг</span>
+                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Онлайн-серверы</span>
+                </div>
+                <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Серверы</h1>
+                <p style="color: var(--text-2); font-size: 13px; margin: 0;">Популярные серверы Minecraft с мониторингом пинга, онлайна и быстрым копированием IP</p>
               </div>
 
-              <!-- Version filter dropdown -->
-              <select class="input" id="servers-version-filter" style="height: 38px; font-size: 13px; border-radius: 10px; background: rgba(0,0,0,0.32); border: 1px solid var(--border-soft); padding: 0 12px; min-width: 130px;">
-                <option value="all" ${this._versionFilter === 'all' ? 'selected' : ''}>Все версии</option>
-                <option value="1.21" ${this._versionFilter === '1.21' ? 'selected' : ''}>1.21.x</option>
-                <option value="1.20" ${this._versionFilter === '1.20' ? 'selected' : ''}>1.20.x</option>
-                <option value="1.19" ${this._versionFilter === '1.19' ? 'selected' : ''}>1.19.x</option>
-                <option value="1.16" ${this._versionFilter === '1.16' ? 'selected' : ''}>1.16.5</option>
-                <option value="1.12" ${this._versionFilter === '1.12' ? 'selected' : ''}>1.12.2</option>
-                <option value="1.8" ${this._versionFilter === '1.8' ? 'selected' : ''}>1.8.9</option>
-              </select>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <!-- Search box with magnifying glass -->
+                <div style="position: relative; width: 220px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input class="input" id="servers-search" placeholder="Поиск серверов..." value="${esc(this._searchTerm)}" style="width: 100%; height: 38px; padding-left: 36px; font-size: 13px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
+                </div>
 
-              <!-- Add server button -->
-              <button class="btn outline" id="btn-add-server" title="Добавить сервер в мониторинг" style="height: 38px; padding: 0 14px; font-size: 13px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Добавить
-              </button>
+                <!-- Version filter dropdown -->
+                <select class="input" id="servers-version-filter" style="height: 38px; font-size: 13px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); padding: 0 12px; min-width: 130px;">
+                  <option value="all" ${this._versionFilter === 'all' ? 'selected' : ''}>Все версии</option>
+                  <option value="1.21" ${this._versionFilter === '1.21' ? 'selected' : ''}>1.21.x</option>
+                  <option value="1.20" ${this._versionFilter === '1.20' ? 'selected' : ''}>1.20.x</option>
+                  <option value="1.19" ${this._versionFilter === '1.19' ? 'selected' : ''}>1.19.x</option>
+                  <option value="1.16" ${this._versionFilter === '1.16' ? 'selected' : ''}>1.16.5</option>
+                  <option value="1.12" ${this._versionFilter === '1.12' ? 'selected' : ''}>1.12.2</option>
+                  <option value="1.8" ${this._versionFilter === '1.8' ? 'selected' : ''}>1.8.9</option>
+                </select>
+
+                <!-- Add server button -->
+                <button class="btn primary" id="btn-add-server" title="Добавить сервер в мониторинг" style="height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Добавить
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- Server List Rows Container -->
-          <div id="servers-list-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+          <div id="servers-list-container" class="st-group-box" style="gap: 8px;">
             <div class="empty-state" style="padding: 40px;"><span class="spinner"></span> Загрузка серверов…</div>
           </div>
         </div>
@@ -308,39 +314,39 @@ window.Views = window.Views || {};
         }
 
         return `
-          <div class="server-card-row card" data-srv-id="${s.id}" data-srv-addr="${esc(s.address)}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-radius: 14px; background: rgba(18,22,30,0.65); border: 1px solid rgba(255,255,255,0.06); transition: all 180ms ease; cursor: pointer;">
+          <div class="server-card-row" data-srv-id="${s.id}" data-srv-addr="${esc(s.address)}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease; cursor: pointer;">
             <!-- Column 1: Icon + Name + Tags -->
-            <div style="display: flex; align-items: center; gap: 16px; flex: 1.6; min-width: 0;">
-              <div id="srv-icon-${s.id}" style="flex-shrink: 0; width: 44px; height: 44px; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <div style="display: flex; align-items: center; gap: 14px; flex: 1.6; min-width: 0;">
+              <div id="srv-icon-${s.id}" style="flex-shrink: 0; width: 42px; height: 42px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);">
                 ${faviconHtml}
               </div>
               <div style="min-width: 0;">
-                <div style="font-size: 15px; font-weight: 750; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(s.name)}</div>
-                <div style="font-size: 12px; color: #8a96a3; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(tags)}</div>
+                <div style="font-size: 14.5px; font-weight: 750; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(s.name)}</div>
+                <div style="font-size: 11.5px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(tags)}</div>
               </div>
             </div>
 
             <!-- Column 2: Version -->
-            <div style="flex: 1; text-align: center; font-size: 13px; color: #8a96a3; font-weight: 500;">
+            <div style="flex: 1; text-align: center; font-size: 12.5px; color: var(--text-2); font-weight: 500;">
               ${esc(version)}
             </div>
 
             <!-- Column 3: Players Online -->
-            <div style="flex: 1; text-align: center; font-size: 13px; color: #8a96a3; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.7;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <div style="flex: 1; text-align: center; font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.7;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span id="srv-online-${s.id}">${onlineText}</span>
             </div>
 
             <!-- Column 4: Status Indicator -->
-            <div style="flex: 0.9; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 7px; font-size: 12px; font-weight: 650; color: ${isOnline ? '#2ecc71' : '#e74c3c'};">
-              <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: ${isOnline ? '#2ecc71' : '#e74c3c'}; box-shadow: 0 0 8px ${isOnline ? 'rgba(46,204,113,0.6)' : 'rgba(231,76,60,0.6)'};"></span>
+            <div style="flex: 0.9; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 7px; font-size: 12px; font-weight: 650; color: ${isOnline ? 'var(--accent)' : 'var(--error)'};">
+              <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: ${isOnline ? 'var(--accent)' : 'var(--error)'}; box-shadow: 0 0 8px ${isOnline ? 'var(--glow)' : 'rgba(255,85,85,0.6)'};"></span>
               <span id="srv-status-${s.id}">${isOnline ? 'Онлайн' : 'Оффлайн'}</span>
             </div>
 
             <!-- Column 5: Menu Action Button -->
-            <div style="margin-left: 20px; position: relative;">
-              <button class="btn ghost btn-srv-menu" data-id="${s.id}" data-addr="${esc(s.address)}" title="Действия" style="padding: 6px 10px; border-radius: 8px; color: #8a96a3;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            <div style="margin-left: 16px; position: relative;">
+              <button class="btn ghost btn-srv-menu" data-id="${s.id}" data-addr="${esc(s.address)}" title="Действия" style="padding: 6px 10px; border-radius: 6px; color: var(--text-2);">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
               </button>
             </div>
           </div>

@@ -141,7 +141,7 @@
       <img class="logo-img" src="assets/icon.png" onerror="this.src='../../icon.png'" alt="Nexus">
     </div>
     <div class="brand-title">Nexus <span>Launcher</span></div>
-    <div class="version-tag" id="version-tag">Release 2026.1.2</div>
+    <div class="version-tag" id="version-tag">build-26.3.0.0.1 (Alpha)</div>
     <div class="progress-track">
       <div class="progress-bar" id="progress-bar"></div>
     </div>
@@ -153,7 +153,7 @@
     try {
       const params = new URLSearchParams(window.location.search);
       const acc = params.get('accent') || '#00e676';
-      const ver = params.get('version') || '2026.1.2';
+      const ver = params.get('version') || 'build-26.3.0.0.1';
       
       document.documentElement.style.setProperty('--accent', acc);
       document.documentElement.style.setProperty('--accent-hi', acc);
@@ -161,7 +161,7 @@
       document.documentElement.style.setProperty('--accent-border', acc + '55');
       
       const vEl = document.getElementById('version-tag');
-      if (vEl) vEl.textContent = 'Release ' + ver;
+      if (vEl) vEl.textContent = ver.includes('build') ? ver : 'Release ' + ver;
     } catch {}
 
     const steps = [

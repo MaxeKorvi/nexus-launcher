@@ -156,7 +156,7 @@ async function pingHttpFallback(address) {
   const startTime = Date.now();
   const res = await axios.get(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(address)}`, {
     timeout: 3500,
-    headers: { 'User-Agent': 'NexusLauncher/2026.1.2' }
+    headers: { 'User-Agent': 'NexusLauncher/build-26.3.0.0.1' }
   });
   const data = res.data;
   const latency = Date.now() - startTime;

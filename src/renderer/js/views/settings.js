@@ -54,100 +54,105 @@ window.Views = window.Views || {};
         <style>
           .st-switch {
             position: relative;
-            width: 44px;
-            height: 24px;
-            background: rgba(255,255,255,0.14);
-            border-radius: 12px;
+            width: 40px;
+            height: 22px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 11px;
             cursor: pointer;
-            transition: background 200ms ease;
+            transition: background 180ms ease;
             flex-shrink: 0;
             user-select: none;
           }
           .st-switch.on {
-            background: #3b82f6;
+            background: var(--accent);
           }
           .st-switch::after {
             content: '';
             position: absolute;
             left: 3px;
             top: 3px;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             background: #ffffff;
             border-radius: 50%;
-            transition: transform 200ms ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+            transition: transform 180ms ease, background 180ms ease;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
           }
           .st-switch.on::after {
-            transform: translateX(20px);
+            transform: translateX(18px);
+            background: var(--bg);
           }
           .st-tab-btn {
             background: none;
             border: none;
-            padding: 7px 18px;
-            border-radius: 9px;
+            padding: 6px 16px;
+            border-radius: 6px;
             font-size: 13px;
             font-weight: 600;
-            color: #8c9ba5;
+            color: var(--text-2);
             cursor: pointer;
-            transition: all 180ms ease;
+            transition: all 160ms ease;
           }
           .st-tab-btn:hover {
-            color: #ffffff;
-            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            background: rgba(255,255,255,0.06);
           }
           .st-tab-btn.active {
-            background: #3b82f6;
-            color: #ffffff;
+            background: var(--accent);
+            color: var(--bg);
             font-weight: 700;
-            box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+            box-shadow: 0 2px 10px var(--glow);
           }
           .st-input-row {
             display: flex;
             align-items: center;
-            background: rgba(14,18,25,0.7);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 10px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border-soft);
+            border-radius: 6px;
             padding: 0 12px;
-            height: 42px;
+            height: 38px;
             gap: 10px;
-            transition: border-color 180ms ease;
+            transition: border-color 160ms ease, box-shadow 160ms ease;
           }
           .st-input-row:focus-within {
-            border-color: #3b82f6;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--glow);
           }
           .st-input-row input, .st-input-row select {
             background: none;
             border: none;
-            color: #ffffff;
+            color: var(--text);
             font-size: 13px;
             width: 100%;
             height: 100%;
             outline: none;
           }
           .st-input-row select option {
-            background: #181d26;
-            color: #ffffff;
+            background: var(--bg-2, #181d26);
+            color: var(--text, #ffffff);
           }
           .st-label {
             font-size: 12px;
             font-weight: 600;
-            color: #8c9ba5;
+            color: var(--text-2);
             margin-bottom: 6px;
             display: block;
           }
-          .st-card {
-            background: rgba(18,22,30,0.65);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 14px;
-            padding: 18px 20px;
+          .st-group-box {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
           }
           .st-toggle-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 9px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-soft);
           }
           .st-toggle-row:last-child {
             border-bottom: none;
@@ -158,13 +163,13 @@ window.Views = window.Views || {};
           }
         </style>
 
-        <div class="view settings-view" style="padding: 24px 30px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+        <div class="view settings-single-card" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
           <!-- Header & Sub-tabs -->
           <div style="display: flex; flex-direction: column; gap: 14px;">
-            <h1 style="font-size: 22px; font-weight: 800; margin: 0; color: #ffffff; letter-spacing: -0.01em;">Настройки</h1>
+            <h1 style="font-size: 22px; font-weight: 800; margin: 0; color: var(--text); letter-spacing: -0.01em;">Настройки</h1>
 
             <!-- Sub-tabs: [Основные] [Minecraft] -->
-            <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border-soft); padding-bottom: 12px;">
               <button class="st-tab-btn ${this.activeTab === 'basic' ? 'active' : ''}" data-tab="basic">Основные</button>
               <button class="st-tab-btn ${this.activeTab === 'minecraft' ? 'active' : ''}" data-tab="minecraft">Minecraft</button>
             </div>
@@ -175,14 +180,14 @@ window.Views = window.Views || {};
             ${this.renderTabContent(s, installedRamGb, cpuThreads, heapGb, ramOptions, activeAccount)}
           </div>
 
-          <!-- Bottom Action Bar (Fixed across all tabs matching Reference) -->
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 6px;">
-            <button class="btn outline" id="btn-reset-settings" style="display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 10px; font-size: 13px; font-weight: 600; background: rgba(0,0,0,0.25);">
+          <!-- Bottom Action Bar -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--border-soft); margin-top: 6px;">
+            <button class="btn outline" id="btn-reset-settings" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 6px; font-size: 13px; font-weight: 600;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
               Сбросить настройки
             </button>
 
-            <button class="btn primary" id="btn-save-settings" style="display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 24px; border-radius: 10px; font-size: 13px; font-weight: 700; background: #3b82f6; box-shadow: 0 4px 16px rgba(59,130,246,0.4);">
+            <button class="btn primary" id="btn-save-settings" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 22px; border-radius: 6px; font-size: 13px; font-weight: 700;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               Сохранить
             </button>
@@ -270,7 +275,7 @@ window.Views = window.Views || {};
 
             <!-- Right Column: Resources & Behavior -->
             <div style="display: flex; flex-direction: column; gap: 16px;">
-              <div class="st-card">
+              <div class="st-group-box">
                 <div style="font-size: 13px; font-weight: 750; color: #ffffff; margin-bottom: 12px;">Выделение ресурсов</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                   <div>
@@ -301,7 +306,7 @@ window.Views = window.Views || {};
                 </div>
               </div>
 
-              <div class="st-card">
+              <div class="st-group-box">
                 <div style="font-size: 14px; font-weight: 750; color: #ffffff; margin-bottom: 14px;">Поведение при запуске</div>
                 <div class="st-toggle-row">
                   <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfd8dc;">
@@ -357,7 +362,7 @@ window.Views = window.Views || {};
               </div>
             </div>
 
-            <div class="st-card">
+            <div class="st-group-box">
               <div style="font-size: 14px; font-weight: 750; color: #ffffff; margin-bottom: 14px;">Интерфейс и эффекты</div>
               
               <div class="st-toggle-row">
@@ -386,7 +391,7 @@ window.Views = window.Views || {};
             </div>
 
             <!-- Рендеринг и GPU (перенесено из вкладки Графика) -->
-            <div class="st-card">
+            <div class="st-group-box">
               <div style="font-size: 14px; font-weight: 750; color: #ffffff; margin-bottom: 14px;">Рендеринг и видеокарта</div>
               <div>
                 <label class="st-label" style="font-size: 12px;">Выбор видеокарты (GPU Preference)</label>
@@ -411,7 +416,7 @@ window.Views = window.Views || {};
           <!-- Right Column: Network, Dependencies, System -->
           <div style="display: flex; flex-direction: column; gap: 16px;">
             <!-- Сеть и скачивание -->
-            <div class="st-card">
+            <div class="st-group-box">
               <div style="font-size: 14px; font-weight: 750; color: #ffffff; margin-bottom: 14px;">Сеть и зависимости</div>
               
               <div>

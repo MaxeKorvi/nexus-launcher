@@ -48,19 +48,17 @@ window.Views.skins = {
       return;
     }
 
-    if (!active || (active.type !== 'microsoft' && active.type !== 'ely')) {
+    if (!active || active.type !== 'microsoft') {
       c.innerHTML = `
-        <div class="view skins-view">
-          <div class="view-hero">
-            <div>
-              <div class="eyebrow">Персонализация</div>
-              <h1>Смена скина недоступна</h1>
-              <p>Для смены скина прямо в лаунчере выберите аккаунт <b>Ely.by</b> или лицензионный <b>Microsoft</b>.</p>
-            </div>
+        <div class="view settings-single-card skins-view" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="color: var(--accent); font-size: 11.5px; font-weight: 700; text-transform: uppercase;">Персонализация</div>
+            <h1 style="font-size: 24px; font-weight: 800; margin: 0; color: var(--text);">Скины доступны для лицензии Microsoft</h1>
+            <p style="color: var(--text-2); font-size: 13px; margin: 0;">Вкладка смены скинов через официальный API Mojang активна только при авторизации через лицензионный аккаунт Microsoft. Для Ely.by скины меняются на сайте ely.by, а для оффлайн — с помощью модов.</p>
           </div>
-          <div class="card" style="padding: 24px; max-width: 500px;">
-            <p style="color: var(--text-2); margin-bottom: 16px;">Локальные offline-профили не имеют облачного сервера скинов.</p>
-            <button class="btn primary" id="btn-goto-accounts">Управление аккаунтами</button>
+          <div class="st-group-box" style="max-width: 500px;">
+            <p style="color: var(--text-2); font-size: 12.5px; margin-bottom: 14px;">Войдите через лицензионный аккаунт Microsoft для управления скином прямо в лаунчере.</p>
+            <button class="btn primary" id="btn-goto-accounts" style="height: 38px; padding: 0 20px; font-size: 13px; font-weight: 700;">Управление аккаунтами</button>
           </div>
         </div>`;
       const btn = document.getElementById('btn-goto-accounts');
@@ -68,48 +66,53 @@ window.Views.skins = {
       return;
     }
 
-    const isMicrosoft = active.type === 'microsoft';
-    const providerTitle = isMicrosoft ? 'Лицензия Microsoft' : 'Ely.by';
-    let skinUrl = active.skin || (isMicrosoft ? `https://mc-heads.net/body/${encodeURIComponent(active.nickname)}/right` : `http://skinsystem.ely.by/skins/${encodeURIComponent(active.nickname)}.png`);
+    const isMicrosoft = true;
+    const providerTitle = 'Лицензия Microsoft';
+    let skinUrl = active.skin || `https://mc-heads.net/body/${encodeURIComponent(active.nickname)}/right`;
 
     c.innerHTML = `
-      <div class="view skins-view">
-        <div class="view-hero">
+      <div class="view settings-single-card skins-view" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-soft); padding-bottom: 14px;">
           <div>
-            <div class="eyebrow">Персонализация · ${providerTitle}</div>
-            <h1>Гардероб и Скины</h1>
-            <p>Управляйте скином для аккаунта <b>${Shared.escapeHtml(active.nickname)}</b> прямо в лаунчере.</p>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Персонализация</span>
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">${providerTitle}</span>
+            </div>
+            <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Гардероб и Скины</h1>
+            <p style="color: var(--text-2); font-size: 13px; margin: 0;">Управляйте скином для аккаунта <b>${Shared.escapeHtml(active.nickname)}</b> прямо в лаунчере.</p>
           </div>
-          <div class="hero-badge ${isMicrosoft ? 'ok' : 'accent'}">${providerTitle}</div>
+          <div style="padding: 4px 12px; border-radius: 6px; background: var(--glow); border: 1px solid var(--border-soft); color: var(--accent-hi); font-size: 12px; font-weight: 700;">
+            ${providerTitle}
+          </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start;">
+        <div style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;">
           <!-- Текущий скин в 3D -->
-          <div class="card" style="text-align: center; padding: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h3 style="font-size: 16px; margin: 0;">3D Предпросмотр</h3>
+          <div class="st-group-box" style="text-align: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="font-size: 14.5px; font-weight: 700; color: var(--text); margin: 0;">3D Предпросмотр</h3>
               <div style="display: flex; gap: 6px;">
                 <button class="btn ghost compact-btn" id="btn-toggle-anim" title="Пауза / Продолжить анимацию" style="padding: 4px 8px; font-size: 11px;">⏸ Пауза</button>
                 <button class="btn ghost compact-btn" id="btn-reset-view" title="Сбросить угол обзора" style="padding: 4px 8px; font-size: 11px;">⟲ Ракурс</button>
               </div>
             </div>
 
-            <div style="width: 250px; height: 330px; margin: 0 auto 14px; background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.45)); border: 1px solid var(--border-soft); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; box-shadow: inset 0 0 25px rgba(0,0,0,0.6);">
+            <div style="width: 250px; height: 320px; margin: 0 auto 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-soft); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
               <canvas id="skin-viewer-canvas" style="width: 100%; height: 100%; cursor: grab;"></canvas>
               <div style="position: absolute; bottom: 8px; left: 8px; right: 8px; font-size: 11px; color: var(--text-2); background: rgba(0,0,0,0.65); padding: 4px 8px; border-radius: 4px; pointer-events: none; backdrop-filter: blur(4px);">
                 ⟳ Вращайте персонажа мышью
               </div>
             </div>
 
-            <div style="font-weight: 700; font-size: 16px; color: var(--text);">${Shared.escapeHtml(active.nickname)}</div>
-            <div style="font-size: 12px; color: var(--text-2); margin-top: 4px;">Провайдер: ${providerTitle}</div>
-            <div style="margin-top: 14px;">
+            <div style="font-weight: 700; font-size: 15px; color: var(--text);">${Shared.escapeHtml(active.nickname)}</div>
+            <div style="font-size: 12px; color: var(--text-2); margin-top: 2px;">Провайдер: ${providerTitle}</div>
+            <div style="margin-top: 12px;">
               <button class="btn ghost compact-btn" id="btn-refresh-skin">Обновить профиль</button>
             </div>
           </div>
 
           <!-- Загрузка нового скина -->
-          <div class="card" style="padding: 24px;">
+          <div class="st-group-box">
             <h3 style="font-size: 18px; margin-bottom: 8px;">Загрузить новый скин</h3>
             <p style="color: var(--text-2); font-size: 13px; margin-bottom: 20px;">
               Выберите файл скина в формате <b>PNG</b> (64x64 или 64x32). Новый скин сразу отобразится на 3D модели слева перед сохранением.

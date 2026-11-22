@@ -14,79 +14,81 @@ window.Views.accounts = {
     c.style.display = 'block';
 
     c.innerHTML = `
-      <div class="view accounts-view" style="padding: 24px; max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
-        <!-- Top Hero Banner (Photo 3) -->
-        <div class="card" style="padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; background: linear-gradient(135deg, rgba(20,26,23,0.85) 0%, rgba(12,15,14,0.95) 100%); border: 1px solid var(--border-soft); border-radius: 18px; position: relative; overflow: hidden;">
-          <div style="position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; background: var(--accent-glow); filter: blur(60px); pointer-events: none; opacity: 0.3;"></div>
+      <div class="view settings-single-card accounts-view" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+        <!-- Top Hero Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-soft); padding-bottom: 16px;">
           <div>
-            <div style="color: var(--accent-hi); font-size: 11px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px;">NEXUS ACCOUNTS</div>
-            <h1 style="font-size: 28px; font-weight: 800; margin: 0; color: var(--text);">Аккаунты</h1>
-            <p style="margin: 6px 0 0; color: var(--text-2); font-size: 13px; max-width: 600px; line-height: 1.5;">Управляйте своими профилями Minecraft. Поддержка Microsoft, Ely.by и локальных аккаунтов с безопасным хранением данных.</p>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Профили</span>
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Nexus Accounts</span>
+            </div>
+            <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Аккаунты</h1>
+            <p style="margin: 0; color: var(--text-2); font-size: 13px; max-width: 600px; line-height: 1.4;">Управляйте профилями Minecraft: официальный вход Microsoft, бесплатная система скинов Ely.by и локальные оффлайн-профили.</p>
           </div>
-          <div class="card" style="padding: 12px 18px; display: flex; align-items: center; gap: 14px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.25); border-radius: 14px;">
-            <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(46, 204, 113, 0.15); display: grid; place-items: center; color: #2ecc71; font-size: 18px;">
+          <div style="padding: 8px 14px; display: flex; align-items: center; gap: 10px; background: var(--glow); border: 1px solid var(--border-soft); border-radius: 8px;">
+            <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,0.06); display: grid; place-items: center; font-size: 14px;">
               🛡️
             </div>
             <div>
-              <div style="color: #2ecc71; font-weight: 700; font-size: 13px;">Ваши аккаунты в безопасности</div>
-              <div style="color: var(--text-2); font-size: 11px; margin-top: 2px;">Все токены шифруются локально на ПК</div>
+              <div style="color: var(--accent-hi); font-weight: 700; font-size: 12px;">Безопасное хранение</div>
+              <div style="color: var(--text-2); font-size: 11px;">Токены шифруются локально на ПК</div>
             </div>
           </div>
         </div>
 
-        <!-- 2-Column Split (Photo 3) -->
-        <div style="display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr); gap: 20px; align-items: start;">
+        <!-- 2-Column Split -->
+        <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); gap: 20px; align-items: start;">
           <!-- Left Column -->
-          <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div style="display: flex; flex-direction: column; gap: 18px;">
             <!-- Methods Block -->
-            <div>
-              <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--text-2); text-transform: uppercase; margin-bottom: 12px;">Способ входа</div>
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div class="st-group-box">
+              <div style="font-size: 13px; font-weight: 750; color: var(--text); margin-bottom: 2px;">Способ входа в игру</div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                 <!-- Microsoft -->
-                <div class="card acc-method-card" id="add-ms" style="padding: 18px 16px; border-radius: 16px; cursor: pointer; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-soft); transition: all 200ms ease;">
-                  <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0,164,239,0.12); display: grid; place-items: center; font-size: 18px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="13" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="13" width="10" height="10" fill="#00a4ef"/><rect x="13" y="13" width="10" height="10" fill="#ffb900"/></svg>
+                <div class="acc-method-card" id="add-ms" style="padding: 14px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
+                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(0,164,239,0.12); display: grid; place-items: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="13" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="13" width="10" height="10" fill="#00a4ef"/><rect x="13" y="13" width="10" height="10" fill="#ffb900"/></svg>
                   </div>
                   <div>
-                    <div style="font-weight: 800; font-size: 15px; color: var(--text);">Microsoft</div>
-                    <div style="font-size: 12px; color: var(--accent-hi); margin-top: 2px;">Лицензионный аккаунт</div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text);">Microsoft</div>
+                    <div style="font-size: 11.5px; color: var(--accent); margin-top: 1px;">Лицензия (Скины)</div>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-3); line-height: 1.4;">Официальный OAuth через браузер без ввода пароля в лаунчере</div>
+                  <div style="font-size: 11px; color: var(--text-2); line-height: 1.35;">Официальный OAuth без ввода пароля</div>
                 </div>
 
                 <!-- Ely.by -->
-                <div class="card acc-method-card" id="add-ely" style="padding: 18px 16px; border-radius: 16px; cursor: pointer; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-soft); transition: all 200ms ease;">
-                  <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(46,204,113,0.12); display: grid; place-items: center; color: #2ecc71;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.5" stroke-linejoin="round"><polygon points="12 2 2 22 22 22"/></svg>
+                <div class="acc-method-card" id="add-ely" style="padding: 14px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
+                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(46,204,113,0.12); display: grid; place-items: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"><polygon points="12 2 2 22 22 22"/></svg>
                   </div>
                   <div>
-                    <div style="font-weight: 800; font-size: 15px; color: var(--text);">Ely.by</div>
-                    <div style="font-size: 12px; color: #2ecc71; margin-top: 2px;">Бесплатные скины</div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text);">Ely.by</div>
+                    <div style="font-size: 11.5px; color: var(--accent); margin-top: 1px;">Бесплатные скины</div>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-3); line-height: 1.4;">Авторизация через веб-сайт или логин для доступа к скинам Ely</div>
+                  <div style="font-size: 11px; color: var(--text-2); line-height: 1.35;">Вход через логин или веб-сайт Ely.by</div>
                 </div>
 
                 <!-- Offline -->
-                <div class="card acc-method-card" id="add-local" style="padding: 18px 16px; border-radius: 16px; cursor: pointer; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-soft); transition: all 200ms ease;">
-                  <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(243,156,18,0.12); display: grid; place-items: center;">
+                <div class="acc-method-card" id="add-local" style="padding: 14px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
+                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(243,156,18,0.12); display: grid; place-items: center; font-size: 16px;">
                     📦
                   </div>
                   <div>
-                    <div style="font-weight: 800; font-size: 15px; color: var(--text);">Offline</div>
-                    <div style="font-size: 12px; color: #f39c12; margin-top: 2px;">Локальный профиль</div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text);">Offline</div>
+                    <div style="font-size: 11.5px; color: var(--text-2); margin-top: 1px;">Локальный профиль</div>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-3); line-height: 1.4;">Быстрый вход только по никнейму для одиночной игры и оффлайн-серверов</div>
+                  <div style="font-size: 11px; color: var(--text-2); line-height: 1.35;">Быстрый никнейм для игры офлайн</div>
                 </div>
               </div>
             </div>
 
             <!-- Saved Accounts List Card -->
-            <div class="card" style="padding: 20px; border-radius: 18px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-                <div id="acc-count-label" style="font-size: 15px; font-weight: 800; color: var(--text);">Мои аккаунты</div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <input class="input" id="acc-search" placeholder="Поиск аккаунта…" value="" style="font-size: 12px; padding: 6px 12px; width: 170px;">
-                  <select class="input" id="acc-sort" style="font-size: 12px; padding: 6px 10px; width: 150px;">
+            <div class="st-group-box">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div id="acc-count-label" style="font-size: 14px; font-weight: 800; color: var(--text);">Мои аккаунты</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input class="input" id="acc-search" placeholder="Поиск аккаунта…" value="" style="font-size: 12px; padding: 4px 10px; width: 150px; height: 32px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
+                  <select class="input" id="acc-sort" style="font-size: 12px; padding: 4px 8px; width: 140px; height: 32px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
                     <option value="default">По умолчанию</option>
                     <option value="active-first">Сначала активный</option>
                     <option value="name">По алфавиту</option>
@@ -94,22 +96,22 @@ window.Views.accounts = {
                 </div>
               </div>
 
-              <div id="acc-list" style="display: flex; flex-direction: column; gap: 10px;">
+              <div id="acc-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
                 <div class="empty-state"><span class="spinner"></span> Загрузка аккаунтов…</div>
               </div>
             </div>
           </div>
 
           <!-- Right Column: Current Account Inspector + Add Account Prompt -->
-          <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div id="current-account-card" class="card" style="padding: 24px; border-radius: 18px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div id="current-account-card" class="st-group-box" style="gap: 14px;">
               <div class="empty-state"><span class="spinner"></span> Загрузка профиля…</div>
             </div>
 
-            <div class="card" id="btn-quick-add-more" style="padding: 20px; border-radius: 18px; border: 2px dashed var(--border-soft); text-align: center; cursor: pointer; transition: all 200ms ease; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-              <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--accent-glow); display: grid; place-items: center; color: var(--accent-hi); font-size: 22px; font-weight: 700;">+</div>
-              <div style="font-weight: 700; font-size: 14px; color: var(--text);">Добавить ещё аккаунт</div>
-              <div style="color: var(--text-2); font-size: 12px; max-width: 260px; line-height: 1.4;">Переключайтесь между аккаунтами в один клик прямо перед запуском игры</div>
+            <div class="st-group-box" id="btn-quick-add-more" style="border: 2px dashed var(--border-soft); text-align: center; cursor: pointer; transition: all 180ms ease; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px;">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--glow); display: grid; place-items: center; color: var(--accent); font-size: 20px; font-weight: 700;">+</div>
+              <div style="font-weight: 700; font-size: 13.5px; color: var(--text);">Добавить ещё аккаунт</div>
+              <div style="color: var(--text-2); font-size: 11.5px; max-width: 260px; line-height: 1.4;">Переключайтесь между аккаунтами в один клик прямо перед запуском игры</div>
             </div>
           </div>
         </div>

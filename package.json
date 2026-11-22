@@ -1,7 +1,7 @@
 {
   "name": "nexus-launcher",
-  "version": "2026.1.2",
-  "description": "Nexus Launcher — Release 2026.1.2",
+  "version": "26.3.0-alpha.0.1",
+  "description": "Nexus Launcher — build-26.3.0.0.1 (Alpha)",
   "main": "src/main/main.js",
   "author": "Nexus Launcher Team",
   "license": "GPL-3.0-or-later",
@@ -18,7 +18,9 @@
     "dist:win:portable": "electron-builder --win portable",
     "dist:all:win": "electron-builder --win --linux",
     "rebuild": "electron-rebuild",
-    "test": "node test/compatibility-smoke.js"
+    "test": "node test/compatibility-smoke.js",
+    "dist:linux": "electron-builder --linux",
+    "package:all": "node scripts/package-crossplatform.js"
   },
   "dependencies": {
     "axios": "^1.7.7",
@@ -68,7 +70,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "src/renderer/assets/nexus-logo.png",
@@ -94,7 +98,10 @@
       "unicode": true,
       "warningsAsErrors": false,
       "runAfterFinish": true,
-      "installerLanguages": ["ru_RU", "en_US"],
+      "installerLanguages": [
+        "ru_RU",
+        "en_US"
+      ],
       "deleteAppDataOnUninstall": false
     },
     "portable": {
@@ -103,5 +110,6 @@
     "appImage": {
       "artifactName": "Nexus-Launcher-${version}-${arch}.${ext}"
     }
-  }
+  },
+  "buildVersion": "build-26.3.0.0.1"
 }

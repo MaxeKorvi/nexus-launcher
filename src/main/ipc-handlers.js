@@ -182,5 +182,19 @@ ipcMain.handle('servers:add', (_e, data) => Servers.add(data));
 ipcMain.handle('servers:remove', (_e, id) => Servers.remove(id));
 ipcMain.handle('servers:ping', (_e, address) => Servers.ping(address));
 
+// ─── Network & Virtual LAN Manager ─────────────────────────────────────────
+const Radmin = require('../services/radmin');
+ipcMain.handle('radmin:get-status', () => Radmin.getStatus());
+ipcMain.handle('radmin:start-host', (_e, data) => Radmin.startHost(data));
+ipcMain.handle('radmin:stop-host', () => Radmin.stopHost());
+ipcMain.handle('radmin:ping-server', (_e, address, port) => Radmin.pingServer(address, port));
+ipcMain.handle('radmin:start-reflector', (_e, data) => Radmin.startReflector(data));
+ipcMain.handle('radmin:stop-reflector', () => Radmin.stopReflector());
+ipcMain.handle('radmin:connect', (_e, name, password) => Radmin.connect(name, password));
+ipcMain.handle('radmin:disconnect', () => Radmin.disconnect());
+ipcMain.handle('radmin:create-network', (_e, name, password) => Radmin.createNetwork(name, password));
+ipcMain.handle('radmin:join-network', (_e, name, password) => Radmin.joinNetwork(name, password));
+ipcMain.handle('radmin:delete-network', (_e, id) => Radmin.deleteNetwork(id));
+
 console.log('[IPC] All service handlers registered.');
 

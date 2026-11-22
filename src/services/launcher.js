@@ -444,6 +444,7 @@ function buildLaunchArgs({ settings, vmeta, versionId, gameDir, versionDir, acco
 
   const customJvmArgs = sanitizeJvmArgsForJava(splitJvmArgs(settings.java.jvmArgs), javaMajor);
   const skinJvmArgs = skinAgent ? [skinAgent] : [];
+  const linuxFixArgs = process.platform === 'linux' ? ['-Dforgewrapper.skipHashCheck=true'] : [];
 
   if (vmeta.arguments) {
     // Modern Forge uses ${version_name}.jar in -DignoreList. The actual client
@@ -463,7 +464,7 @@ function buildLaunchArgs({ settings, vmeta, versionId, gameDir, versionDir, acco
 
     const game = resolveMojangArgs(vmeta.arguments.game || [], vars, features);
     if (settings.resolution.fullscreen && !game.includes('--fullscreen')) game.push('--fullscreen');
-    return [...memoryArgs, ...presetArgs, ...customJvmArgs, ...skinJvmArgs, ...jvm, resolveMainClass(vmeta, versionId), ...game];
+    return [...memoryArgs, ...presetArgs, ...linuxFixArgs, ...customJvmArgs, ...skinJvmArgs, ...jvm, resolveMainClass(vmeta, versionId), ...game];
   }
 
   const legacyGameArgs = vmeta.minecraftArguments
@@ -486,6 +487,7 @@ function buildLaunchArgs({ settings, vmeta, versionId, gameDir, versionDir, acco
   return [
     ...memoryArgs,
     ...presetArgs,
+    ...linuxFixArgs,
     ...customJvmArgs,
     ...skinJvmArgs,
     `-Djava.library.path=${nativesDir}`,

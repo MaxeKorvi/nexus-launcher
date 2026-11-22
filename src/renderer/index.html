@@ -13,7 +13,7 @@
     <div class="titlebar">
       <div class="title">
         <img class="brand-logo" src="assets/icon.png" onerror="this.src='../../icon.png'" alt="Nexus Launcher">
-        <div class="brand-wordmark"><strong>Nexus</strong><span>Launcher 2026.1.2</span></div>
+        <div class="brand-wordmark"><strong>Nexus</strong><span>Launcher build-26.3.0.0.1 (Alpha)</span></div>
       </div>
       <div class="controls">
         <button id="btn-min" title="Свернуть">
@@ -48,11 +48,15 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
             <span class="nav-text">Серверы</span>
           </button>
+          <button class="nav-item" data-view="radmin" id="nav-radmin" data-tip="Сетевая игра">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span class="nav-text">Сетевая игра</span>
+          </button>
           <button class="nav-item" data-view="library" data-tip="Библиотека">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             <span class="nav-text">Библиотека</span>
           </button>
-          <button class="nav-item" data-view="skins" id="nav-skins" data-tip="Скины">
+          <button class="nav-item hidden" data-view="skins" id="nav-skins" data-tip="Скины" style="display: none !important;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <span class="nav-text">Скины</span>
           </button>
@@ -97,12 +101,13 @@
                 </div>
               </div>
               <div class="profile-actions">
-                <button class="btn outline" id="hero-btn-instances" title="Управление изолированными профилями">Инстансы</button>
-                <button class="btn outline" id="hero-btn-check" title="Проверить файлы версии">Проверить файлы</button>
-                <button class="btn outline" id="hero-btn-folder" title="Открыть папку версии">Папка</button>
-                <button class="btn primary play" id="hero-btn-play">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                  Играть
+                <button class="btn outline" id="hero-btn-instances" title="Управление изолированными сборками и инстансами">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  Инстансы
+                </button>
+                <button class="btn outline" id="hero-btn-versions" title="Каталог версий Minecraft">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  Версии
                 </button>
               </div>
             </div>
@@ -230,6 +235,7 @@
   <script src="js/views/settings.js"></script>
   <script src="js/views/themes.js"></script>
   <script src="js/views/servers.js"></script>
+  <script src="js/views/radmin.js"></script>
   <script src="js/views/profile.js"></script>
   <script src="js/libs/skinview3d.bundle.js"></script>
   <script src="js/views/skins.js"></script>

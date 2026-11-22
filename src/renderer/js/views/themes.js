@@ -174,34 +174,37 @@ window.Views = window.Views || {};
       this.libraryViewMode = s.libraryDisplayMode || 'cards';
 
       c.innerHTML = `
-        <div class="view tm-container">
-          <!-- ═══ 1. Hero Banner matching concept ═══ -->
-          <div class="tm-hero">
-            <div class="tm-hero-left">
-              <span class="tm-hero-eyebrow">NEXUS LAUNCHER</span>
-              <h1>Темы и Оформление</h1>
-              <p>Сделай лаунчер своим. Выбирай, настраивай, сочетай.</p>
+        <div class="view settings-single-card tm-container" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+          <!-- ═══ 1. Header ═══ -->
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Кастомизация</span>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Themes & Colors</span>
+              </div>
+              <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Темы и Оформление</h1>
+              <p style="margin: 0; color: var(--text-2); font-size: 13px;">Сделай лаунчер своим: выбирайте готовые палитры, создавайте свою цветовую гамму и настраивайте стили</p>
             </div>
-            <div class="tm-hero-right">
-              <button class="tm-btn-reset-default" id="tm-reset-default">
+            <div>
+              <button class="btn outline" id="tm-reset-default" style="display: flex; align-items: center; gap: 8px; height: 38px;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                Восстановить стандартную тему
+                Сбросить к стандарту
               </button>
             </div>
           </div>
 
           <!-- ═══ 2. Sub-nav Tabs ═══ -->
-          <div class="tm-tabs">
-            <button class="tm-tab ${this.currentTab === 'ready' ? 'active' : ''}" data-tab="ready">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border-soft); padding-bottom: 12px;">
+            <button class="st-tab-btn ${this.currentTab === 'ready' ? 'active' : ''}" data-tab="ready">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
               Готовые темы
             </button>
-            <button class="tm-tab ${this.currentTab === 'personal' ? 'active' : ''}" data-tab="personal">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <button class="st-tab-btn ${this.currentTab === 'personal' ? 'active' : ''}" data-tab="personal">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
               Персонализация (Своя тема)
             </button>
-            <button class="tm-tab ${this.currentTab === 'bg' ? 'active' : ''}" data-tab="bg">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <button class="st-tab-btn ${this.currentTab === 'bg' ? 'active' : ''}" data-tab="bg">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
               Фон и атмосфера
             </button>
           </div>
@@ -221,10 +224,10 @@ window.Views = window.Views || {};
         resetBtn.onclick = () => this.applyPreset('emerald');
       }
 
-      document.querySelectorAll('.tm-tab[data-tab]').forEach(tab => {
+      document.querySelectorAll('.st-tab-btn[data-tab]').forEach(tab => {
         tab.onclick = () => {
           this.currentTab = tab.dataset.tab;
-          document.querySelectorAll('.tm-tab').forEach(x => x.classList.remove('active'));
+          document.querySelectorAll('.st-tab-btn').forEach(x => x.classList.remove('active'));
           tab.classList.add('active');
           this.renderTabContent();
         };

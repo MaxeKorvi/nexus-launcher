@@ -113,7 +113,20 @@ const ALLOWED_CHANNELS = {
   'servers:list': () => ipcRenderer.invoke('servers:list'),
   'servers:add': (data) => ipcRenderer.invoke('servers:add', data),
   'servers:remove': (id) => ipcRenderer.invoke('servers:remove', id),
-  'servers:ping': (address) => ipcRenderer.invoke('servers:ping', address)
+  'servers:ping': (address) => ipcRenderer.invoke('servers:ping', address),
+
+  // Network & Virtual LAN
+  'radmin:get-status': () => ipcRenderer.invoke('radmin:get-status'),
+  'radmin:start-host': (data) => ipcRenderer.invoke('radmin:start-host', data),
+  'radmin:stop-host': () => ipcRenderer.invoke('radmin:stop-host'),
+  'radmin:ping-server': (address, port) => ipcRenderer.invoke('radmin:ping-server', address, port),
+  'radmin:start-reflector': (data) => ipcRenderer.invoke('radmin:start-reflector', data),
+  'radmin:stop-reflector': () => ipcRenderer.invoke('radmin:stop-reflector'),
+  'radmin:connect': (name, password) => ipcRenderer.invoke('radmin:connect', name, password),
+  'radmin:disconnect': () => ipcRenderer.invoke('radmin:disconnect'),
+  'radmin:create-network': (name, password) => ipcRenderer.invoke('radmin:create-network', name, password),
+  'radmin:join-network': (name, password) => ipcRenderer.invoke('radmin:join-network', name, password),
+  'radmin:delete-network': (id) => ipcRenderer.invoke('radmin:delete-network', id)
 };
 
 async function invokeBackend(channel, ...payload) {

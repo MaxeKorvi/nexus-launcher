@@ -107,7 +107,7 @@ function createMainWindow() {
   splashWindow.loadFile(path.join(__dirname, '..', 'renderer', 'splash.html'), {
     query: {
       accent: themeAccent,
-      version: app.getVersion() || '2026.1.2'
+      version: app.getVersion() || 'build-26.3.0.0.1'
     }
   });
   splashWindow.once('ready-to-show', () => {
