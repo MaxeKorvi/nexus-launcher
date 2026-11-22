@@ -27,6 +27,18 @@ window.Views.home = {
         }
       };
     }
+    const btnVers = document.getElementById('hero-btn-versions');
+    if (btnVers) {
+      btnVers.onclick = () => {
+        if (window.App) window.App.navigate('versions');
+      };
+    }
+    const accBadge = document.getElementById('profile-account-badge');
+    if (accBadge) {
+      accBadge.onclick = () => {
+        if (window.App) window.App.navigate('accounts');
+      };
+    }
   },
 
   destroy() {}

@@ -157,7 +157,7 @@ window.Views = window.Views || {};
       c.style.display = 'block';
 
       c.innerHTML = `
-        <div class="view settings-single-card servers-view" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+        <div class="view settings-single-card servers-view" style="padding: 24px 30px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
           <!-- Top Header Row -->
           <div style="display: flex; flex-direction: column; gap: 14px;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">

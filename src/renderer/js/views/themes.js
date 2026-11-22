@@ -167,6 +167,7 @@ window.Views = window.Views || {};
       this.currentCard = ct.card || curPreset.card || 'rgba(8, 20, 14, 0.85)';
       this.currentText = ct.text || curPreset.text || '#f0fdf4';
       this.customThemeName = ct.name || 'Мой авторский стиль';
+      this.customBackground = s.customBackground || curPreset.image || 'assets/backgrounds/bg-valley.png';
 
       this.animationsEnabled = s.animations !== false;
       this.glowEnabled = s.glowEffects !== false;
@@ -174,7 +175,7 @@ window.Views = window.Views || {};
       this.libraryViewMode = s.libraryDisplayMode || 'cards';
 
       c.innerHTML = `
-        <div class="view settings-single-card tm-container" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+        <div class="view settings-single-card tm-container" style="padding: 24px 30px; width: 100%; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box;">
           <!-- ═══ 1. Header ═══ -->
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div>
@@ -330,14 +331,14 @@ window.Views = window.Views || {};
       }
 
       if (this.currentTab === 'bg') {
-        const activeBg = (current && current.image) || 'assets/backgrounds/bg-valley.png';
+        const activeBg = this.customBackground || (current && current.image) || 'assets/backgrounds/bg-valley.png';
         container.innerHTML = `
           <div class="tm-split-grid">
             <section class="tm-collection-card">
               <div class="tm-collection-head">
                 <div>
                   <h2>Фон и атмосфера</h2>
-                  <p>Выберите фоновые пейзажи Minecraft. Цветовая гамма лаунчера автоматически подстраивается под выбранный фон.</p>
+                  <p>Выберите фоновые пейзажи Minecraft для лаунчера.</p>
                 </div>
               </div>
               <div class="tm-cards-grid">
@@ -356,21 +357,26 @@ window.Views = window.Views || {};
               </div>
             </section>
             <section class="tm-settings-card">
-              ${this.renderPreviewCardHtml(current)}
+              ${this.renderPreviewCardHtml(current, activeBg)}
             </section>
           </div>
         `;
         document.querySelectorAll('[data-bg-img]').forEach(card => {
           card.onclick = async () => {
             const url = card.dataset.bgImg;
-            const preset = PRESETS.find(p => p.image === url) || PRESETS[0];
-            await this.applyPreset(preset.id);
+            this.customBackground = url;
+            await this.applyBackground(url);
             document.querySelectorAll('[data-bg-img]').forEach(c => {
               const isMatch = c.dataset.bgImg === url;
               c.classList.toggle('active', isMatch);
               const check = c.querySelector('.tm-check-indicator');
               if (check) check.textContent = isMatch ? '✓' : '';
             });
+            const mock = document.getElementById('tm-mockup');
+            if (mock) {
+              const b = mock.querySelector('.tm-mock-banner');
+              if (b) b.style.backgroundImage = `url('${url}')`;
+            }
           };
         });
         this.bindRightCardEvents();
@@ -419,7 +425,8 @@ window.Views = window.Views || {};
       this.bindRightCardEvents();
     },
 
-    renderPreviewCardHtml(current) {
+    renderPreviewCardHtml(current, bgOverride = null) {
+      const bannerBg = bgOverride || this.customBackground || (current && current.image) || 'assets/backgrounds/bg-valley.png';
       return `
         <!-- Live Miniature Mockup -->
         <div class="tm-preview-section">
@@ -437,7 +444,7 @@ window.Views = window.Views || {};
                 <div class="tm-mock-logo" style="background: ${this.currentAccent};"></div>
                 <span class="tm-mock-title">Nexus Launcher</span>
               </div>
-              <div class="tm-mock-banner" style="background-image: url('${current.image}');">
+              <div class="tm-mock-banner" style="background-image: url('${bannerBg}');">
                 <span style="color: ${this.currentAccent}; text-shadow: 0 0 10px ${this.currentAccent};">Больше чем игра</span>
               </div>
             </div>
@@ -822,8 +829,9 @@ window.Views = window.Views || {};
     },
 
     async applyBackground(url) {
+      this.customBackground = url;
       Store.set('settings.customBackground', url);
-      await window.api.invoke('settings:set', 'customBackground', url);
+      await window.api.invoke('settings:set', { customBackground: url });
       const centerContent = document.querySelector('.center-content');
       if (centerContent) {
         centerContent.style.backgroundImage = `linear-gradient(135deg, var(--glow), rgba(11,11,12,.76) 34%, rgba(4,4,5,.88)), url('${url}')`;
@@ -831,6 +839,11 @@ window.Views = window.Views || {};
       const profileCover = document.getElementById('profile-cover');
       if (profileCover) {
         profileCover.style.backgroundImage = `linear-gradient(to right, rgba(14,17,23,0.92) 20%, rgba(14,17,23,0.6) 60%, rgba(14,17,23,0.2) 100%), url('${url}')`;
+      }
+      const mock = document.getElementById('tm-mockup');
+      if (mock) {
+        const b = mock.querySelector('.tm-mock-banner');
+        if (b) b.style.backgroundImage = `url('${url}')`;
       }
     },
 

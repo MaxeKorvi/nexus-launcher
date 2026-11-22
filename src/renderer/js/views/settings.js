@@ -163,7 +163,7 @@ window.Views = window.Views || {};
           }
         </style>
 
-        <div class="view settings-single-card" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+        <div class="view settings-single-card" style="padding: 24px 30px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
           <!-- Header & Sub-tabs -->
           <div style="display: flex; flex-direction: column; gap: 14px;">
             <h1 style="font-size: 22px; font-weight: 800; margin: 0; color: var(--text); letter-spacing: -0.01em;">Настройки</h1>

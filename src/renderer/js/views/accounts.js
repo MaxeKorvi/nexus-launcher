@@ -14,7 +14,7 @@ window.Views.accounts = {
     c.style.display = 'block';
 
     c.innerHTML = `
-      <div class="view settings-single-card accounts-view" style="padding: 24px 30px; max-width: 1100px; margin: 16px auto; display: flex; flex-direction: column; gap: 20px;">
+      <div class="view settings-single-card accounts-view" style="padding: 24px 30px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
         <!-- Top Hero Header -->
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-soft); padding-bottom: 16px;">
           <div>

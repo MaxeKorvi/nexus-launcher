@@ -312,6 +312,8 @@ window.App = {
     if (heroBtnFolder) heroBtnFolder.onclick = folder;
     const heroBtnVersions = document.getElementById('hero-btn-versions');
     if (heroBtnVersions) heroBtnVersions.onclick = () => this.navigate('versions');
+    const heroBtnAcc = document.getElementById('profile-account-badge');
+    if (heroBtnAcc) heroBtnAcc.onclick = () => this.navigate('accounts');
     const accSelect = document.getElementById('account-select');
     if (accSelect) accSelect.onclick = () => this.navigate('accounts');
     const verSelect = document.getElementById('version-select');
@@ -969,6 +971,17 @@ window.App = {
     const statusBadge = document.getElementById('profile-status-badge');
     const iconEl = document.getElementById('profile-icon');
     const coverEl = document.getElementById('profile-cover');
+    const accountNameEl = document.getElementById('profile-account-name');
+
+    const accounts = Store.get('accounts') || [];
+    const activeAccount = (Array.isArray(accounts) && (accounts.find(a => a.active) || accounts[0])) || null;
+    if (accountNameEl) {
+      accountNameEl.textContent = activeAccount ? activeAccount.nickname : 'Гость';
+    }
+
+    const s = Store.get('settings') || {};
+    const bgImg = s.customBackground || Store.get('settings.customBackground') || '';
+    const bgUrl = bgImg ? `, url('${bgImg}')` : '';
 
     if (nameEl) {
       if (activeInstance) {
@@ -977,7 +990,7 @@ window.App = {
         verBadge.textContent = `MC ${activeInstance.mcVersion}`;
         iconEl.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
         if (coverEl) {
-          coverEl.style.background = 'linear-gradient(135deg, rgba(255, 122, 0, 0.18), rgba(17, 17, 17, 0.85) 50%)';
+          coverEl.style.backgroundImage = `linear-gradient(135deg, rgba(255, 122, 0, 0.18), rgba(17, 17, 17, 0.88) 50%)${bgUrl}`;
         }
       } else if (selectedModpack) {
         nameEl.textContent = selectedModpack.name;
@@ -985,7 +998,7 @@ window.App = {
         verBadge.textContent = `Версия: ${selectedVersion}`;
         iconEl.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
         if (coverEl) {
-          coverEl.style.background = 'linear-gradient(135deg, rgba(255, 122, 0, 0.12), rgba(17, 17, 17, 0.85) 50%)';
+          coverEl.style.backgroundImage = `linear-gradient(135deg, rgba(255, 122, 0, 0.12), rgba(17, 17, 17, 0.88) 50%)${bgUrl}`;
         }
       } else {
         nameEl.textContent = 'Стандартный профиль';
@@ -993,7 +1006,7 @@ window.App = {
         verBadge.textContent = selectedVersion;
         iconEl.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M12 12h.01"/><path d="M15 10h.01"/><path d="M18 12h.01"/><path d="M6 12h4"/><path d="M8 10v4"/></svg>`;
         if (coverEl) {
-          coverEl.style.background = 'linear-gradient(135deg, rgba(0, 182, 212, 0.12), rgba(17, 17, 17, 0.85) 50%)';
+          coverEl.style.backgroundImage = `linear-gradient(135deg, rgba(0, 182, 212, 0.12), rgba(17, 17, 17, 0.88) 50%)${bgUrl}`;
         }
       }
     }
