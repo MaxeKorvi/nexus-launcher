@@ -164,7 +164,7 @@ window.Views = window.Views || {};
               <div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Мониторинг</span>
-                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Онлайн-серверы</span>
+                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Онлайн-серверы</span>
                 </div>
                 <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Серверы</h1>
                 <p style="color: var(--text-2); font-size: 13px; margin: 0;">Популярные серверы Minecraft с мониторингом пинга, онлайна и быстрым копированием IP</p>
@@ -174,11 +174,11 @@ window.Views = window.Views || {};
                 <!-- Search box with magnifying glass -->
                 <div style="position: relative; width: 220px;">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input class="input" id="servers-search" placeholder="Поиск серверов..." value="${esc(this._searchTerm)}" style="width: 100%; height: 38px; padding-left: 36px; font-size: 13px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
+                  <input class="input" id="servers-search" placeholder="Поиск серверов..." value="${esc(this._searchTerm)}" style="width: 100%; height: 38px; padding-left: 36px; font-size: 13px; border-radius: 3px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
                 </div>
 
                 <!-- Version filter dropdown -->
-                <select class="input" id="servers-version-filter" style="height: 38px; font-size: 13px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); padding: 0 12px; min-width: 130px;">
+                <select class="input" id="servers-version-filter" style="height: 38px; font-size: 13px; border-radius: 3px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); padding: 0 12px; min-width: 130px;">
                   <option value="all" ${this._versionFilter === 'all' ? 'selected' : ''}>Все версии</option>
                   <option value="1.21" ${this._versionFilter === '1.21' ? 'selected' : ''}>1.21.x</option>
                   <option value="1.20" ${this._versionFilter === '1.20' ? 'selected' : ''}>1.20.x</option>
@@ -189,7 +189,7 @@ window.Views = window.Views || {};
                 </select>
 
                 <!-- Add server button -->
-                <button class="btn primary" id="btn-add-server" title="Добавить сервер в мониторинг" style="height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+                <button class="btn primary" id="btn-add-server" title="Добавить сервер в мониторинг" style="height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; border-radius: 3px; display: flex; align-items: center; gap: 6px;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Добавить
                 </button>
@@ -309,15 +309,15 @@ window.Views = window.Views || {};
             onlineText = `${pingData.players.online.toLocaleString('ru-RU')} / ${pingData.players.max.toLocaleString('ru-RU')}`;
           }
           if (pingData.icon) {
-            faviconHtml = `<img src="${esc(pingData.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+            faviconHtml = `<img src="${esc(pingData.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius: 4px;">`;
           }
         }
 
         return `
-          <div class="server-card-row" data-srv-id="${s.id}" data-srv-addr="${esc(s.address)}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease; cursor: pointer;">
+          <div class="server-card-row" data-srv-id="${s.id}" data-srv-addr="${esc(s.address)}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 4px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease; cursor: pointer;">
             <!-- Column 1: Icon + Name + Tags -->
             <div style="display: flex; align-items: center; gap: 14px; flex: 1.6; min-width: 0;">
-              <div id="srv-icon-${s.id}" style="flex-shrink: 0; width: 42px; height: 42px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);">
+              <div id="srv-icon-${s.id}" style="flex-shrink: 0; width: 42px; height: 42px; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);">
                 ${faviconHtml}
               </div>
               <div style="min-width: 0;">
@@ -345,7 +345,7 @@ window.Views = window.Views || {};
 
             <!-- Column 5: Menu Action Button -->
             <div style="margin-left: 16px; position: relative;">
-              <button class="btn ghost btn-srv-menu" data-id="${s.id}" data-addr="${esc(s.address)}" title="Действия" style="padding: 6px 10px; border-radius: 6px; color: var(--text-2);">
+              <button class="btn ghost btn-srv-menu" data-id="${s.id}" data-addr="${esc(s.address)}" title="Действия" style="padding: 6px 10px; border-radius: 3px; color: var(--text-2);">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
               </button>
             </div>
@@ -388,14 +388,14 @@ window.Views = window.Views || {};
       const meta = KNOWN_SERVERS[srvId] || {};
       const pingData = this._pingCache[srvId];
       const iconHtml = (pingData && pingData.icon)
-        ? `<img src="${esc(pingData.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`
+        ? `<img src="${esc(pingData.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius: 4px;">`
         : (meta.iconHtml || defaultGenericIcon(s.name));
 
       const body = document.createElement('div');
       body.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 16px;">
           <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-soft);">
-            <div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px; overflow: hidden;">
+            <div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 4px; overflow: hidden;">
               ${iconHtml}
             </div>
             <div>
@@ -414,7 +414,7 @@ window.Views = window.Views || {};
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 10px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 4px;">
             <div>
               <span style="color: var(--text-3);">Версия:</span>
               <div style="font-weight: 700; color: var(--text);">${esc(meta.version || '1.8 - 1.21.5')}</div>
@@ -508,7 +508,7 @@ window.Views = window.Views || {};
               }
             }
             if (res.icon && iconEl) {
-              iconEl.innerHTML = `<img src="${res.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+              iconEl.innerHTML = `<img src="${res.icon}" style="width:100%;height:100%;object-fit:cover;border-radius: 4px;">`;
             }
           }
         } catch {}

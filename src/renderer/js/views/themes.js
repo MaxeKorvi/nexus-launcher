@@ -103,14 +103,14 @@ window.Views = window.Views || {};
   ];
 
   const BACKGROUND_PRESETS = [
-    { name: 'Солнечная долина', image: 'assets/backgrounds/bg-valley.png' },
-    { name: 'Цветущая сакура', image: 'assets/backgrounds/bg-sakura.png' },
-    { name: 'Лавовая кузня', image: 'assets/backgrounds/bg-forge.png' },
-    { name: 'Северное сияние', image: 'assets/backgrounds/bg-aurora.png' },
-    { name: 'Владыка Края', image: 'assets/backgrounds/bg-end.png' },
-    { name: 'Песчаный храм', image: 'assets/backgrounds/bg-desert.png' },
-    { name: 'Бастион Незера', image: 'assets/backgrounds/bg-bastion.png' },
-    { name: 'Парящие острова', image: 'assets/backgrounds/bg-skylands.png' }
+    { id: 'valley', name: 'Солнечная долина', image: 'assets/backgrounds/bg-valley.png' },
+    { id: 'sakura', name: 'Цветущая сакура', image: 'assets/backgrounds/bg-sakura.png' },
+    { id: 'forge', name: 'Лавовая кузня', image: 'assets/backgrounds/bg-forge.png' },
+    { id: 'aurora', name: 'Северное сияние', image: 'assets/backgrounds/bg-aurora.png' },
+    { id: 'end', name: 'Владыка Края', image: 'assets/backgrounds/bg-end.png' },
+    { id: 'desert', name: 'Песчаный храм', image: 'assets/backgrounds/bg-desert.png' },
+    { id: 'bastion', name: 'Бастион Незера', image: 'assets/backgrounds/bg-bastion.png' },
+    { id: 'skylands', name: 'Парящие острова', image: 'assets/backgrounds/bg-skylands.png' }
   ];
 
   const ACCENT_SWATCHES = [
@@ -180,7 +180,7 @@ window.Views = window.Views || {};
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Кастомизация</span>
-                <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Themes & Colors</span>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Themes & Colors</span>
               </div>
               <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Темы и Оформление</h1>
               <p style="margin: 0; color: var(--text-2); font-size: 13px;">Сделай лаунчер своим: выбирайте готовые палитры, создавайте свою цветовую гамму и настраивайте стили</p>
@@ -265,7 +265,7 @@ window.Views = window.Views || {};
                     Цвет акцента (кнопки, бейджи, свечение)
                   </label>
                   <div class="tm-color-picker-wrap">
-                    <input type="text" class="tm-color-hex-input" id="tm-hex-accent" value="${this.currentAccent}" style="width: 80px; padding: 4px 6px; border-radius: 6px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                    <input type="text" class="tm-color-hex-input" id="tm-hex-accent" value="${this.currentAccent}" style="width: 80px; padding: 4px 6px; border-radius: 3px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
                     <input type="color" id="tm-picker-accent" value="${this.ensureHex(this.currentAccent, '#00e676')}">
                   </div>
                 </div>
@@ -277,7 +277,7 @@ window.Views = window.Views || {};
                     Цвет фона лаунчера
                   </label>
                   <div class="tm-color-picker-wrap">
-                    <input type="text" class="tm-color-hex-input" id="tm-hex-bg" value="${this.currentBg}" style="width: 80px; padding: 4px 6px; border-radius: 6px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                    <input type="text" class="tm-color-hex-input" id="tm-hex-bg" value="${this.currentBg}" style="width: 80px; padding: 4px 6px; border-radius: 3px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
                     <input type="color" id="tm-picker-bg" value="${this.ensureHex(this.currentBg, '#040906')}">
                   </div>
                 </div>
@@ -289,7 +289,7 @@ window.Views = window.Views || {};
                     Цвет карточек и списков
                   </label>
                   <div class="tm-color-picker-wrap">
-                    <input type="text" class="tm-color-hex-input" id="tm-hex-card" value="${this.currentCard}" style="width: 80px; padding: 4px 6px; border-radius: 6px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                    <input type="text" class="tm-color-hex-input" id="tm-hex-card" value="${this.currentCard}" style="width: 80px; padding: 4px 6px; border-radius: 3px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
                     <input type="color" id="tm-picker-card" value="${this.ensureHex(this.currentCard, '#08140e')}">
                   </div>
                 </div>
@@ -301,7 +301,7 @@ window.Views = window.Views || {};
                     Цвет основного текста
                   </label>
                   <div class="tm-color-picker-wrap">
-                    <input type="text" class="tm-color-hex-input" id="tm-hex-text" value="${this.currentText}" style="width: 80px; padding: 4px 6px; border-radius: 6px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
+                    <input type="text" class="tm-color-hex-input" id="tm-hex-text" value="${this.currentText}" style="width: 80px; padding: 4px 6px; border-radius: 3px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
                     <input type="color" id="tm-picker-text" value="${this.ensureHex(this.currentText, '#f0fdf4')}">
                   </div>
                 </div>
@@ -330,22 +330,29 @@ window.Views = window.Views || {};
       }
 
       if (this.currentTab === 'bg') {
+        const activeBg = (current && current.image) || 'assets/backgrounds/bg-valley.png';
         container.innerHTML = `
           <div class="tm-split-grid">
             <section class="tm-collection-card">
               <div class="tm-collection-head">
                 <div>
                   <h2>Фон и атмосфера</h2>
-                  <p>Выберите фоновые пейзажи Minecraft для лаунчера.</p>
+                  <p>Выберите фоновые пейзажи Minecraft. Цветовая гамма лаунчера автоматически подстраивается под выбранный фон.</p>
                 </div>
               </div>
               <div class="tm-cards-grid">
-                ${BACKGROUND_PRESETS.map(p => `
-                  <div class="tm-preset-card" data-bg-img="${p.image}">
-                    <div class="tm-card-preview-art" style="background-image: url('${p.image}');"></div>
+                ${BACKGROUND_PRESETS.map(p => {
+                  const isActive = activeBg === p.image;
+                  return `
+                  <div class="tm-preset-card ${isActive ? 'active' : ''}" data-bg-img="${p.image}">
+                    <div class="tm-card-preview-art" style="background-image: url('${p.image}');">
+                      <div class="tm-check-indicator">
+                        ${isActive ? '✓' : ''}
+                      </div>
+                    </div>
                     <div class="tm-preset-title">${esc(p.name)}</div>
                   </div>
-                `).join('')}
+                `}).join('')}
               </div>
             </section>
             <section class="tm-settings-card">
@@ -356,13 +363,14 @@ window.Views = window.Views || {};
         document.querySelectorAll('[data-bg-img]').forEach(card => {
           card.onclick = async () => {
             const url = card.dataset.bgImg;
-            const mock = document.getElementById('tm-mockup');
-            if (mock) {
-              const b = mock.querySelector('.tm-mock-banner');
-              if (b) b.style.backgroundImage = `url('${url}')`;
-            }
-            await this.applyBackground(url);
-            Toast.success('Фон обновлён!', 'Пейзаж применён в лаунчере');
+            const preset = PRESETS.find(p => p.image === url) || PRESETS[0];
+            await this.applyPreset(preset.id);
+            document.querySelectorAll('[data-bg-img]').forEach(c => {
+              const isMatch = c.dataset.bgImg === url;
+              c.classList.toggle('active', isMatch);
+              const check = c.querySelector('.tm-check-indicator');
+              if (check) check.textContent = isMatch ? '✓' : '';
+            });
           };
         });
         this.bindRightCardEvents();
@@ -449,8 +457,8 @@ window.Views = window.Views || {};
 
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
             <span style="font-size: 11.5px; color: var(--text-2);">Свой HEX:</span>
-            <input type="text" id="tm-quick-hex" value="${this.currentAccent}" style="width: 85px; padding: 4px 8px; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
-            <input type="color" id="tm-quick-picker" value="${this.ensureHex(this.currentAccent, '#00e676')}" style="width: 28px; height: 28px; border: none; border-radius: 6px; background: transparent; cursor: pointer;">
+            <input type="text" id="tm-quick-hex" value="${this.currentAccent}" style="width: 85px; padding: 4px 8px; border-radius: 3px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-family: monospace; text-transform: uppercase;">
+            <input type="color" id="tm-quick-picker" value="${this.ensureHex(this.currentAccent, '#00e676')}" style="width: 28px; height: 28px; border: none; border-radius: 3px; background: transparent; cursor: pointer;">
           </div>
 
           <label style="font-size: 12px; font-weight: 700; color: #fff; margin-top: 14px; display: block;">Стиль интерфейса</label>
@@ -494,14 +502,6 @@ window.Views = window.Views || {};
           this.applyPreset(pid);
         };
       });
-
-      // Swatches click
-      document.querySelectorAll('[data-color]').forEach(swatch => {
-        swatch.onclick = () => {
-          const hex = swatch.dataset.color;
-          this.applyCustomAccent(hex);
-        };
-      });
     },
 
     bindPersonalEvents() {
@@ -518,19 +518,19 @@ window.Views = window.Views || {};
       const updateRealtime = () => {
         if (pAccent) {
           this.currentAccent = pAccent.value;
-          if (hexAccent) hexAccent.textContent = pAccent.value;
+          if (hexAccent) hexAccent.value = pAccent.value.toUpperCase();
         }
         if (pBg) {
           this.currentBg = pBg.value;
-          if (hexBg) hexBg.textContent = pBg.value;
+          if (hexBg) hexBg.value = pBg.value.toUpperCase();
         }
         if (pCard) {
           this.currentCard = pCard.value;
-          if (hexCard) hexCard.textContent = pCard.value;
+          if (hexCard) hexCard.value = pCard.value.toUpperCase();
         }
         if (pText) {
           this.currentText = pText.value;
-          if (hexText) hexText.textContent = pText.value;
+          if (hexText) hexText.value = pText.value.toUpperCase();
         }
 
         this.previewFullTheme({
@@ -599,6 +599,14 @@ window.Views = window.Views || {};
     },
 
     bindRightCardEvents() {
+      // Swatches click (available in all sub-tabs)
+      document.querySelectorAll('[data-color]').forEach(swatch => {
+        swatch.onclick = () => {
+          const hex = swatch.dataset.color;
+          this.applyCustomAccent(hex);
+        };
+      });
+
       // Interface styles (standard | glass | matte)
       document.querySelectorAll('[data-style]').forEach(pill => {
         pill.onclick = async () => {
@@ -608,9 +616,6 @@ window.Views = window.Views || {};
           await window.api.invoke('settings:set', { interfaceStyle: st });
           document.body.classList.toggle('glass-style', st === 'glass');
           document.body.classList.toggle('matte-style', st === 'matte');
-          
-          const label = st === 'glass' ? 'Стеклянный акрил' : (st === 'matte' ? 'Матовый бархат' : 'Стандартный');
-          Toast.success('Стиль интерфейса', label);
         };
       });
 
@@ -622,7 +627,6 @@ window.Views = window.Views || {};
           document.querySelectorAll('[data-lib-view]').forEach(x => x.classList.toggle('active', x.dataset.libView === v));
           Store.set('settings.libraryDisplayMode', v);
           await window.api.invoke('settings:set', { libraryDisplayMode: v });
-          Toast.success('Библиотека', v === 'cards' ? 'Режим карточек (концепт)' : 'Компактный список');
         };
       });
 
@@ -657,7 +661,6 @@ window.Views = window.Views || {};
           Store.set('settings.animations', this.animationsEnabled);
           await window.api.invoke('settings:set', { animations: this.animationsEnabled });
           document.body.classList.toggle('no-animations', !this.animationsEnabled);
-          Toast.info('Анимации', this.animationsEnabled ? 'Включены' : 'Отключены');
         };
       }
 
@@ -670,7 +673,6 @@ window.Views = window.Views || {};
           Store.set('settings.glowEffects', this.glowEnabled);
           await window.api.invoke('settings:set', { glowEffects: this.glowEnabled });
           document.body.classList.toggle('no-glow', !this.glowEnabled);
-          Toast.info('Эффекты свечения', this.glowEnabled ? 'Включены' : 'Отключены');
         };
       }
     },
@@ -744,11 +746,24 @@ window.Views = window.Views || {};
 
       if (p.image) {
         await this.applyBackground(p.image);
+        const mock = document.getElementById('tm-mockup');
+        if (mock) {
+          const b = mock.querySelector('.tm-mock-banner');
+          if (b) b.style.backgroundImage = `url('${p.image}')`;
+        }
       }
 
-      // Update selection UI
-      document.querySelectorAll('.tm-preset-card').forEach(card => {
+      // Update selection UI for preset cards
+      document.querySelectorAll('.tm-preset-card[data-preset-id]').forEach(card => {
         const isThis = card.dataset.presetId === p.id;
+        card.classList.toggle('active', isThis);
+        const check = card.querySelector('.tm-check-indicator');
+        if (check) check.textContent = isThis ? '✓' : '';
+      });
+
+      // Update selection UI for background cards
+      document.querySelectorAll('.tm-preset-card[data-bg-img]').forEach(card => {
+        const isThis = card.dataset.bgImg === p.image;
         card.classList.toggle('active', isThis);
         const check = card.querySelector('.tm-check-indicator');
         if (check) check.textContent = isThis ? '✓' : '';
@@ -757,6 +772,11 @@ window.Views = window.Views || {};
       document.querySelectorAll('[data-color]').forEach(sw => {
         sw.classList.toggle('active', sw.dataset.color.toLowerCase() === p.accent.toLowerCase());
       });
+
+      const qHex = document.getElementById('tm-quick-hex');
+      const qPick = document.getElementById('tm-quick-picker');
+      if (qHex) qHex.value = p.accent.toUpperCase();
+      if (qPick) qPick.value = this.ensureHex(p.accent, '#00e676');
 
       // Save in settings
       await window.api.invoke('settings:set', {
@@ -776,25 +796,29 @@ window.Views = window.Views || {};
       if (window.App && typeof window.App.applyRuntimeSettings === 'function') {
         await window.App.applyRuntimeSettings();
       }
-
-      Toast.success('Тема применена', p.name);
     },
 
     async applyCustomAccent(hex) {
+      this.currentAccent = hex;
       this.previewAccent(hex);
 
       document.querySelectorAll('[data-color]').forEach(sw => {
         sw.classList.toggle('active', sw.dataset.color.toLowerCase() === hex.toLowerCase());
       });
 
+      const qHex = document.getElementById('tm-quick-hex');
+      const qPick = document.getElementById('tm-quick-picker');
+      if (qHex) qHex.value = hex.toUpperCase();
+      if (qPick) qPick.value = this.ensureHex(hex, '#00e676');
+
       const s = await window.api.invoke('settings:get').catch(() => ({}));
       const ct = s.customTheme || {};
       ct.accent = hex;
+      ct.accentHi = hex;
       await window.api.invoke('settings:set', { customTheme: ct, customAccentColor: hex });
       if (window.App && typeof window.App.applyRuntimeSettings === 'function') {
         await window.App.applyRuntimeSettings();
       }
-      Toast.success('Акцентный цвет', hex);
     },
 
     async applyBackground(url) {

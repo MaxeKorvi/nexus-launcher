@@ -184,7 +184,7 @@ window.Views = window.Views || {};
 
       const header = `
         <div style="display:flex;gap:14px;align-items:flex-start;">
-          <div style="width:64px;height:64px;border-radius:10px;background:var(--bg-2);background-size:cover;background-position:center;flex-shrink:0;${shader.icon ? `background-image:url('${shader.icon}')` : ''}"></div>
+          <div style="width:64px;height:64px;border-radius: 4px;background:var(--bg-2);background-size:cover;background-position:center;flex-shrink:0;${shader.icon ? `background-image:url('${shader.icon}')` : ''}"></div>
           <div style="flex:1;min-width:0;">
             <h3 style="margin:0 0 4px;font-size:17px;color:var(--text-0);">${esc(shader.title || '')}</h3>
             <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">
@@ -198,7 +198,7 @@ window.Views = window.Views || {};
       `;
 
       const desc = `
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;color:var(--text-1);max-height:220px;overflow-y:auto;white-space:pre-wrap;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius: 4px;padding:12px;font-size:13px;line-height:1.6;color:var(--text-1);max-height:220px;overflow-y:auto;white-space:pre-wrap;">
           ${esc(shader.description || 'Описание отсутствует.')}
         </div>
       `;

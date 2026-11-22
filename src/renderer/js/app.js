@@ -186,20 +186,17 @@ window.App = {
       }
 
       const palette = THEME_PALETTES[themeId] || s.customTheme || null;
+      const accent = s.customAccentColor || (palette && palette.accent) || '#00e676';
+      const accentHi = (palette && !s.customAccentColor) ? (palette.accentHi || palette.accent) : accent;
+      document.documentElement.style.setProperty('--accent', accent);
+      document.documentElement.style.setProperty('--accent-hi', accentHi);
+      document.documentElement.style.setProperty('--accent-glow', accent + '40');
+      document.documentElement.style.setProperty('--glow', accent + '25');
+      document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${accent}33`);
       if (palette) {
-        const accent = (s.customAccentColor && themeId === 'custom') ? s.customAccentColor : palette.accent;
-        const accentHi = palette.accentHi || accent;
-        document.documentElement.style.setProperty('--accent', accent);
-        document.documentElement.style.setProperty('--accent-hi', accentHi);
-        document.documentElement.style.setProperty('--accent-glow', accent + '40');
-        document.documentElement.style.setProperty('--glow', accent + '25');
-        document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${accent}33`);
         if (palette.bg) document.documentElement.style.setProperty('--bg', palette.bg);
         if (palette.card) document.documentElement.style.setProperty('--card', palette.card);
         if (palette.text) document.documentElement.style.setProperty('--text', palette.text);
-      } else if (s.customAccentColor) {
-        document.documentElement.style.setProperty('--accent', s.customAccentColor);
-        document.documentElement.style.setProperty('--accent-hi', s.customAccentColor);
       }
 
       if (s.consoleFontSize) {
@@ -213,6 +210,10 @@ window.App = {
         const centerContent = document.querySelector('.center-content');
         if (centerContent) {
           centerContent.style.backgroundImage = `linear-gradient(135deg, var(--glow), rgba(11,11,12,.76) 34%, rgba(4,4,5,.88)), url('${bgImg}')`;
+        }
+        const profileCover = document.getElementById('profile-cover');
+        if (profileCover) {
+          profileCover.style.backgroundImage = `linear-gradient(to right, rgba(14,17,23,0.92) 20%, rgba(14,17,23,0.6) 60%, rgba(14,17,23,0.2) 100%), url('${bgImg}')`;
         }
       }
 

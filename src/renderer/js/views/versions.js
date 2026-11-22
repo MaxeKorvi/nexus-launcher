@@ -655,7 +655,7 @@ window.Views = window.Views || {};
         body: `
           <div style="display:flex;flex-direction:column;gap:12px;">
             <p style="font-size:14px;color:var(--text);">${esc(desc)}</p>
-            <div style="background:rgba(255,255,255,0.04);padding:10px;border-radius:8px;font-size:12px;color:var(--text-2);">
+            <div style="background:rgba(255,255,255,0.04);padding:10px;border-radius: 4px;font-size:12px;color:var(--text-2);">
               <div><b>Тип:</b> ${esc(v.type || 'Релиз')}</div>
               <div><b>Дата релиза:</b> ${esc(formatRussianDate(v.releaseTime) || '—')}</div>
               <div><b>Совместимость с загрузчиками:</b> Fabric, Forge, NeoForge, Quilt</div>

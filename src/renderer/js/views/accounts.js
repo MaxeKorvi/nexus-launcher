@@ -20,13 +20,13 @@ window.Views.accounts = {
           <div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Профили</span>
-              <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Nexus Accounts</span>
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Nexus Accounts</span>
             </div>
             <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Аккаунты</h1>
             <p style="margin: 0; color: var(--text-2); font-size: 13px; max-width: 600px; line-height: 1.4;">Управляйте профилями Minecraft: официальный вход Microsoft, бесплатная система скинов Ely.by и локальные оффлайн-профили.</p>
           </div>
-          <div style="padding: 8px 14px; display: flex; align-items: center; gap: 10px; background: var(--glow); border: 1px solid var(--border-soft); border-radius: 8px;">
-            <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,0.06); display: grid; place-items: center; font-size: 14px;">
+          <div style="padding: 8px 14px; display: flex; align-items: center; gap: 10px; background: var(--glow); border: 1px solid var(--border-soft); border-radius: 4px;">
+            <div style="width: 28px; height: 28px; border-radius: 3px; background: rgba(255,255,255,0.06); display: grid; place-items: center; font-size: 14px;">
               🛡️
             </div>
             <div>
@@ -45,8 +45,8 @@ window.Views.accounts = {
               <div style="font-size: 13px; font-weight: 750; color: var(--text); margin-bottom: 2px;">Способ входа в игру</div>
               <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                 <!-- Microsoft -->
-                <div class="acc-method-card" id="add-ms" style="padding: 14px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
-                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(0,164,239,0.12); display: grid; place-items: center;">
+                <div class="acc-method-card" id="add-ms" style="padding: 14px 12px; border-radius: 4px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
+                  <div style="width: 32px; height: 32px; border-radius: 3px; background: rgba(0,164,239,0.12); display: grid; place-items: center;">
                     <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="13" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="13" width="10" height="10" fill="#00a4ef"/><rect x="13" y="13" width="10" height="10" fill="#ffb900"/></svg>
                   </div>
                   <div>
@@ -57,8 +57,8 @@ window.Views.accounts = {
                 </div>
 
                 <!-- Ely.by -->
-                <div class="acc-method-card" id="add-ely" style="padding: 14px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
-                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(46,204,113,0.12); display: grid; place-items: center;">
+                <div class="acc-method-card" id="add-ely" style="padding: 14px 12px; border-radius: 4px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
+                  <div style="width: 32px; height: 32px; border-radius: 3px; background: rgba(46,204,113,0.12); display: grid; place-items: center;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"><polygon points="12 2 2 22 22 22"/></svg>
                   </div>
                   <div>
@@ -69,8 +69,8 @@ window.Views.accounts = {
                 </div>
 
                 <!-- Offline -->
-                <div class="acc-method-card" id="add-local" style="padding: 14px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
-                  <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(243,156,18,0.12); display: grid; place-items: center; font-size: 16px;">
+                <div class="acc-method-card" id="add-local" style="padding: 14px 12px; border-radius: 4px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease;">
+                  <div style="width: 32px; height: 32px; border-radius: 3px; background: rgba(243,156,18,0.12); display: grid; place-items: center; font-size: 16px;">
                     📦
                   </div>
                   <div>
@@ -87,8 +87,8 @@ window.Views.accounts = {
               <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                 <div id="acc-count-label" style="font-size: 14px; font-weight: 800; color: var(--text);">Мои аккаунты</div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <input class="input" id="acc-search" placeholder="Поиск аккаунта…" value="" style="font-size: 12px; padding: 4px 10px; width: 150px; height: 32px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
-                  <select class="input" id="acc-sort" style="font-size: 12px; padding: 4px 8px; width: 140px; height: 32px; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
+                  <input class="input" id="acc-search" placeholder="Поиск аккаунта…" value="" style="font-size: 12px; padding: 4px 10px; width: 150px; height: 32px; border-radius: 3px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
+                  <select class="input" id="acc-sort" style="font-size: 12px; padding: 4px 8px; width: 140px; height: 32px; border-radius: 3px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
                     <option value="default">По умолчанию</option>
                     <option value="active-first">Сначала активный</option>
                     <option value="name">По алфавиту</option>
@@ -184,9 +184,9 @@ window.Views.accounts = {
       const initial = (a.nickname || '?').charAt(0).toUpperCase();
       const isActive = !!a.active;
       return `
-        <div class="card acc-row-card" style="padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid ${isActive ? 'var(--accent)' : 'var(--border-soft)'}; background: ${isActive ? 'rgba(255,255,255,0.03)' : 'transparent'};">
+        <div class="card acc-row-card" style="padding: 12px 16px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid ${isActive ? 'var(--accent)' : 'var(--border-soft)'}; background: ${isActive ? 'rgba(255,255,255,0.03)' : 'transparent'};">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 42px; height: 42px; border-radius: 10px; background: ${isActive ? 'var(--accent)' : 'var(--bg-2)'}; color: ${isActive ? 'var(--bg)' : 'var(--text)'}; display: grid; place-items: center; font-weight: 800; font-size: 17px; box-shadow: ${isActive ? '0 0 14px var(--shadow-glow)' : 'none'};">
+            <div style="width: 42px; height: 42px; border-radius: 4px; background: ${isActive ? 'var(--accent)' : 'var(--bg-2)'}; color: ${isActive ? 'var(--bg)' : 'var(--text)'}; display: grid; place-items: center; font-weight: 800; font-size: 17px; box-shadow: ${isActive ? '0 0 14px var(--shadow-glow)' : 'none'};">
               ${initial}
             </div>
             <div>
@@ -275,7 +275,7 @@ window.Views.accounts = {
 
       <!-- Avatar & Nickname Showcase -->
       <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 10px 0;">
-        <div style="width: 84px; height: 84px; border-radius: 20px; overflow: hidden; border: 2px solid var(--accent); box-shadow: 0 0 24px var(--shadow-glow); background: var(--bg-2);">
+        <div style="width: 84px; height: 84px; border-radius: 4px; overflow: hidden; border: 2px solid var(--accent); box-shadow: 0 0 24px var(--shadow-glow); background: var(--bg-2);">
           <img src="${skinHeadUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22><circle cx=%2212%22 cy=%228%22 r=%225%22/><path d=%22M20 21a8 8 0 1 0-16 0%22/></svg>'">
         </div>
         <div>
@@ -285,7 +285,7 @@ window.Views.accounts = {
       </div>
 
       <!-- Key-Value Metadata Grid -->
-      <div class="card" style="padding: 12px 16px; border-radius: 12px; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+      <div class="card" style="padding: 12px 16px; border-radius: 4px; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: var(--text-3);">UUID</span>
           <span style="color: var(--text); font-family: monospace; font-size: 11px;">${active.uuid ? active.uuid.slice(0, 12) + '…' : 'Offline'}</span>
@@ -306,8 +306,8 @@ window.Views.accounts = {
 
       <!-- Action Buttons -->
       <div style="display: flex; gap: 10px; margin-top: 4px;">
-        <button class="btn outline" id="btn-change-skin" style="flex: 1; padding: 8px 0; font-size: 12px; font-weight: 700; border-radius: 10px;">Сменить скин</button>
-        <button class="btn ghost" id="btn-logout-acc" style="padding: 8px 16px; font-size: 12px; border-radius: 10px; color: var(--error);">Выйти</button>
+        <button class="btn outline" id="btn-change-skin" style="flex: 1; padding: 8px 0; font-size: 12px; font-weight: 700; border-radius: 4px;">Сменить скин</button>
+        <button class="btn ghost" id="btn-logout-acc" style="padding: 8px 16px; font-size: 12px; border-radius: 4px; color: var(--error);">Выйти</button>
       </div>
     `;
 

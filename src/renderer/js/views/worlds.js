@@ -32,7 +32,7 @@ window.Views = window.Views || {};
           </div>
 
           <!-- Drag and Drop Zone -->
-          <div id="world-dropzone" style="border: 2px dashed rgba(59,130,246,0.4); border-radius: 14px; padding: 24px; text-align: center; background: rgba(59,130,246,0.04); cursor: pointer; transition: all 200ms ease;">
+          <div id="world-dropzone" style="border: 2px dashed rgba(59,130,246,0.4); border-radius: 4px; padding: 24px; text-align: center; background: rgba(59,130,246,0.04); cursor: pointer; transition: all 200ms ease;">
             <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <div style="font-size: 14px; font-weight: 700; color: #ffffff;">Перетащите сюда папку с картой или Zip/Rar архив мира</div>
@@ -200,7 +200,7 @@ window.Views = window.Views || {};
 
         listEl.innerHTML = worlds.map(w => `
           <div class="card world-card" style="display: flex; gap: 12px; align-items: center; padding: 12px; background: rgba(18,22,30,0.65); border: 1px solid var(--border-soft); border-radius: var(--radius-md); transition: all 180ms ease;">
-            <div style="width: 52px; height: 52px; border-radius: 8px; background: #111; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-line);">
+            <div style="width: 52px; height: 52px; border-radius: 4px; background: #111; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-line);">
               ${w.icon ? `<img src="${w.icon}" style="width:100%;height:100%;object-fit:cover;" />` : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`}
             </div>
             <div style="flex: 1; min-width: 0;">

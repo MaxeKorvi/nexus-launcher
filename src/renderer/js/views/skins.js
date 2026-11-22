@@ -76,12 +76,12 @@ window.Views.skins = {
           <div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Персонализация</span>
-              <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">${providerTitle}</span>
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">${providerTitle}</span>
             </div>
             <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Гардероб и Скины</h1>
             <p style="color: var(--text-2); font-size: 13px; margin: 0;">Управляйте скином для аккаунта <b>${Shared.escapeHtml(active.nickname)}</b> прямо в лаунчере.</p>
           </div>
-          <div style="padding: 4px 12px; border-radius: 6px; background: var(--glow); border: 1px solid var(--border-soft); color: var(--accent-hi); font-size: 12px; font-weight: 700;">
+          <div style="padding: 4px 12px; border-radius: 3px; background: var(--glow); border: 1px solid var(--border-soft); color: var(--accent-hi); font-size: 12px; font-weight: 700;">
             ${providerTitle}
           </div>
         </div>
@@ -97,7 +97,7 @@ window.Views.skins = {
               </div>
             </div>
 
-            <div style="width: 250px; height: 320px; margin: 0 auto 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-soft); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+            <div style="width: 250px; height: 320px; margin: 0 auto 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-soft); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
               <canvas id="skin-viewer-canvas" style="width: 100%; height: 100%; cursor: grab;"></canvas>
               <div style="position: absolute; bottom: 8px; left: 8px; right: 8px; font-size: 11px; color: var(--text-2); background: rgba(0,0,0,0.65); padding: 4px 8px; border-radius: 4px; pointer-events: none; backdrop-filter: blur(4px);">
                 ⟳ Вращайте персонажа мышью

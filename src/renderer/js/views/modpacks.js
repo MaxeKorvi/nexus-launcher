@@ -421,8 +421,8 @@ window.Views = window.Views || {};
                 const globalIdx = startIdx + idx;
                 const already = isPackInstalled(installedPacks, p);
                 return `
-                  <div class="mod-card" data-open-index="${globalIdx}" style="cursor: pointer; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); display: flex; align-items: center; gap: 16px;">
-                    <div class="icon" style="width: 54px; height: 54px; border-radius: 12px; background-size: cover; background-position: center; flex-shrink: 0; ${p.icon ? `background-image:url('${esc(p.icon)}')` : `background: var(--bg-2);`}"></div>
+                  <div class="mod-card" data-open-index="${globalIdx}" style="cursor: pointer; padding: 14px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); display: flex; align-items: center; gap: 16px;">
+                    <div class="icon" style="width: 54px; height: 54px; border-radius: 4px; background-size: cover; background-position: center; flex-shrink: 0; ${p.icon ? `background-image:url('${esc(p.icon)}')` : `background: var(--bg-2);`}"></div>
                     <div class="info" style="flex: 1; min-width: 0;">
                       <h3 style="margin: 0 0 4px; font-size: 15px; font-weight: 700; color: var(--text);">${esc(p.title)}</h3>
                       <div class="author" style="font-size: 12px; color: var(--text-2);">${esc(p.author || '—')} · ${sourceLabel(p.source)}</div>
@@ -456,18 +456,18 @@ window.Views = window.Views || {};
                 const approxSize = `${400 + ((globalIdx * 67) % 650)} МБ`;
 
                 return `
-                  <div class="mp-card card" data-open-index="${globalIdx}" style="padding: 0; overflow: hidden; border-radius: 14px; border: 1px solid var(--border-soft); display: flex; flex-direction: column; cursor: pointer; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; background: rgba(20,24,30,0.65);">
+                  <div class="mp-card card" data-open-index="${globalIdx}" style="padding: 0; overflow: hidden; border-radius: 4px; border: 1px solid var(--border-soft); display: flex; flex-direction: column; cursor: pointer; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; background: rgba(20,24,30,0.65);">
                     <!-- Compact Header / Banner -->
                     <div style="height: 75px; width: 100%; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(25,32,45,0.9), rgba(15,18,25,0.95));">
                       <div style="position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.35; filter: blur(3px); background-image: url('${esc(cover)}');"></div>
                       <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(14, 18, 16, 0.95) 0%, rgba(14, 18, 16, 0.3) 100%);"></div>
                       <div style="position: absolute; top: 8px; left: 10px; display: flex; gap: 6px;">
-                        <span class="pill-mini ok" style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.35); color: #2ecc71; font-weight: 700; padding: 2px 7px; border-radius: 6px; font-size: 10px;">
+                        <span class="pill-mini ok" style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.35); color: #2ecc71; font-weight: 700; padding: 2px 7px; border-radius: 3px; font-size: 10px;">
                           ${badgeText}
                         </span>
                       </div>
                       ${p.icon ? `
-                        <div style="position: absolute; bottom: 8px; right: 10px; width: 36px; height: 36px; border-radius: 8px; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.5); background-image: url('${esc(p.icon)}');"></div>
+                        <div style="position: absolute; bottom: 8px; right: 10px; width: 36px; height: 36px; border-radius: 4px; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.5); background-image: url('${esc(p.icon)}');"></div>
                       ` : ''}
                     </div>
 
@@ -495,10 +495,10 @@ window.Views = window.Views || {};
 
                       <!-- Action Button Bar -->
                       <div style="display: flex; gap: 6px; margin-top: 2px; align-items: center;">
-                        <button class="btn ${already ? 'ghost' : 'primary'}" style="flex: 1; height: 32px; padding: 0 10px; font-size: 12px; font-weight: 700; border-radius: 8px;" data-install="${globalIdx}">
+                        <button class="btn ${already ? 'ghost' : 'primary'}" style="flex: 1; height: 32px; padding: 0 10px; font-size: 12px; font-weight: 700; border-radius: 4px;" data-install="${globalIdx}">
                           ${already ? '✓ Установлено' : 'Установить'}
                         </button>
-                        <button class="btn outline" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px;" data-open="${globalIdx}" title="Подробнее">
+                        <button class="btn outline" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" data-open="${globalIdx}" title="Подробнее">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="12" r="2"/></svg>
                         </button>
                       </div>
@@ -619,12 +619,12 @@ window.Views = window.Views || {};
           ${detail.screenshots && detail.screenshots.length ? `
             <h3 style="margin:18px 0 10px;">Фото</h3>
             <div style="display:flex;gap:10px;overflow:auto;padding-bottom:6px;">
-              ${detail.screenshots.slice(0, 12).map(src => `<img src="${esc(src)}" style="height:160px;border-radius:16px;border:1px solid var(--border-soft);object-fit:cover;">`).join('')}
+              ${detail.screenshots.slice(0, 12).map(src => `<img src="${esc(src)}" style="height:160px;border-radius: 4px;border:1px solid var(--border-soft);object-fit:cover;">`).join('')}
             </div>
           ` : ''}
 
           <h3 style="margin:18px 0 10px;">Описание</h3>
-          <div style="max-height:210px;overflow:auto;white-space:pre-wrap;color:var(--text-2);line-height:1.5;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:16px;padding:14px;">${esc(detail.description || detail.summary || pack.description || 'Описание отсутствует.')}</div>
+          <div style="max-height:210px;overflow:auto;white-space:pre-wrap;color:var(--text-2);line-height:1.5;background:var(--bg-2);border:1px solid var(--border-soft);border-radius: 4px;padding:14px;">${esc(detail.description || detail.summary || pack.description || 'Описание отсутствует.')}</div>
 
           <h3 style="margin:18px 0 10px;">Версия сборки</h3>
           ${detail.error ? `<div style="color:var(--accent-hi);font-size:13px;margin-bottom:10px;">${esc(detail.error)}</div>` : ''}
@@ -673,8 +673,8 @@ window.Views = window.Views || {};
       el.innerHTML = `
         <div class="card grid" style="grid-template-columns: 1fr; gap: 10px; padding: 14px;">
           ${list.map(p => `
-            <div class="mod-card" style="padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); display: flex; align-items: center; gap: 16px;">
-              <div class="icon" style="width: 50px; height: 50px; border-radius: 12px; background:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--accent);">
+            <div class="mod-card" style="padding: 14px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); display: flex; align-items: center; gap: 16px;">
+              <div class="icon" style="width: 50px; height: 50px; border-radius: 4px; background:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--accent);">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v13h18V7M3 7l9-4 9 4M3 7h18"/></svg>
               </div>
               <div class="info" style="flex: 1; min-width: 0;">

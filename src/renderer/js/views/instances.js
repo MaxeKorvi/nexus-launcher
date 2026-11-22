@@ -50,7 +50,7 @@ window.Views.instances = {
           ${!activeId ? `<div style="position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 700; color: var(--accent-hi); background: rgba(255,122,0,0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255,122,0,0.3);">АКТИВЕН</div>` : ''}
           <div>
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 36px; height: 36px; border-radius: 4px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
               </div>
               <div>
@@ -77,7 +77,7 @@ window.Views.instances = {
             ${isCur ? `<div style="position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 700; color: var(--accent-hi); background: rgba(255,122,0,0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255,122,0,0.3);">АКТИВЕН</div>` : ''}
             <div>
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(255,122,0,0.12); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,122,0,0.25);">
+                <div style="width: 36px; height: 36px; border-radius: 4px; background: rgba(255,122,0,0.12); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,122,0,0.25);">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                 </div>
                 <div>

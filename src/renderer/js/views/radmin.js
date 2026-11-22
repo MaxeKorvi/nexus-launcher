@@ -111,7 +111,7 @@ window.Views.radmin = {
           background: none;
           border: none;
           padding: 6px 16px;
-          border-radius: 6px;
+          border-radius: 3px;
           font-size: 13px;
           font-weight: 600;
           color: var(--text-2);
@@ -133,7 +133,7 @@ window.Views.radmin = {
           align-items: center;
           background: rgba(0,0,0,0.25);
           border: 1px solid var(--border-soft);
-          border-radius: 6px;
+          border-radius: 3px;
           padding: 0 12px;
           height: 38px;
           gap: 10px;
@@ -162,7 +162,7 @@ window.Views.radmin = {
         .st-group-box {
           background: rgba(0,0,0,0.2);
           border: 1px solid var(--border-soft);
-          border-radius: 8px;
+          border-radius: 4px;
           padding: 14px 16px;
           display: flex;
           flex-direction: column;
@@ -177,7 +177,7 @@ window.Views.radmin = {
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Мультиплеер</span>
-                <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">P2P / LAN Engine</span>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">P2P / LAN Engine</span>
               </div>
               <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Сетевая игра</h1>
               <p style="color: var(--text-2); font-size: 13px; margin: 0;">Совместная игра с друзьями в Minecraft: открывайте локальные миры, подключайтесь по IP и играйте без белого IP и без платных хостингов</p>
@@ -299,7 +299,7 @@ window.Views.radmin = {
               </p>
 
               <!-- Address 1: LAN / Radmin VPN -->
-              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--accent); letter-spacing: 0.04em;">Локальная сеть / Radmin VPN</span>
                   <span style="font-size: 10.5px; color: var(--text-2);">В одной сети / VPN</span>
@@ -313,7 +313,7 @@ window.Views.radmin = {
               </div>
 
               <!-- Address 2: Public Internet IP -->
-              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text); letter-spacing: 0.04em;">Публичный IP (Через интернет)</span>
                   <span style="font-size: 10.5px; color: var(--text-2);">${s.publicIp ? 'Определён автоматически' : 'Поиск...'}</span>
@@ -371,7 +371,7 @@ window.Views.radmin = {
 
             <div id="net-ping-result-box" style="margin-top: 6px;">
               ${this.pingResult ? `
-                <div style="padding: 10px 14px; border-radius: 8px; font-size: 12.5px; background: ${this.pingResult.online ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 85, 85, 0.1)'}; border: 1px solid ${this.pingResult.online ? 'var(--accent)' : 'var(--error)'}; color: ${this.pingResult.online ? 'var(--accent-hi)' : 'var(--error)'};">
+                <div style="padding: 10px 14px; border-radius: 4px; font-size: 12.5px; background: ${this.pingResult.online ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 85, 85, 0.1)'}; border: 1px solid ${this.pingResult.online ? 'var(--accent)' : 'var(--error)'}; color: ${this.pingResult.online ? 'var(--accent-hi)' : 'var(--error)'};">
                   ${this.pingResult.online ? `🟢 Сервер онлайн! Пинг: <b>${this.pingResult.ping} ms</b> (${this.pingResult.host}:${this.pingResult.port})` : `🔴 Сервер недоступен: ${this.pingResult.message}`}
                 </div>
               ` : ''}
@@ -382,7 +382,7 @@ window.Views.radmin = {
           <div class="st-group-box" style="display: flex; flex-direction: column; gap: 14px;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <h3 style="font-size: 15px; font-weight: 700; color: var(--text); margin: 0;">LAN-ретранслятор в игре</h3>
-              <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: ${reflectorActive ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255,255,255,0.06)'}; color: ${reflectorActive ? 'var(--accent)' : 'var(--text-2)'}; font-weight: 600;">
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: ${reflectorActive ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255,255,255,0.06)'}; color: ${reflectorActive ? 'var(--accent)' : 'var(--text-2)'}; font-weight: 600;">
                 ${reflectorActive ? 'Активен' : 'Отключен'}
               </span>
             </div>
@@ -426,7 +426,7 @@ window.Views.radmin = {
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
               ${adapters.length ? adapters.map(a => `
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 4px;">
                   <div>
                     <div style="font-size: 13px; font-weight: 700; color: var(--text);">${a.label}</div>
                     <div style="font-size: 11.5px; color: var(--text-2);">Интерфейс: <span style="color:var(--text);">${a.interface}</span> • Маска: ${a.netmask || '255.255.255.0'}</div>
@@ -466,7 +466,7 @@ window.Views.radmin = {
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
               ${saved.length ? saved.map(r => `
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); border-radius: 4px;">
                   <div>
                     <div style="font-size: 13px; font-weight: 700; color: var(--text);">${r.name}</div>
                     <div style="font-size: 11px; color: var(--text-2);">${r.isOwner ? 'Владелец' : 'Участник'}</div>

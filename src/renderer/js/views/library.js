@@ -15,7 +15,7 @@ window.Views.library = {
     c.innerHTML = `
       <div class="view library-view" style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
         <div class="library-tabs-wrap" style="padding: 16px 24px 10px; border-bottom: 1px solid var(--border-soft); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-          <div class="library-tabs" style="display:inline-flex; align-items:center; gap:4px; padding:3px; border-radius:6px; background:rgba(0,0,0,0.3); border:1px solid var(--border-soft);">
+          <div class="library-tabs" style="display:inline-flex; align-items:center; gap:4px; padding:3px; border-radius: 3px; background:rgba(0,0,0,0.3); border:1px solid var(--border-soft);">
             <button class="tab-item" data-tab="instances">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
               <span>Профили</span>

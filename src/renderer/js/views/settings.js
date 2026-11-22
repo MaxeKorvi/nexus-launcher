@@ -86,7 +86,7 @@ window.Views = window.Views || {};
             background: none;
             border: none;
             padding: 6px 16px;
-            border-radius: 6px;
+            border-radius: 3px;
             font-size: 13px;
             font-weight: 600;
             color: var(--text-2);
@@ -108,7 +108,7 @@ window.Views = window.Views || {};
             align-items: center;
             background: rgba(0,0,0,0.25);
             border: 1px solid var(--border-soft);
-            border-radius: 6px;
+            border-radius: 3px;
             padding: 0 12px;
             height: 38px;
             gap: 10px;
@@ -141,7 +141,7 @@ window.Views = window.Views || {};
           .st-group-box {
             background: rgba(0,0,0,0.2);
             border: 1px solid var(--border-soft);
-            border-radius: 8px;
+            border-radius: 4px;
             padding: 14px 16px;
             display: flex;
             flex-direction: column;
@@ -182,12 +182,12 @@ window.Views = window.Views || {};
 
           <!-- Bottom Action Bar -->
           <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--border-soft); margin-top: 6px;">
-            <button class="btn outline" id="btn-reset-settings" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 6px; font-size: 13px; font-weight: 600;">
+            <button class="btn outline" id="btn-reset-settings" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 3px; font-size: 13px; font-weight: 600;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
               Сбросить настройки
             </button>
 
-            <button class="btn primary" id="btn-save-settings" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 22px; border-radius: 6px; font-size: 13px; font-weight: 700;">
+            <button class="btn primary" id="btn-save-settings" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 22px; border-radius: 3px; font-size: 13px; font-weight: 700;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               Сохранить
             </button>
@@ -256,7 +256,7 @@ window.Views = window.Views || {};
                 <div class="st-input-row">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                   <input id="set-java-path" value="${esc(javaPathVal)}" placeholder="Автоопределение Java">
-                  <button class="btn ghost" id="pick-java-btn" title="Обзор" style="padding: 4px 8px; border-radius: 6px; color: #8c9ba5;">
+                  <button class="btn ghost" id="pick-java-btn" title="Обзор" style="padding: 4px 8px; border-radius: 3px; color: #8c9ba5;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                   </button>
                 </div>

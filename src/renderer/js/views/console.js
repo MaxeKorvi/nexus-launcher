@@ -14,7 +14,7 @@ window.Views.console = {
         <h1>Консоль лаунчера</h1>
         <p style="color:var(--text-2);margin-bottom:12px;">Логи запуска Minecraft и операции лаунчера. Ошибки — красным, успех — зелёным.</p>
         <div class="search-bar" style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap: wrap;">
-          <input type="text" id="c-search" placeholder="Поиск в консоли..." style="padding:6px 12px; border-radius:6px; border:1px solid var(--border-soft); background:rgba(255,255,255,0.03); color:#fff; width:220px; font-size:12px;">
+          <input type="text" id="c-search" placeholder="Поиск в консоли..." style="padding:6px 12px; border-radius: 3px; border:1px solid var(--border-soft); background:rgba(255,255,255,0.03); color:#fff; width:220px; font-size:12px;">
           <button class="btn ghost btn-filter primary" data-f="all">Все</button>
           <button class="btn ghost btn-filter" data-f="info">Info</button>
           <button class="btn ghost btn-filter" data-f="error">Ошибки</button>
@@ -23,7 +23,7 @@ window.Views.console = {
           <button class="btn outline" id="c-copy">Копировать</button>
           <button class="btn outline" id="c-open">Открыть файл</button>
         </div>
-        <div id="c-output" class="console" style="flex:1; overflow-y:auto; font-family: var(--console-font-family, monospace); background:#020202; border:1px solid var(--border-soft); border-radius:8px; padding:12px; font-size: var(--console-font-size, 12px); line-height:1.6;"></div>
+        <div id="c-output" class="console" style="flex:1; overflow-y:auto; font-family: var(--console-font-family, monospace); background:#020202; border:1px solid var(--border-soft); border-radius: 4px; padding:12px; font-size: var(--console-font-size, 12px); line-height:1.6;"></div>
       </div>
     `;
 
