@@ -834,11 +834,11 @@ window.Views = window.Views || {};
       await window.api.invoke('settings:set', { customBackground: url });
       const centerContent = document.querySelector('.center-content');
       if (centerContent) {
-        centerContent.style.backgroundImage = `linear-gradient(135deg, var(--glow), rgba(11,11,12,.76) 34%, rgba(4,4,5,.88)), url('${url}')`;
+        centerContent.style.backgroundImage = `linear-gradient(180deg, rgba(12, 15, 20, 0.88) 0%, rgba(8, 10, 14, 0.94) 100%), url('${url}')`;
       }
       const profileCover = document.getElementById('profile-cover');
       if (profileCover) {
-        profileCover.style.backgroundImage = `linear-gradient(to right, rgba(14,17,23,0.92) 20%, rgba(14,17,23,0.6) 60%, rgba(14,17,23,0.2) 100%), url('${url}')`;
+        profileCover.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%), url('${url}')`;
       }
       const mock = document.getElementById('tm-mockup');
       if (mock) {

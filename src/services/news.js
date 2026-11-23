@@ -13,8 +13,8 @@ const axios = require('axios');
 const { app } = require('electron');
 
 const BASE_URL = 'https://www.minecraft.net';
-const NEWS_URL = `${BASE_URL}/en-us/article`;
-const NEWS_URLS = [NEWS_URL, `${BASE_URL}/en-us/articles`];
+const NEWS_URL = `${BASE_URL}/ru-ru/article`;
+const NEWS_URLS = [NEWS_URL, `${BASE_URL}/ru-ru/articles`, `${BASE_URL}/en-us/article`];
 const CACHE_TTL_MS = 1000 * 60 * 60 * 3; // 3 hours
 const MAX_ITEMS = 12;
 const ARTICLE_ENRICH_LIMIT = 10;
@@ -35,42 +35,74 @@ const UPDATE_KEYWORDS = [
   'minecraft live'
 ];
 
+const LOCALIZATION_MAP = [
+  [/\bMinecraft Snapshot\b/gi, 'Снапшот Minecraft'],
+  [/\bMinecraft Java Edition Snapshot\b/gi, 'Снапшот Minecraft Java Edition'],
+  [/\bMinecraft:\s*Java Edition\b/gi, 'Minecraft Java Edition'],
+  [/\bMinecraft:\s*Bedrock Edition\b/gi, 'Minecraft Bedrock Edition'],
+  [/\bBedrock Edition\b/gi, 'Bedrock Edition'],
+  [/\bPre-Release\b/gi, 'Пре-релиз'],
+  [/\bRelease Candidate\b/gi, 'Кандидат на релиз'],
+  [/\bGame Drop\b/gi, 'Игровой дроп'],
+  [/\bPatch Notes\b/gi, 'Список исправлений'],
+  [/\bChangelog\b/gi, 'Список изменений'],
+  [/\bHotfix\b/gi, 'Хотфикс'],
+  [/\bOfficial Update\b/gi, 'Официальное обновление']
+];
+
+function localizeTitle(raw) {
+  let title = cleanText(raw);
+  for (const [pattern, replacement] of LOCALIZATION_MAP) {
+    title = title.replace(pattern, replacement);
+  }
+  return title;
+}
+
+function truncateDescription(text, maxLen = 200) {
+  if (!text) return '';
+  const clean = cleanText(text);
+  if (clean.length <= maxLen) return clean;
+  const sub = clean.slice(0, maxLen);
+  const lastSpace = sub.lastIndexOf(' ');
+  const cut = lastSpace > maxLen * 0.6 ? sub.slice(0, lastSpace) : sub;
+  return cut.replace(/[,\s;:.-]+$/, '') + '…';
+}
+
 function cachePath() {
   const base = app && app.getPath ? app.getPath('userData') : process.cwd();
   return path.join(base, 'news-cache.json');
 }
 
 function getLauncherReleaseNewsItem() {
-  const content = `Список изменений обновления Nexus Launcher build-26.3.0.0.1 (Alpha):
+  const content = `Что нового в обновлении Nexus Launcher build-26.3.0.0.1 (Alpha):
 
-1. UI/UX Refactoring & Typography Standardization:
-   • Комплексная чистка визуального шума («вайбкод-дизайна»): унифицированы отступы, карточки, радиусы скруглений и уровни матового размытия (Acrylic).
-   • Строгая типографическая иерархия без диспропорций текста и прыгающих межстрочных интервалов.
-   • Устранено дублирование элементов: очищена верхняя карточка профиля от нагромождения дублирующих кнопок, нижний бар приведен к единому стандарту.
-   • Идеальное вертикальное выравнивание иконок и надписей в левом навигационном меню с приятным акцентным индикатором.
-   • Исправлен контраст кнопок действий: главная кнопка «ИГРАТЬ» теперь обладает однозначным приоритетом без конфликтующих оранжевых наложений.
+🎮 Главный экран и профиль:
+• Убрали лишние дубли профиля — теперь статус и аккаунт выводятся в одном компактном блоке в сайдбаре.
+• Кнопка «Играть» синхронизирована с версией: если версия не выбрана, кнопка вежливо подсказывает выбрать её в Библиотеке, а статус проверки скрывается.
+• Улучшена читаемость: мягкое затемнение фонового арта и выверенная сетка отступов делают текст и карточки четкими без напряжения глаз.
 
-2. Добавлена вкладка «Моды» (Mods) в Библиотеку:
-   • В раздел «Библиотека» официально добавлена прямая подвкладка «Моды» для централизованного управления контентом (моды, сборки, ресурспаки, шейдеры, миры).
-   • Быстрый поиск, сортировка по категориям и фильтрация модов под выбранную версию игры.
+🌐 Серверы и Мультиплеер:
+• Отображение реального пинга серверов и быстрое копирование IP в один клик.
+• Честный счётчик онлайна без превышения лимита слотов и единые зелёные индикаторы для серверов онлайн.
+• Встроенный Radmin VPN: играйте с друзьями по локальной сети без белого IP и проброса портов.
 
-3. Встроенная поддержка Radmin VPN / Локальной сети:
-   • Полноценный интерфейс виртуальной сети прямо в лаунчере: подключение/отключение, отображение виртуального IP-адреса и пинга.
-   • Управление комнатами: создание и подключение к существующим сетям для комфортной игры с друзьями по сети без белого IP и проброса портов.
-   • Автоматическое определение локального мира Minecraft (LAN Broadcast) с генерацией готового IP:Port для друзей в 1 клик.
+📦 Библиотека и Сборки:
+• Корректные загрузчики модов: NeoForge, Forge, Fabric и Quilt разделены без путаницы.
+• Живые обложки и скриншоты для карточек сборок вместо размытых заглушек.
+• Компактная панель фильтров: категории и сортировка объединены в одну удобную строку.
+• Спокойные цвета второстепенных кнопок для максимального визуального комфорта.
 
-4. Кроссплатформенная совместимость и компиляция:
-   • Улучшена поддержка Linux (CachyOS/Arch/Ubuntu) и Windows (.exe/portable).
-   • Автоматический обход проблем со сжатием zlib-ng при установке Forge/NeoForge на современных дистрибутивах Linux.`;
+⚡ Быстродействие:
+• Моментальный запуск и плавная работа интерфейса на современных системах Windows и Linux.`;
 
   return {
-    title: 'Nexus Launcher build-26.3.0.0.1 (Alpha): Рефакторинг UI/UX, вкладка Моды и Radmin VPN!',
+    title: 'Nexus Launcher: Большое обновление главного экрана, серверов и сборок!',
     link: 'https://github.com/MaxeKorvi/nexus-launcher',
     pubDate: new Date().toISOString(),
-    description: 'В обновлении build-26.3.0.0.1 (Alpha): глубокая чистка UI/UX, стандартизация типографики, вкладка «Моды» в Библиотеке, встроенная поддержка Radmin VPN для игры по сети и улучшенная совместимость Linux/Windows.',
+    description: 'Встречайте свежее обновление: чистый главный экран, умная кнопка запуска, пинг серверов с копированием IP в 1 клик, живые обложки сборок и единая строка фильтров.',
     content: content,
     image: 'assets/minecraft-hero-panorama.jpg',
-    category: 'Nexus Update build-26.3.0.0.1'
+    category: 'Nexus Launcher'
   };
 }
 
@@ -145,20 +177,21 @@ async function fetchOfficialMinecraftNews() {
 
 async function enrichArticle(candidate) {
   const html = await fetchText(candidate.link, 5000);
-  const title = cleanText(
+  const title = localizeTitle(cleanText(
     getMeta(html, 'og:title') ||
     getMeta(html, 'twitter:title') ||
     extractTagText(html, 'h1') ||
     candidate.title
-  ).replace(/\s*\|\s*Minecraft\s*$/i, '').trim();
+  ).replace(/\s*\|\s*Minecraft\s*$/i, ''));
 
-  const description = cleanText(
+  const description = truncateDescription(
     getMeta(html, 'og:description') ||
     getMeta(html, 'description') ||
     getMeta(html, 'twitter:description') ||
     candidate.description ||
-    extractFirstParagraph(html)
-  ).slice(0, 240);
+    extractFirstParagraph(html),
+    200
+  );
 
   const image = absolutize(
     getMeta(html, 'og:image') ||
@@ -219,13 +252,13 @@ function extractArticleCandidates(html) {
     const end = Math.min(html.length, match.index + 2600);
     const context = html.slice(start, end);
 
-    const title = cleanText(
+    const title = localizeTitle(cleanText(
       extractNearbyHeading(context) ||
       extractAttrNear(context, 'aria-label') ||
       extractAttrNear(context, 'title') ||
       slugToTitle(link)
-    );
-    const description = cleanText(extractNearbyParagraph(context)).slice(0, 240);
+    ));
+    const description = truncateDescription(extractNearbyParagraph(context), 200);
     const image = absolutize(extractBestImage(context), NEWS_URL);
 
     // Avoid menu/footer duplicates that are not article cards.
@@ -261,10 +294,10 @@ function parseRssLikeFallback(html) {
     const link = normalizeMinecraftArticleUrl(href);
     if (!link) continue;
     items.push({
-      title: cleanText(extractNearbyHeading(block) || slugToTitle(link)),
+      title: localizeTitle(cleanText(extractNearbyHeading(block) || slugToTitle(link))),
       link,
       pubDate: normalizeDate(extractDatetime(block)),
-      description: cleanText(extractNearbyParagraph(block)).slice(0, 240),
+      description: truncateDescription(extractNearbyParagraph(block), 200),
       image: absolutize(extractBestImage(block), NEWS_URL),
       category: 'News'
     });
@@ -279,10 +312,10 @@ function normalizeItems(items) {
     if (!item || !item.link || seen.has(item.link)) continue;
     seen.add(item.link);
     out.push({
-      title: cleanText(item.title || slugToTitle(item.link)),
+      title: localizeTitle(cleanText(item.title || slugToTitle(item.link))),
       link: item.link,
       pubDate: normalizeDate(item.pubDate),
-      description: cleanText(item.description || '').slice(0, 240),
+      description: truncateDescription(item.description || '', 200),
       image: item.image ? absolutize(item.image, item.link) : null,
       category: item.category || 'News'
     });
@@ -393,7 +426,8 @@ function extractTagText(html, tag) {
 function slugToTitle(link) {
   try {
     const slug = new URL(link).pathname.split('/').filter(Boolean).pop() || '';
-    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const formatted = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return localizeTitle(formatted);
   } catch {
     return '';
   }

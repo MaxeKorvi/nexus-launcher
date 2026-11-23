@@ -97,7 +97,6 @@
                   <div class="profile-meta">
                     <span class="version-badge" id="profile-version-badge">Версия: —</span>
                     <span class="status-badge" id="profile-status-badge">● Файлы не проверены</span>
-                    <span class="account-badge" id="profile-account-badge" title="Активный аккаунт (клик для смены)" style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 3px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-soft); color: var(--text-2); cursor: pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="profile-account-name">Гость</span></span>
                   </div>
                 </div>
               </div>
@@ -136,17 +135,8 @@
         <section id="view-container" class="main-view" style="display:none;"></section>
       </div>
 
-      <!-- Right side panel: Account & Downloads -->
-      <aside class="right-panel" id="right-panel">
-        <div class="user-card" id="user-card">
-          <div class="avatar" id="user-avatar">?</div>
-          <div class="user-card-body">
-            <div class="nick" id="user-nick">Гость</div>
-            <div class="provider" id="user-provider">Войдите в аккаунт</div>
-            <div class="status" id="user-status">Оффлайн</div>
-          </div>
-        </div>
-
+      <!-- Right side panel: Downloads (shown when active) -->
+      <aside class="right-panel" id="right-panel" style="display: none;">
         <div class="downloads-panel" id="downloads-panel" style="display: none;">
           <div class="downloads-panel-head" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-soft); margin-bottom: 10px;">
             <h3 style="font-size: 14px; font-weight: 700; color: var(--text);">Загрузки</h3>

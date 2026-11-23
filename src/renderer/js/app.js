@@ -209,11 +209,11 @@ window.App = {
       if (bgImg) {
         const centerContent = document.querySelector('.center-content');
         if (centerContent) {
-          centerContent.style.backgroundImage = `linear-gradient(135deg, var(--glow), rgba(11,11,12,.76) 34%, rgba(4,4,5,.88)), url('${bgImg}')`;
+          centerContent.style.backgroundImage = `linear-gradient(180deg, rgba(12, 15, 20, 0.88) 0%, rgba(8, 10, 14, 0.94) 100%), url('${bgImg}')`;
         }
         const profileCover = document.getElementById('profile-cover');
         if (profileCover) {
-          profileCover.style.backgroundImage = `linear-gradient(to right, rgba(14,17,23,0.92) 20%, rgba(14,17,23,0.6) 60%, rgba(14,17,23,0.2) 100%), url('${bgImg}')`;
+          profileCover.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%), url('${bgImg}')`;
         }
       }
 
@@ -312,8 +312,6 @@ window.App = {
     if (heroBtnFolder) heroBtnFolder.onclick = folder;
     const heroBtnVersions = document.getElementById('hero-btn-versions');
     if (heroBtnVersions) heroBtnVersions.onclick = () => this.navigate('versions');
-    const heroBtnAcc = document.getElementById('profile-account-badge');
-    if (heroBtnAcc) heroBtnAcc.onclick = () => this.navigate('accounts');
     const accSelect = document.getElementById('account-select');
     if (accSelect) accSelect.onclick = () => this.navigate('accounts');
     const verSelect = document.getElementById('version-select');
@@ -465,6 +463,8 @@ window.App = {
 
   renderDownloadDrawer() {
     const panel = document.getElementById('downloads-panel');
+    const rightPanel = document.getElementById('right-panel');
+    const mainContent = document.querySelector('main.content');
     const body = document.getElementById('downloads-panel-body');
     if (!body) return;
     const d = Store.get('downloads') || { active: [], queue: [], completed: [], paused: [] };
@@ -472,13 +472,16 @@ window.App = {
     const queue = d.queue || [];
     const completed = d.completed || [];
     const isDownloading = active.length > 0 || queue.length > 0;
+    const showDrawer = Boolean(isDownloading || (this._downloadJustFinished && completed.length));
 
     if (panel) {
-      if (isDownloading || (this._downloadJustFinished && completed.length)) {
-        panel.style.display = 'block';
-      } else {
-        panel.style.display = 'none';
-      }
+      panel.style.display = showDrawer ? 'block' : 'none';
+    }
+    if (rightPanel) {
+      rightPanel.style.display = showDrawer ? 'flex' : 'none';
+    }
+    if (mainContent) {
+      mainContent.classList.toggle('has-downloads', showDrawer);
     }
 
     const rows = active.length || queue.length ? [...active, ...queue.slice(0, 8)] : [];
@@ -971,13 +974,9 @@ window.App = {
     const statusBadge = document.getElementById('profile-status-badge');
     const iconEl = document.getElementById('profile-icon');
     const coverEl = document.getElementById('profile-cover');
-    const accountNameEl = document.getElementById('profile-account-name');
 
     const accounts = Store.get('accounts') || [];
     const activeAccount = (Array.isArray(accounts) && (accounts.find(a => a.active) || accounts[0])) || null;
-    if (accountNameEl) {
-      accountNameEl.textContent = activeAccount ? activeAccount.nickname : 'Гость';
-    }
 
     const s = Store.get('settings') || {};
     const bgImg = s.customBackground || Store.get('settings.customBackground') || '';
@@ -990,7 +989,7 @@ window.App = {
         verBadge.textContent = `MC ${activeInstance.mcVersion}`;
         iconEl.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
         if (coverEl) {
-          coverEl.style.backgroundImage = `linear-gradient(135deg, rgba(255, 122, 0, 0.18), rgba(17, 17, 17, 0.88) 50%)${bgUrl}`;
+          coverEl.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%)${bgUrl}`;
         }
       } else if (selectedModpack) {
         nameEl.textContent = selectedModpack.name;
@@ -998,7 +997,7 @@ window.App = {
         verBadge.textContent = `Версия: ${selectedVersion}`;
         iconEl.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
         if (coverEl) {
-          coverEl.style.backgroundImage = `linear-gradient(135deg, rgba(255, 122, 0, 0.12), rgba(17, 17, 17, 0.88) 50%)${bgUrl}`;
+          coverEl.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%)${bgUrl}`;
         }
       } else {
         nameEl.textContent = 'Стандартный профиль';
@@ -1006,16 +1005,23 @@ window.App = {
         verBadge.textContent = selectedVersion;
         iconEl.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M12 12h.01"/><path d="M15 10h.01"/><path d="M18 12h.01"/><path d="M6 12h4"/><path d="M8 10v4"/></svg>`;
         if (coverEl) {
-          coverEl.style.backgroundImage = `linear-gradient(135deg, rgba(0, 182, 212, 0.12), rgba(17, 17, 17, 0.88) 50%)${bgUrl}`;
+          coverEl.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%)${bgUrl}`;
         }
       }
     }
 
     const isLaunching = Store.get('isLaunching');
     const verifyOnLaunch = Store.get('verifyOnLaunch');
+    const hasValidVersion = Boolean(selectedVersion && selectedVersion !== '—' && selectedVersion !== 'null' && selectedVersion !== 'undefined');
+
     if (statusBadge) {
-      statusBadge.textContent = isLaunching ? '● Запущено' : (verifyOnLaunch !== false ? '● Готово к проверке' : '● Готово к запуску');
-      statusBadge.style.color = isLaunching ? 'var(--success)' : 'var(--accent-hi)';
+      if (!hasValidVersion) {
+        statusBadge.style.display = 'none';
+      } else {
+        statusBadge.style.display = '';
+        statusBadge.textContent = isLaunching ? '● Запущено' : (verifyOnLaunch !== false ? '● Готово к проверке' : '● Готово к запуску');
+        statusBadge.style.color = isLaunching ? 'var(--success)' : 'var(--accent-hi)';
+      }
     }
 
     // Sync Play button states
@@ -1024,19 +1030,43 @@ window.App = {
     if (btnPlay) {
       if (isLaunching) {
         btnPlay.disabled = true;
+        btnPlay.classList.add('disabled');
+        btnPlay.classList.remove('glow-pulse');
+        btnPlay.title = 'Игра запущена';
+        btnPlay.removeAttribute('data-tip');
         btnPlay.innerHTML = 'Игра запущена';
+      } else if (!hasValidVersion) {
+        btnPlay.disabled = true;
+        btnPlay.classList.add('disabled');
+        btnPlay.classList.remove('glow-pulse');
+        btnPlay.title = 'Выберите версию';
+        btnPlay.setAttribute('data-tip', 'Выберите версию');
+        btnPlay.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg> <span>ИГРАТЬ</span>';
       } else {
         btnPlay.disabled = false;
-        btnPlay.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Играть';
+        btnPlay.classList.remove('disabled');
+        btnPlay.classList.add('glow-pulse');
+        btnPlay.title = 'Запустить Minecraft';
+        btnPlay.removeAttribute('data-tip');
+        btnPlay.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg> <span>ИГРАТЬ</span>';
       }
     }
     if (heroBtnPlay) {
       if (isLaunching) {
         heroBtnPlay.disabled = true;
+        heroBtnPlay.classList.add('disabled');
         heroBtnPlay.innerHTML = 'Запущено';
+      } else if (!hasValidVersion) {
+        heroBtnPlay.disabled = true;
+        heroBtnPlay.classList.add('disabled');
+        heroBtnPlay.title = 'Выберите версию';
+        heroBtnPlay.setAttribute('data-tip', 'Выберите версию');
+        heroBtnPlay.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg> <span>ИГРАТЬ</span>';
       } else {
         heroBtnPlay.disabled = false;
-        heroBtnPlay.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Играть';
+        heroBtnPlay.classList.remove('disabled');
+        heroBtnPlay.removeAttribute('data-tip');
+        heroBtnPlay.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg> <span>ИГРАТЬ</span>';
       }
     }
   },
