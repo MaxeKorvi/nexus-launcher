@@ -17,6 +17,7 @@ window.Views = window.Views || {};
       version: '1.8 - 1.21.5',
       website: 'https://hypixel.net',
       defaultOnline: '5823 / 30000',
+      defaultPing: 34,
       iconHtml: `
         <svg viewBox="0 0 44 44" width="44" height="44">
           <defs>
@@ -39,6 +40,7 @@ window.Views = window.Views || {};
       version: '1.12.2 - 1.21.5',
       website: 'https://mineblaze.ru',
       defaultOnline: '3421 / 10000',
+      defaultPing: 22,
       iconHtml: `
         <svg viewBox="0 0 44 44" width="44" height="44">
           <defs>
@@ -57,7 +59,8 @@ window.Views = window.Views || {};
       tags: 'Анархия, Гриф, PvP',
       version: '1.16.5 - 1.21.5',
       website: 'https://funtime.su',
-      defaultOnline: '2719 / 10000',
+      defaultOnline: '3420 / 10000',
+      defaultPing: 28,
       iconHtml: `
         <svg viewBox="0 0 44 44" width="44" height="44">
           <defs>
@@ -77,6 +80,7 @@ window.Views = window.Views || {};
       version: '1.12.2 - 1.21.5',
       website: 'https://reallyworld.ru',
       defaultOnline: '1954 / 7000',
+      defaultPing: 31,
       iconHtml: `
         <svg viewBox="0 0 44 44" width="44" height="44">
           <defs>
@@ -96,6 +100,7 @@ window.Views = window.Views || {};
       version: '1.9 - 1.21.5',
       website: 'https://cubecraft.net',
       defaultOnline: '890 / 5000',
+      defaultPing: 45,
       iconHtml: `
         <svg viewBox="0 0 44 44" width="44" height="44">
           <defs>
@@ -115,6 +120,7 @@ window.Views = window.Views || {};
       version: '1.12.2 - 1.20.4',
       website: 'https://workshop47.pro',
       defaultOnline: '1150 / 3000',
+      defaultPing: 38,
       iconHtml: `
         <svg viewBox="0 0 44 44" width="44" height="44">
           <defs>
@@ -158,42 +164,40 @@ window.Views = window.Views || {};
 
       c.innerHTML = `
         <div class="view settings-single-card servers-view" style="padding: 24px 30px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
-          <!-- Top Header Row -->
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-              <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Мониторинг</span>
-                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Онлайн-серверы</span>
-                </div>
-                <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Серверы</h1>
-                <p style="color: var(--text-2); font-size: 13px; margin: 0;">Популярные серверы Minecraft с мониторингом пинга, онлайна и быстрым копированием IP</p>
+          <!-- Top Header Row with readable scrim / gradient backing -->
+          <div class="servers-header-box" style="padding: 18px 22px; border-radius: 4px; background: linear-gradient(135deg, rgba(14, 18, 26, 0.78) 0%, rgba(10, 12, 18, 0.90) 100%); border: 1px solid var(--border-soft); backdrop-filter: blur(14px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="min-width: 260px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Мониторинг</span>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Онлайн-серверы</span>
+              </div>
+              <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text); text-shadow: 0 1px 3px rgba(0,0,0,0.7);">Серверы</h1>
+              <p style="color: var(--text-2); font-size: 13px; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.6);">Популярные серверы Minecraft с мониторингом пинга, онлайна и быстрым копированием IP</p>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <!-- Search box with widened field and concise placeholder -->
+              <div style="position: relative; min-width: 220px; width: 250px; flex: 1; max-width: 280px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="input" id="servers-search" placeholder="Поиск..." value="${esc(this._searchTerm)}" style="width: 100%; height: 38px; padding-left: 36px; padding-right: 12px; font-size: 13px; border-radius: 3px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-soft); color: var(--text);">
               </div>
 
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <!-- Search box with magnifying glass -->
-                <div style="position: relative; width: 220px;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input class="input" id="servers-search" placeholder="Поиск серверов..." value="${esc(this._searchTerm)}" style="width: 100%; height: 38px; padding-left: 36px; font-size: 13px; border-radius: 3px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft);">
-                </div>
+              <!-- Version filter dropdown -->
+              <select class="input" id="servers-version-filter" style="height: 38px; font-size: 13px; border-radius: 3px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-soft); padding: 0 12px; min-width: 130px; color: var(--text);">
+                <option value="all" ${this._versionFilter === 'all' ? 'selected' : ''}>Все версии</option>
+                <option value="1.21" ${this._versionFilter === '1.21' ? 'selected' : ''}>1.21.x</option>
+                <option value="1.20" ${this._versionFilter === '1.20' ? 'selected' : ''}>1.20.x</option>
+                <option value="1.19" ${this._versionFilter === '1.19' ? 'selected' : ''}>1.19.x</option>
+                <option value="1.16" ${this._versionFilter === '1.16' ? 'selected' : ''}>1.16.5</option>
+                <option value="1.12" ${this._versionFilter === '1.12' ? 'selected' : ''}>1.12.2</option>
+                <option value="1.8" ${this._versionFilter === '1.8' ? 'selected' : ''}>1.8.9</option>
+              </select>
 
-                <!-- Version filter dropdown -->
-                <select class="input" id="servers-version-filter" style="height: 38px; font-size: 13px; border-radius: 3px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); padding: 0 12px; min-width: 130px;">
-                  <option value="all" ${this._versionFilter === 'all' ? 'selected' : ''}>Все версии</option>
-                  <option value="1.21" ${this._versionFilter === '1.21' ? 'selected' : ''}>1.21.x</option>
-                  <option value="1.20" ${this._versionFilter === '1.20' ? 'selected' : ''}>1.20.x</option>
-                  <option value="1.19" ${this._versionFilter === '1.19' ? 'selected' : ''}>1.19.x</option>
-                  <option value="1.16" ${this._versionFilter === '1.16' ? 'selected' : ''}>1.16.5</option>
-                  <option value="1.12" ${this._versionFilter === '1.12' ? 'selected' : ''}>1.12.2</option>
-                  <option value="1.8" ${this._versionFilter === '1.8' ? 'selected' : ''}>1.8.9</option>
-                </select>
-
-                <!-- Add server button -->
-                <button class="btn primary" id="btn-add-server" title="Добавить сервер в мониторинг" style="height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; border-radius: 3px; display: flex; align-items: center; gap: 6px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Добавить
-                </button>
-              </div>
+              <!-- Add server button -->
+              <button class="btn primary" id="btn-add-server" title="Добавить сервер в мониторинг" style="height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; border-radius: 3px; display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Добавить
+              </button>
             </div>
           </div>
 
@@ -302,21 +306,34 @@ window.Views = window.Views || {};
         let onlineText = meta.defaultOnline || '— / —';
         let isOnline = true;
         let faviconHtml = iconHtml;
+        let latency = meta.defaultPing || 32;
 
         if (pingData) {
           isOnline = pingData.online !== false;
+          if (pingData.latency !== undefined && pingData.latency > 0) {
+            latency = pingData.latency;
+          }
           if (pingData.players) {
-            onlineText = `${pingData.players.online.toLocaleString('ru-RU')} / ${pingData.players.max.toLocaleString('ru-RU')}`;
+            const curOnline = pingData.players.online || 0;
+            // Normalize max players so current online never exceeds max slots
+            const maxSlots = (pingData.players.max < curOnline)
+              ? Math.max(curOnline, 5000)
+              : (pingData.players.max || 1000);
+            onlineText = `${curOnline.toLocaleString('ru-RU')} / ${maxSlots.toLocaleString('ru-RU')}`;
           }
           if (pingData.icon) {
             faviconHtml = `<img src="${esc(pingData.icon)}" style="width:100%;height:100%;object-fit:cover;border-radius: 4px;">`;
           }
         }
 
+        const statusColor = isOnline ? '#2ecc71' : '#e74c3c';
+        const statusGlow = isOnline ? 'rgba(46, 204, 113, 0.45)' : 'rgba(231, 76, 60, 0.45)';
+        const pingColor = !isOnline ? 'var(--text-3, #71717a)' : (latency < 80 ? '#2ecc71' : latency < 160 ? '#f39c12' : '#e74c3c');
+
         return `
-          <div class="server-card-row" data-srv-id="${s.id}" data-srv-addr="${esc(s.address)}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 4px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-soft); transition: all 180ms ease; cursor: pointer;">
+          <div class="server-card-row" data-srv-id="${s.id}" data-srv-addr="${esc(s.address)}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 4px; background: rgba(14, 18, 26, 0.70); border: 1px solid var(--border-soft); transition: all 180ms ease; cursor: pointer;">
             <!-- Column 1: Icon + Name + Tags -->
-            <div style="display: flex; align-items: center; gap: 14px; flex: 1.6; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 14px; flex: 1.5; min-width: 0;">
               <div id="srv-icon-${s.id}" style="flex-shrink: 0; width: 42px; height: 42px; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);">
                 ${faviconHtml}
               </div>
@@ -327,24 +344,35 @@ window.Views = window.Views || {};
             </div>
 
             <!-- Column 2: Version -->
-            <div style="flex: 1; text-align: center; font-size: 12.5px; color: var(--text-2); font-weight: 500;">
+            <div style="flex: 0.85; text-align: center; font-size: 12.5px; color: var(--text-2); font-weight: 500;">
               ${esc(version)}
             </div>
 
             <!-- Column 3: Players Online -->
-            <div style="flex: 1; text-align: center; font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <div style="flex: 1.05; text-align: center; font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; justify-content: center; gap: 6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.7;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span id="srv-online-${s.id}">${onlineText}</span>
             </div>
 
-            <!-- Column 4: Status Indicator -->
-            <div style="flex: 0.9; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 7px; font-size: 12px; font-weight: 650; color: ${isOnline ? 'var(--accent)' : 'var(--error)'};">
-              <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: ${isOnline ? 'var(--accent)' : 'var(--error)'}; box-shadow: 0 0 8px ${isOnline ? 'var(--glow)' : 'rgba(255,85,85,0.6)'};"></span>
+            <!-- Column 4: Ping -->
+            <div style="flex: 0.75; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12px; font-weight: 600; color: ${pingColor};">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V4"/></svg>
+              <span id="srv-ping-${s.id}">${isOnline ? `${latency} мс` : '—'}</span>
+            </div>
+
+            <!-- Column 5: Status Indicator -->
+            <div style="flex: 0.75; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 7px; font-size: 12px; font-weight: 650; color: ${statusColor};">
+              <span id="srv-dot-${s.id}" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 8px ${statusGlow};"></span>
               <span id="srv-status-${s.id}">${isOnline ? 'Онлайн' : 'Оффлайн'}</span>
             </div>
 
-            <!-- Column 5: Menu Action Button -->
-            <div style="margin-left: 16px; position: relative;">
+            <!-- Column 6: Quick Copy IP + Menu Action Button -->
+            <div style="margin-left: 14px; display: flex; align-items: center; gap: 6px;">
+              <button class="btn outline compact-btn btn-copy-ip-row" data-addr="${esc(s.address)}" title="Скопировать IP: ${esc(s.address)}" style="display: flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; font-size: 11.5px; font-weight: 600; border-radius: 3px; color: var(--text); border-color: var(--border-soft); background: rgba(255,255,255,0.03);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>IP</span>
+              </button>
+
               <button class="btn ghost btn-srv-menu" data-id="${s.id}" data-addr="${esc(s.address)}" title="Действия" style="padding: 6px 10px; border-radius: 3px; color: var(--text-2);">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
               </button>
@@ -356,19 +384,43 @@ window.Views = window.Views || {};
       // Add hover and click effects
       container.querySelectorAll('.server-card-row').forEach(row => {
         row.onmouseenter = () => {
-          row.style.background = 'rgba(28,34,48,0.75)';
-          row.style.borderColor = 'rgba(91,140,255,0.3)';
+          row.style.background = 'rgba(28,34,48,0.85)';
+          row.style.borderColor = 'rgba(91,140,255,0.35)';
         };
         row.onmouseleave = () => {
-          row.style.background = 'rgba(18,22,30,0.65)';
-          row.style.borderColor = 'rgba(255,255,255,0.06)';
+          row.style.background = 'rgba(14, 18, 26, 0.70)';
+          row.style.borderColor = 'var(--border-soft)';
         };
 
         row.onclick = (e) => {
-          if (e.target.closest('.btn-srv-menu')) return;
+          if (e.target.closest('.btn-srv-menu') || e.target.closest('.btn-copy-ip-row')) return;
           const srvId = row.dataset.srvId;
           const addr = row.dataset.srvAddr;
           this.showServerActionModal(srvId, addr);
+        };
+      });
+
+      // Bind quick copy IP buttons
+      container.querySelectorAll('.btn-copy-ip-row').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const addr = btn.dataset.addr;
+          try {
+            await navigator.clipboard.writeText(addr);
+            const span = btn.querySelector('span');
+            const orig = span ? span.textContent : 'IP';
+            if (span) span.textContent = 'Скопировано!';
+            btn.style.borderColor = '#2ecc71';
+            btn.style.color = '#2ecc71';
+            Toast.success('IP скопирован в буфер', addr);
+            setTimeout(() => {
+              if (span) span.textContent = orig;
+              btn.style.borderColor = '';
+              btn.style.color = '';
+            }, 1800);
+          } catch {
+            Toast.info('IP адрес:', addr);
+          }
         };
       });
 
@@ -492,23 +544,46 @@ window.Views = window.Views || {};
 
           const elOnline = document.getElementById(`srv-online-${s.id}`);
           const elStatus = document.getElementById(`srv-status-${s.id}`);
+          const elDot = document.getElementById(`srv-dot-${s.id}`);
+          const elPing = document.getElementById(`srv-ping-${s.id}`);
           const iconEl = document.getElementById(`srv-icon-${s.id}`);
 
           if (res && res.online) {
             if (elOnline && res.players) {
-              elOnline.textContent = `${res.players.online.toLocaleString('ru-RU')} / ${res.players.max.toLocaleString('ru-RU')}`;
+              const curOnline = res.players.online || 0;
+              const maxSlots = (res.players.max < curOnline)
+                ? Math.max(curOnline, 5000)
+                : (res.players.max || 1000);
+              elOnline.textContent = `${curOnline.toLocaleString('ru-RU')} / ${maxSlots.toLocaleString('ru-RU')}`;
+            }
+            if (elPing && res.latency !== undefined && res.latency > 0) {
+              elPing.textContent = `${res.latency} мс`;
+              const pColor = res.latency < 80 ? '#2ecc71' : res.latency < 160 ? '#f39c12' : '#e74c3c';
+              elPing.parentElement.style.color = pColor;
             }
             if (elStatus) {
               elStatus.textContent = 'Онлайн';
               elStatus.parentElement.style.color = '#2ecc71';
-              const dot = elStatus.previousElementSibling;
-              if (dot) {
-                dot.style.background = '#2ecc71';
-                dot.style.boxShadow = '0 0 8px rgba(46,204,113,0.6)';
-              }
+            }
+            if (elDot) {
+              elDot.style.background = '#2ecc71';
+              elDot.style.boxShadow = '0 0 8px rgba(46,204,113,0.5)';
             }
             if (res.icon && iconEl) {
               iconEl.innerHTML = `<img src="${res.icon}" style="width:100%;height:100%;object-fit:cover;border-radius: 4px;">`;
+            }
+          } else {
+            if (elStatus) {
+              elStatus.textContent = 'Оффлайн';
+              elStatus.parentElement.style.color = '#e74c3c';
+            }
+            if (elDot) {
+              elDot.style.background = '#e74c3c';
+              elDot.style.boxShadow = '0 0 8px rgba(231,76,60,0.5)';
+            }
+            if (elPing) {
+              elPing.textContent = '—';
+              elPing.parentElement.style.color = 'var(--text-3, #71717a)';
             }
           }
         } catch {}
