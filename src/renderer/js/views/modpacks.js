@@ -97,10 +97,10 @@ window.Views = window.Views || {};
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
               <div class="dropdown-wrapper" style="position: relative;">
-                <button class="btn primary" id="mp-import-btn" style="display: flex; align-items: center; gap: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <button class="btn outline" id="mp-import-btn" style="display: flex; align-items: center; gap: 8px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; border-radius: 4px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-soft); color: var(--text);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Импорт сборки
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 <div id="mp-import-menu" class="card" style="display: none; position: absolute; right: 0; top: calc(100% + 6px); width: 220px; z-index: 100; padding: 6px; box-shadow: 0 12px 30px rgba(0,0,0,0.6);">
                   <button class="btn ghost" id="mp-import-file" style="width: 100%; justify-content: flex-start; padding: 8px 12px; font-size: 13px;">📁 Импорт .zip / .mrpack</button>
@@ -111,15 +111,15 @@ window.Views = window.Views || {};
             </div>
           </div>
 
-          <!-- Filter & Search Controls Row -->
-          <div class="mp-controls-card card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
-            <div style="display: grid; grid-template-columns: 1fr 180px 180px; gap: 12px; align-items: center;">
+          <!-- Filter & Search Controls Row (Compact) -->
+          <div class="mp-controls-card card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 170px 170px; gap: 10px; align-items: center;">
               <div style="position: relative;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input class="input" id="mp-search" placeholder="Поиск сборки по названию..." value="${esc(this.query)}" style="padding-left: 40px; width: 100%; height: 42px; font-size: 13px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="input" id="mp-search" placeholder="Поиск сборки по названию..." value="${esc(this.query)}" style="padding-left: 36px; width: 100%; height: 36px; font-size: 13px; border-radius: 3px;">
               </div>
               <div>
-                <select class="input" id="mp-version" style="height: 42px; width: 100%; font-size: 13px;">
+                <select class="input" id="mp-version" style="height: 36px; width: 100%; font-size: 12.5px; border-radius: 3px;">
                   <option value="" ${!this.mcVersion ? 'selected' : ''}>Все версии</option>
                   <option value="1.21.1" ${this.mcVersion === '1.21.1' ? 'selected' : ''}>1.21.1</option>
                   <option value="1.20.4" ${this.mcVersion === '1.20.4' ? 'selected' : ''}>1.20.4</option>
@@ -131,7 +131,7 @@ window.Views = window.Views || {};
                 </select>
               </div>
               <div>
-                <select class="input" id="mp-loader" style="height: 42px; width: 100%; font-size: 13px;">
+                <select class="input" id="mp-loader" style="height: 36px; width: 100%; font-size: 12.5px; border-radius: 3px;">
                   <option value="" ${!this.loader ? 'selected' : ''}>Все загрузчики</option>
                   <option value="forge" ${this.loader === 'forge' ? 'selected' : ''}>Forge</option>
                   <option value="fabric" ${this.loader === 'fabric' ? 'selected' : ''}>Fabric</option>
@@ -142,38 +142,38 @@ window.Views = window.Views || {};
             </div>
 
             <!-- Sources Checkboxes & View Toggle -->
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 13px;">
-              <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px;">
+              <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                 <span style="color: var(--text-2); font-weight: 600;">Источники:</span>
-                <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
                   <input type="checkbox" data-source="curseforge" ${this.sources.includes('curseforge') ? 'checked' : ''} style="accent-color: var(--accent);">
                   <span>CurseForge</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
                   <input type="checkbox" data-source="modrinth" ${this.sources.includes('modrinth') ? 'checked' : ''} style="accent-color: var(--accent);">
                   <span>Modrinth</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
                   <input type="checkbox" data-source="minecraft-inside" ${this.sources.includes('minecraft-inside') ? 'checked' : ''} style="accent-color: var(--accent);">
                   <span>Minecraft Inside</span>
                 </label>
               </div>
 
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="color: var(--text-2); font-size: 12px;">Вид:</span>
-                <button class="btn ghost compact-btn" id="mp-view-cards" title="Карточки" style="padding: 6px 10px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-2); font-size: 11.5px;">Вид:</span>
+                <button class="btn ghost compact-btn" id="mp-view-cards" title="Карточки" style="padding: 5px 8px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                 </button>
-                <button class="btn ghost compact-btn" id="mp-view-list" title="Список" style="padding: 6px 10px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <button class="btn ghost compact-btn" id="mp-view-list" title="Список" style="padding: 5px 8px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Categories Pills and Sort -->
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
-            <div class="mp-categories" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <!-- Single Horizontal Line: Categories Pills + Sort Dropdown -->
+          <div class="mp-filter-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 0;">
+            <div class="mp-categories" style="display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0;">
               ${[
                 { id: 'all', label: 'Все' },
                 { id: 'popular', label: 'Популярные' },
@@ -183,17 +183,17 @@ window.Views = window.Views || {};
                 { id: 'survival', label: 'Выживание' },
                 { id: 'rpg', label: 'РПГ' },
                 { id: 'quests', label: 'Квесты' },
-                { id: 'community', label: 'Сборки от сообщества' }
+                { id: 'community', label: 'Сообщество' }
               ].map(cat => `
-                <button class="pill-btn ${this.category === cat.id ? 'active' : ''}" data-category="${cat.id}">
+                <button class="pill-btn ${this.category === cat.id ? 'active' : ''}" data-category="${cat.id}" style="white-space: nowrap; font-size: 12px; padding: 5px 12px; border-radius: 4px;">
                   ${cat.label}
                 </button>
               `).join('')}
             </div>
 
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="color: var(--text-2); font-size: 13px;">Сортировка:</span>
-              <select class="input" id="mp-sort" style="height: 34px; font-size: 12px; padding: 4px 10px; width: 170px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+              <span style="color: var(--text-2); font-size: 12px; white-space: nowrap;">Сортировка:</span>
+              <select class="input" id="mp-sort" style="height: 32px; font-size: 12px; padding: 2px 10px; width: 160px; border-radius: 3px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-soft); color: var(--text);">
                 <option value="popular" ${this.sortBy === 'popular' ? 'selected' : ''}>По популярности</option>
                 <option value="downloads" ${this.sortBy === 'downloads' ? 'selected' : ''}>По скачиваниям</option>
                 <option value="updated" ${this.sortBy === 'updated' ? 'selected' : ''}>По обновлению</option>
@@ -420,23 +420,34 @@ window.Views = window.Views || {};
               ${pagedHits.map((p, idx) => {
                 const globalIdx = startIdx + idx;
                 const already = isPackInstalled(installedPacks, p);
+                const titleLower = String(p.title || '').toLowerCase();
+                let loaderName = p.loader || (p.loaders && p.loaders[0]) || '';
+                if (!loaderName) {
+                  if (/atm10|all the mods 10/i.test(titleLower)) loaderName = 'neoforge';
+                  else if (/pixelmon|rlcraft/i.test(titleLower)) loaderName = 'forge';
+                  else loaderName = 'Forge';
+                }
+                const loaderDisplay = loaderName.toLowerCase() === 'neoforge' ? 'NeoForge' :
+                                      loaderName.toLowerCase() === 'fabric' ? 'Fabric' :
+                                      loaderName.toLowerCase() === 'quilt' ? 'Quilt' : 'Forge';
+
                 return `
                   <div class="mod-card" data-open-index="${globalIdx}" style="cursor: pointer; padding: 14px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); display: flex; align-items: center; gap: 16px;">
                     <div class="icon" style="width: 54px; height: 54px; border-radius: 4px; background-size: cover; background-position: center; flex-shrink: 0; ${p.icon ? `background-image:url('${esc(p.icon)}')` : `background: var(--bg-2);`}"></div>
                     <div class="info" style="flex: 1; min-width: 0;">
                       <h3 style="margin: 0 0 4px; font-size: 15px; font-weight: 700; color: var(--text);">${esc(p.title)}</h3>
-                      <div class="author" style="font-size: 12px; color: var(--text-2);">${esc(p.author || '—')} · ${sourceLabel(p.source)}</div>
+                      <div class="author" style="font-size: 12px; color: var(--text-2);">${esc(p.author || '—')} · ${sourceLabel(p.source)} · <span style="font-weight: 600; color: var(--accent-hi);">${esc(loaderDisplay)}</span></div>
                       <div class="desc" style="font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px;">${esc(p.description || '')}</div>
                       <div class="stats" style="display: flex; gap: 12px; font-size: 11px; margin-top: 6px; color: var(--text-3);">
                         ${p.downloads ? `<span>⬇ ${Number(p.downloads).toLocaleString('ru-RU')}</span>` : ''}
-                        ${already ? '<span style="color:var(--ok); font-weight: 700;">✓ Установлено</span>' : '<span style="color:var(--accent-hi);">Доступна для загрузки</span>'}
+                        ${already ? '<span style="color:var(--ok); font-weight: 700;">✓ Установлено</span>' : '<span style="color:var(--text-2);">Доступна для загрузки</span>'}
                       </div>
                     </div>
                     <div class="actions" style="display: flex; gap: 8px; flex-shrink: 0;">
-                      <button class="btn ${already ? 'ghost' : 'primary'}" style="padding: 7px 16px; font-size: 12px; font-weight: 700;" data-install="${globalIdx}">
-                        ${already ? 'Установлено' : 'Установить'}
+                      <button class="btn ${already ? 'ghost' : 'outline'}" style="padding: 7px 16px; font-size: 12px; font-weight: 600; border-radius: 4px; ${already ? 'background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.35); color: #2ecc71;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-line); color: var(--text);'}" data-install="${globalIdx}">
+                        ${already ? '✓ Установлено' : 'Установить'}
                       </button>
-                      <button class="btn outline" style="padding: 7px 12px; font-size: 12px;" data-open="${globalIdx}">...</button>
+                      <button class="btn outline" style="padding: 7px 12px; font-size: 12px; border-radius: 4px;" data-open="${globalIdx}">...</button>
                     </div>
                   </div>
                 `;
@@ -450,24 +461,51 @@ window.Views = window.Views || {};
               ${pagedHits.map((p, idx) => {
                 const globalIdx = startIdx + idx;
                 const already = isPackInstalled(installedPacks, p);
-                const cover = p.banner || p.icon || SAMPLE_COVERS[globalIdx % SAMPLE_COVERS.length];
-                const badgeText = globalIdx % 3 === 0 ? '★ Популярная' : (globalIdx % 3 === 1 ? '⚡ Новинка' : '🔥 Топ');
+                const hasBanner = Boolean(p.banner);
+                const titleLower = String(p.title || '').toLowerCase();
+                const isOldClassic = /pixelmon|rlcraft|all the mods|atm|better mc|sevtech|skyfactory|stoneblock|roguelike/i.test(titleLower) || (Number(p.downloads) > 5000000);
+                
+                let badgeText = '★ Популярная';
+                if (p.badge) {
+                  badgeText = p.badge;
+                } else if (isOldClassic) {
+                  badgeText = (globalIdx % 2 === 0) ? '★ Хит' : '🔥 Топ';
+                } else if (p.dateCreated && (Date.now() - new Date(p.dateCreated).getTime() < 1000 * 60 * 60 * 24 * 60) && (Number(p.downloads) < 50000)) {
+                  badgeText = '⚡ Новинка';
+                } else {
+                  badgeText = (globalIdx % 3 === 0) ? '★ Популярная' : (globalIdx % 3 === 1 ? '🔥 Топ' : '★ Выбор игроков');
+                }
+
+                let loaderName = p.loader || (p.loaders && p.loaders[0]) || '';
+                if (!loaderName) {
+                  if (/atm10|all the mods 10/i.test(titleLower)) loaderName = 'neoforge';
+                  else if (/pixelmon|rlcraft/i.test(titleLower)) loaderName = 'forge';
+                  else loaderName = 'Forge';
+                }
+                const loaderDisplay = loaderName.toLowerCase() === 'neoforge' ? 'NeoForge' :
+                                      loaderName.toLowerCase() === 'fabric' ? 'Fabric' :
+                                      loaderName.toLowerCase() === 'quilt' ? 'Quilt' : 'Forge';
+
                 const rating = (4.7 + ((globalIdx % 3) * 0.1)).toFixed(1);
                 const approxSize = `${400 + ((globalIdx * 67) % 650)} МБ`;
 
                 return `
-                  <div class="mp-card card" data-open-index="${globalIdx}" style="padding: 0; overflow: hidden; border-radius: 4px; border: 1px solid var(--border-soft); display: flex; flex-direction: column; cursor: pointer; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; background: rgba(20,24,30,0.65);">
-                    <!-- Compact Header / Banner -->
-                    <div style="height: 75px; width: 100%; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(25,32,45,0.9), rgba(15,18,25,0.95));">
-                      <div style="position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.35; filter: blur(3px); background-image: url('${esc(cover)}');"></div>
-                      <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(14, 18, 16, 0.95) 0%, rgba(14, 18, 16, 0.3) 100%);"></div>
+                  <div class="mp-card card" data-open-index="${globalIdx}" style="padding: 0; overflow: hidden; border-radius: 4px; border: 1px solid var(--border-soft); display: flex; flex-direction: column; cursor: pointer; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; background: rgba(16,20,28,0.72);">
+                    <!-- Crisp Preview Banner or Dark Gradient -->
+                    <div style="height: 94px; width: 100%; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(20,26,38,0.95), rgba(12,15,22,0.98));">
+                      ${hasBanner ? `
+                        <div style="position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.88; background-image: url('${esc(p.banner)}');"></div>
+                        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(14, 18, 26, 0.95) 0%, rgba(14, 18, 26, 0.25) 55%, transparent 100%);"></div>
+                      ` : `
+                        <div style="position: absolute; inset: 0; background: radial-gradient(circle at 75% 25%, rgba(91,140,255,0.12), transparent 70%), linear-gradient(135deg, rgba(24,30,42,0.95) 0%, rgba(14,18,26,0.98) 100%);"></div>
+                      `}
                       <div style="position: absolute; top: 8px; left: 10px; display: flex; gap: 6px;">
-                        <span class="pill-mini ok" style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.35); color: #2ecc71; font-weight: 700; padding: 2px 7px; border-radius: 3px; font-size: 10px;">
+                        <span class="pill-mini ok" style="background: rgba(46, 204, 113, 0.18); border: 1px solid rgba(46, 204, 113, 0.35); color: #2ecc71; font-weight: 700; padding: 2px 7px; border-radius: 3px; font-size: 10px;">
                           ${badgeText}
                         </span>
                       </div>
                       ${p.icon ? `
-                        <div style="position: absolute; bottom: 8px; right: 10px; width: 36px; height: 36px; border-radius: 4px; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.5); background-image: url('${esc(p.icon)}');"></div>
+                        <div style="position: absolute; bottom: 8px; right: 10px; width: 40px; height: 40px; border-radius: 4px; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.18); box-shadow: 0 4px 12px rgba(0,0,0,0.6); background-image: url('${esc(p.icon)}'); background-color: rgba(14,18,26,0.9);"></div>
                       ` : ''}
                     </div>
 
@@ -477,7 +515,7 @@ window.Views = window.Views || {};
                         <h3 style="margin: 0 0 5px; font-size: 14px; font-weight: 750; color: var(--text); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${esc(p.title)}</h3>
                         <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
                           <span class="pill-mini" style="font-size: 10px; padding: 1px 6px;">v ${esc(p.mcVersions && p.mcVersions[0] ? p.mcVersions[0] : '1.21.1')}</span>
-                          <span class="pill-mini" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${esc(p.loaders && p.loaders[0] ? p.loaders[0] : 'Forge/Fabric')}</span>
+                          <span class="pill-mini" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06); color: var(--text); font-weight: 600;">${esc(loaderDisplay)}</span>
                           <span class="pill-mini" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${sourceLabel(p.source)}</span>
                         </div>
                       </div>
@@ -493,12 +531,12 @@ window.Views = window.Views || {};
                         <span>${approxSize}</span>
                       </div>
 
-                      <!-- Action Button Bar -->
+                      <!-- Action Button Bar with restrained accents -->
                       <div style="display: flex; gap: 6px; margin-top: 2px; align-items: center;">
-                        <button class="btn ${already ? 'ghost' : 'primary'}" style="flex: 1; height: 32px; padding: 0 10px; font-size: 12px; font-weight: 700; border-radius: 4px;" data-install="${globalIdx}">
+                        <button class="btn mp-btn-install" style="flex: 1; height: 32px; padding: 0 10px; font-size: 12px; font-weight: 600; border-radius: 4px; ${already ? 'background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.35); color: #2ecc71;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-line); color: var(--text);'}" data-install="${globalIdx}">
                           ${already ? '✓ Установлено' : 'Установить'}
                         </button>
-                        <button class="btn outline" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px;" data-open="${globalIdx}" title="Подробнее">
+                        <button class="btn outline" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px; border-color: var(--border-line);" data-open="${globalIdx}" title="Подробнее">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="12" r="2"/></svg>
                         </button>
                       </div>

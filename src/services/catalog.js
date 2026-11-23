@@ -220,22 +220,31 @@ async function searchModrinth({ query = '', projectType, mcVersion = '', loader 
   return {
     source: 'modrinth',
     total: data.total_hits,
-    hits: (data.hits || []).map(h => ({
-      id: h.project_id,
-      slug: h.slug,
-      title: h.title,
-      description: h.description,
-      author: h.author,
-      downloads: h.downloads,
-      follows: h.follows,
-      icon: h.icon_url,
-      latest: h.latest_version,
-      mcVersions: h.versions || [],
-      versions: h.versions || [],
-      loader: loader || detectLoader((h.categories || []).join(' ')),
-      source: 'modrinth',
-      url: `https://modrinth.com/${projectType === 'modpack' ? 'modpack' : projectType}/${h.slug}`
-    }))
+    hits: (data.hits || []).map(h => {
+      const modLoaders = (h.categories || []).filter(c => ['fabric', 'forge', 'neoforge', 'quilt'].includes(c.toLowerCase()));
+      const detectedLoader = loader || modLoaders[0] || detectLoader((h.categories || []).join(' '));
+      const bannerUrl = h.featured_gallery || (h.gallery && h.gallery[0]) || null;
+      return {
+        id: h.project_id,
+        slug: h.slug,
+        title: h.title,
+        description: h.description,
+        author: h.author,
+        downloads: h.downloads,
+        follows: h.follows,
+        icon: h.icon_url,
+        banner: bannerUrl,
+        latest: h.latest_version,
+        mcVersions: h.versions || [],
+        versions: h.versions || [],
+        loader: detectedLoader,
+        loaders: modLoaders.length ? modLoaders : (detectedLoader ? [detectedLoader] : []),
+        dateCreated: h.date_created,
+        dateModified: h.date_modified,
+        source: 'modrinth',
+        url: `https://modrinth.com/${projectType === 'modpack' ? 'modpack' : projectType}/${h.slug}`
+      };
+    })
   };
 }
 
@@ -260,6 +269,16 @@ function curseForgeLoaderType(loader) {
   if (loader === 'quilt') return 5;
   if (loader === 'neoforge') return 6;
   return undefined;
+}
+
+function curseForgeLoaderName(type) {
+  if (type === 1) return 'forge';
+  if (type === 2) return 'cauldron';
+  if (type === 3) return 'liteloader';
+  if (type === 4) return 'fabric';
+  if (type === 5) return 'quilt';
+  if (type === 6) return 'neoforge';
+  return '';
 }
 
 async function searchCurseForge({ query = '', type = 'mod', mcVersion = '', loader = '', page = 0, pageSize = 60 }) {
@@ -293,19 +312,29 @@ async function searchCurseForge({ query = '', type = 'mod', mcVersion = '', load
       return { source: 'curseforge', total: 0, hits: [], error: curseForgeErrorMessage(err) };
     }
   }
-  const hits = (data.data || []).map(m => ({
-    id: m.id,
-    slug: m.slug,
-    title: m.name,
-    description: m.summary,
-    author: (m.authors && m.authors[0] && m.authors[0].name) || '',
-    downloads: m.downloadCount,
-    icon: m.logo && m.logo.url,
-    url: m.websiteUrl,
-    mcVersions: Array.from(new Set((m.latestFilesIndexes || []).map(x => x.gameVersion).filter(Boolean))),
-    loader: loader || '',
-    source: 'curseforge'
-  }));
+  const hits = (data.data || []).map(m => {
+    const fileLoaders = Array.from(new Set((m.latestFilesIndexes || []).map(x => curseForgeLoaderName(x.modLoader)).filter(Boolean)));
+    const detectedLoader = loader || fileLoaders[0] || (m.name && /atm10|all the mods 10/i.test(m.name) ? 'neoforge' : (m.name && /pixelmon|rlcraft/i.test(m.name) ? 'forge' : ''));
+    const bannerUrl = (m.screenshots && m.screenshots[0] && (m.screenshots[0].url || m.screenshots[0].thumbnailUrl)) || null;
+
+    return {
+      id: m.id,
+      slug: m.slug,
+      title: m.name,
+      description: m.summary,
+      author: (m.authors && m.authors[0] && m.authors[0].name) || '',
+      downloads: m.downloadCount,
+      icon: m.logo && m.logo.url,
+      banner: bannerUrl,
+      url: m.websiteUrl,
+      mcVersions: Array.from(new Set((m.latestFilesIndexes || []).map(x => x.gameVersion).filter(Boolean))),
+      loader: detectedLoader,
+      loaders: fileLoaders.length ? fileLoaders : (detectedLoader ? [detectedLoader] : []),
+      dateCreated: m.dateCreated,
+      dateReleased: m.dateReleased,
+      source: 'curseforge'
+    };
+  });
   return { source: 'curseforge', total: data.pagination ? data.pagination.totalCount : hits.length, hits };
 }
 

@@ -3725,6 +3725,23 @@ body.matte-style * {
   font-weight: 800 !important;
   box-shadow: 0 0 14px var(--shadow-glow) !important;
 }
+.mp-btn-install {
+  transition: all 180ms ease !important;
+}
+.mp-btn-install:hover:not(.installed) {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-hi) !important;
+  box-shadow: 0 0 10px var(--shadow-glow) !important;
+}
+#mp-import-btn {
+  transition: all 180ms ease !important;
+}
+#mp-import-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-hi) !important;
+}
 
 /* Accounts Method Cards (Photo 3) */
 .acc-method-card:hover {

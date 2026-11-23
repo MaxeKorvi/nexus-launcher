@@ -32,7 +32,8 @@ function defaultGameFolder() {
     const systemDrive = String(process.env.SystemDrive || 'C:').replace(/[\\/]+$/, '');
     return path.join(systemDrive, 'NexusLauncher');
   }
-  return path.join(app.getPath('home'), '.minecraft');
+  const home = (app && typeof app.getPath === 'function') ? app.getPath('home') : (process.env.USERPROFILE || process.env.HOME || '.');
+  return path.join(home, '.minecraft');
 }
 
 const DEFAULT_GAME_FOLDER = defaultGameFolder();

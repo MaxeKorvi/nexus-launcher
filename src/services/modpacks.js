@@ -386,6 +386,120 @@ async function getDetails(pack = {}) {
 }
 
 
+function getCuratedFallbackModpacks({ query = '', mcVersion = '', loader = '' } = {}) {
+  const packs = [
+    {
+      id: 925200,
+      slug: 'all-the-mods-10',
+      title: 'All the Mods 10 - ATM10',
+      description: 'Флагманская сборка 2026 года на NeoForge с более чем 500 модами, квестами и сбалансированным эндгеймом.',
+      author: 'ATMTeam',
+      downloads: 23213599,
+      icon: 'https://media.forgecdn.net/avatars/1182/438/638755918649288941.png',
+      banner: 'https://media.forgecdn.net/attachments/980/939/2024-10-02_23.png',
+      mcVersions: ['1.21.1'],
+      loader: 'neoforge',
+      loaders: ['neoforge'],
+      dateCreated: '2024-07-01T00:00:00Z',
+      source: 'curseforge',
+      badge: '★ Хит'
+    },
+    {
+      id: 284144,
+      slug: 'pixelmon-modpack',
+      title: 'Pixelmon Modpack',
+      description: 'Легендарная вселенная покемонов в Minecraft: исследование мира, тренировки, битвы тренеров и гимы.',
+      author: 'PixelmonMod',
+      downloads: 14820100,
+      icon: 'https://media.forgecdn.net/avatars/98/626/636287950529887713.png',
+      banner: 'https://media.forgecdn.net/attachments/thumbnails/983/80/310/172/2024-10-05_14.png',
+      mcVersions: ['1.16.5', '1.12.2'],
+      loader: 'forge',
+      loaders: ['forge'],
+      dateCreated: '2016-04-12T00:00:00Z',
+      source: 'curseforge',
+      badge: '★ Классика'
+    },
+    {
+      id: 452013,
+      slug: 'better-mc-forge',
+      title: 'Better MC [FORGE] - BMC4',
+      description: 'Полная переработка выживания: новые измерения, боссы, сотни данжей и улучшенная генерация мира.',
+      author: 'SHXRKIE',
+      downloads: 18512300,
+      icon: 'https://media.forgecdn.net/avatars/535/512/637862900741870635.png',
+      banner: 'https://media.forgecdn.net/attachments/983/79/310/172/2024-10-03_12.png',
+      mcVersions: ['1.20.1'],
+      loader: 'forge',
+      loaders: ['forge'],
+      dateCreated: '2021-03-10T00:00:00Z',
+      source: 'curseforge',
+      badge: '🔥 Топ'
+    },
+    {
+      id: 452014,
+      slug: 'better-mc-fabric',
+      title: 'Better MC [FABRIC] - BMC4',
+      description: 'Максимальная оптимизация на Fabric, встроенные шейдеры, переработанное ванильное приключение.',
+      author: 'SHXRKIE',
+      downloads: 12340500,
+      icon: 'https://media.forgecdn.net/avatars/612/820/637996530663471018.png',
+      banner: 'https://media.forgecdn.net/attachments/980/938/310/172/image-1.png',
+      mcVersions: ['1.21.1', '1.20.1'],
+      loader: 'fabric',
+      loaders: ['fabric'],
+      dateCreated: '2021-05-15T00:00:00Z',
+      source: 'curseforge',
+      badge: '★ Популярная'
+    },
+    {
+      id: 285109,
+      slug: 'rlcraft',
+      title: 'RLCraft',
+      description: 'Ультра-хардкорное выживание с жаждой, температурой, драконами и глубоким реализмом.',
+      author: 'Shivaxi',
+      downloads: 28914000,
+      icon: 'https://media.forgecdn.net/avatars/209/781/636973307524949511.png',
+      banner: 'https://media.forgecdn.net/attachments/980/942/310/172/2024-10-03_12.png',
+      mcVersions: ['1.12.2'],
+      loader: 'forge',
+      loaders: ['forge'],
+      dateCreated: '2018-09-02T00:00:00Z',
+      source: 'curseforge',
+      badge: '★ Легендарная'
+    },
+    {
+      id: 843102,
+      slug: 'create-perfect-world',
+      title: 'Create: Perfect World',
+      description: 'Эстетичная индустриальная сборка вокруг Create: железные дороги, кинематика и автоматизация.',
+      author: 'MrBeardstone',
+      downloads: 8421000,
+      icon: 'https://media.forgecdn.net/avatars/878/321/638309123847291823.png',
+      banner: 'https://media.forgecdn.net/attachments/983/81/310/172/2024-10-05_14.png',
+      mcVersions: ['1.20.1'],
+      loader: 'forge',
+      loaders: ['forge'],
+      dateCreated: '2023-04-18T00:00:00Z',
+      source: 'curseforge',
+      badge: '★ Выбор игроков'
+    }
+  ];
+
+  let filtered = packs;
+  if (query) {
+    const q = query.toLowerCase();
+    filtered = filtered.filter(p => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+  }
+  if (mcVersion) {
+    filtered = filtered.filter(p => p.mcVersions.includes(mcVersion));
+  }
+  if (loader) {
+    filtered = filtered.filter(p => p.loader === loader || p.loaders.includes(loader));
+  }
+  return filtered;
+}
+
 async function search({ query = '', source = 'all', sources = [], preferSource = 'curseforge', mcVersion = '', loader = '', page = 0, pageSize = 60 } = {}) {
   const requested = Array.from(new Set((sources && sources.length ? sources : (source === 'all' ? ['curseforge', 'modrinth', 'minecraft-inside'] : [source])).filter(Boolean)));
   const jobs = [];
@@ -407,6 +521,14 @@ async function search({ query = '', source = 'all', sources = [], preferSource =
 
   const deduped = dedupeByPriority(hits, priority(preferSource));
   deduped.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+
+  if (!deduped.length) {
+    const fallbackPacks = getCuratedFallbackModpacks({ query, mcVersion, loader });
+    if (fallbackPacks.length) {
+      return { source: 'curated-fallback', total: fallbackPacks.length, hits: fallbackPacks.slice(0, pageSize), errors };
+    }
+  }
+
   return { source: requested.length === 1 ? requested[0] : 'all', total: deduped.length, hits: deduped.slice(0, pageSize), errors };
 }
 
