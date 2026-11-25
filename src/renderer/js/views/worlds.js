@@ -12,22 +12,51 @@ window.Views = window.Views || {};
   }
 
   window.Views.worlds = {
+    _worldsCount: 0,
+    _backupsCount: 0,
+
     async render(container) {
       const root = container || document.getElementById('library-view-content') || document.getElementById('view-container');
       if (!root) return;
 
+      const [instances, settings] = await Promise.all([
+        window.api.invoke('instances:list').catch(() => []),
+        window.api.invoke('settings:get').catch(() => ({}))
+      ]);
+      const activeInstance = Store.get('activeInstance');
+      let rootDir = activeInstance ? activeInstance.rootDir : null;
+      const defaultLabel = settings && settings.gameFolder ? `${settings.gameFolder}/saves` : '.minecraft/saves';
+
       root.innerHTML = `
         <div class="worlds-view" style="padding: 20px; display: flex; flex-direction: column; gap: 20px; color: var(--text);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
             <div>
               <h2 style="font-size: 20px; font-weight: 750; margin: 0;">Миры и Резервные копии</h2>
               <p style="color: var(--text-2); font-size: 13px; margin: 4px 0 0 0;">Управляйте сохранениями Minecraft, переносите карты из Проводника и создавайте бэкапы</p>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <button class="btn outline compact-btn" id="btn-import-world-dialog">Импорт карты</button>
               <button class="btn outline compact-btn" id="btn-open-saves-folder">Папка миров</button>
               <button class="btn outline compact-btn" id="btn-open-backups-folder">Папка бэкапов</button>
-              <button class="icon-button" id="btn-refresh-worlds" title="Обновить">↻</button>
+              <button class="icon-button" id="btn-refresh-worlds" title="Обновить список миров" data-tip="Обновить список миров">
+                <svg class="refresh-spin-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Profile & Saves Path Bar -->
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-soft); border-radius: 4px;">
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+              <span style="font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap;">Профиль:</span>
+              <select class="input" id="worlds-profile-select" style="height: 30px; font-size: 12.5px; padding: 2px 10px; max-width: 340px;">
+                <option value="" ${!activeInstance ? 'selected' : ''}>Стандартный (.minecraft/saves)</option>
+                ${(Array.isArray(instances) ? instances : []).map(inst => `
+                  <option value="${esc(inst.id)}" ${activeInstance && activeInstance.id === inst.id ? 'selected' : ''}>${esc(inst.name)} (${esc(inst.mcVersion || '')})</option>
+                `).join('')}
+              </select>
+            </div>
+            <div id="worlds-target-path" style="font-size: 11.5px; color: var(--text-2); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+              ${esc(rootDir ? `${rootDir}/saves` : defaultLabel)}
             </div>
           </div>
 
@@ -36,7 +65,7 @@ window.Views = window.Views || {};
             <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <div style="font-size: 14px; font-weight: 700; color: #ffffff;">Перетащите сюда папку с картой или Zip/Rar архив мира</div>
-              <div style="font-size: 12px; color: var(--text-2);">Архив автоматически проверится на наличие сохранения (level.dat) и распакуется в папку saves</div>
+              <div style="font-size: 12px; color: var(--text-2);">Архив автоматически проверится на наличие сохранения (level.dat) и распакуется в папку saves выбранного профиля</div>
             </div>
           </div>
 
@@ -51,8 +80,8 @@ window.Views = window.Views || {};
             </div>
           </div>
 
-          <!-- Backups Section -->
-          <div>
+          <!-- Backups Section (hidden when no worlds and no backups) -->
+          <div id="backups-section" style="display: none;">
             <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Резервные копии (backups)
@@ -64,8 +93,19 @@ window.Views = window.Views || {};
         </div>
       `;
 
-      const activeInstance = Store.get('activeInstance');
-      const rootDir = activeInstance ? activeInstance.rootDir : null;
+      const profileSelect = document.getElementById('worlds-profile-select');
+      if (profileSelect) {
+        profileSelect.onchange = async (e) => {
+          const val = e.target.value;
+          const selected = val ? (instances || []).find(x => x.id === val) || null : null;
+          Store.set('activeInstance', selected);
+          rootDir = selected ? selected.rootDir : null;
+          const pathEl = document.getElementById('worlds-target-path');
+          if (pathEl) pathEl.textContent = rootDir ? `${rootDir}/saves` : defaultLabel;
+          if (window.App && window.App.updateHomeProfile) window.App.updateHomeProfile();
+          await this.loadData(rootDir);
+        };
+      }
 
       // Dropzone events
       const dropzone = document.getElementById('world-dropzone');
@@ -115,18 +155,26 @@ window.Views = window.Views || {};
       };
 
       document.getElementById('btn-open-saves-folder').onclick = async () => {
-        const settings = await window.api.invoke('settings:get');
-        const gameFolder = rootDir || settings.gameFolder;
+        const curSettings = await window.api.invoke('settings:get');
+        const gameFolder = rootDir || curSettings.gameFolder;
         await window.api.shell.openPath(`${gameFolder}/saves`);
       };
 
       document.getElementById('btn-open-backups-folder').onclick = async () => {
-        const settings = await window.api.invoke('settings:get');
-        const gameFolder = rootDir || settings.gameFolder;
+        const curSettings = await window.api.invoke('settings:get');
+        const gameFolder = rootDir || curSettings.gameFolder;
         await window.api.shell.openPath(`${gameFolder}/backups`);
       };
 
-      document.getElementById('btn-refresh-worlds').onclick = () => this.loadData(rootDir);
+      const refreshBtn = document.getElementById('btn-refresh-worlds');
+      if (refreshBtn) {
+        refreshBtn.onclick = async () => {
+          refreshBtn.classList.remove('spinning');
+          void refreshBtn.offsetWidth;
+          refreshBtn.classList.add('spinning');
+          await this.loadData(rootDir);
+        };
+      }
 
       await this.loadData(rootDir);
     },
@@ -179,8 +227,15 @@ window.Views = window.Views || {};
       };
     },
 
+    updateBackupsVisibility() {
+      const section = document.getElementById('backups-section');
+      if (!section) return;
+      section.style.display = (this._worldsCount > 0 || this._backupsCount > 0) ? '' : 'none';
+    },
+
     async loadData(rootDir) {
       await Promise.all([this.loadWorlds(rootDir), this.loadBackups(rootDir)]);
+      this.updateBackupsVisibility();
     },
 
     async loadWorlds(rootDir) {
@@ -189,6 +244,8 @@ window.Views = window.Views || {};
 
       try {
         const worlds = await window.api.invoke('worlds:list', rootDir);
+        this._worldsCount = Array.isArray(worlds) ? worlds.length : 0;
+        this.updateBackupsVisibility();
         if (!worlds || !worlds.length) {
           listEl.innerHTML = `
             <div style="grid-column: 1 / -1; padding: 24px; text-align: center; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); color: var(--text-2); border: 1px dashed var(--border-soft);">
@@ -249,6 +306,8 @@ window.Views = window.Views || {};
 
       try {
         const backups = await window.api.invoke('worlds:list-backups', rootDir);
+        this._backupsCount = Array.isArray(backups) ? backups.length : 0;
+        this.updateBackupsVisibility();
         if (!backups || !backups.length) {
           listEl.innerHTML = `
             <div style="padding: 20px; text-align: center; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); color: var(--text-2); border: 1px dashed var(--border-soft);">

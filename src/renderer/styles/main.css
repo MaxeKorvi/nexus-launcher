@@ -3987,6 +3987,16 @@ body.matte-style * {
   opacity: 1;
   transform: translateX(0);
 }
+
+@keyframes nexusSpinOnce {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.icon-button.spinning svg,
+.icon-button.spinning .refresh-spin-icon {
+  display: inline-flex;
+  animation: nexusSpinOnce 550ms cubic-bezier(0.22, 1, 0.36, 1);
+}
   border-color: var(--accent) !important;
   background: var(--accent-glow) !important;
 }
