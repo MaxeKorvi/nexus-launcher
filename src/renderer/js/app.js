@@ -128,6 +128,7 @@ window.App = {
     this.bindLiquidGlass();
     this.bindVersionProgress();
     this.bindAutoScaling();
+    this.bindTooltips();
 
     // Persist selected version across restarts
     Store.on('selectedVersion', (ver) => {
@@ -387,6 +388,60 @@ window.App = {
     updateScale();
   },
 
+  bindTooltips() {
+    let tip = document.getElementById('nexus-tooltip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'nexus-tooltip';
+      tip.className = 'nexus-tooltip';
+      document.body.appendChild(tip);
+    }
+
+    let currentTarget = null;
+    const hide = () => {
+      currentTarget = null;
+      tip.classList.remove('visible');
+    };
+
+    document.addEventListener('mouseover', (e) => {
+      const target = e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
+      if (!target) return;
+      const isSidebarItem = Boolean(target.closest('.left-panel'));
+      if (isSidebarItem && window.innerWidth > 1024) return;
+      const text = target.getAttribute('data-tip');
+      if (!text) return;
+
+      currentTarget = target;
+      tip.textContent = text;
+      const rect = target.getBoundingClientRect();
+      tip.classList.add('visible');
+
+      const tipRect = tip.getBoundingClientRect();
+      let left;
+      let top;
+      if (isSidebarItem) {
+        left = rect.right + 10;
+        top = rect.top + (rect.height - tipRect.height) / 2;
+      } else {
+        left = Math.max(8, Math.min(window.innerWidth - tipRect.width - 8, rect.left + (rect.width - tipRect.width) / 2));
+        top = Math.max(8, rect.top - tipRect.height - 8);
+      }
+      tip.style.left = `${Math.round(left)}px`;
+      tip.style.top = `${Math.round(top)}px`;
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      if (!currentTarget) return;
+      const related = e.relatedTarget;
+      if (!related || !currentTarget.contains(related)) {
+        hide();
+      }
+    });
+
+    document.addEventListener('mousedown', hide);
+    window.addEventListener('resize', hide);
+  },
+
   bindKeyboard() {
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey) {
@@ -607,6 +662,7 @@ window.App = {
     const sbAvatar = el('sidebar-user-avatar');
     const sbName = el('sidebar-user-name');
     const sbStatus = el('sidebar-user-status');
+    const sbPill = el('sidebar-user-pill');
     if (active) {
       const avatarEl = el('user-avatar');
       const initial = (active.nickname || '?').charAt(0).toUpperCase();
@@ -617,6 +673,11 @@ window.App = {
       if (el('user-provider')) el('user-provider').textContent = active.type === 'microsoft' ? 'Microsoft аккаунт' : active.type === 'ely' ? 'Ely.by аккаунт' : 'Локальный аккаунт';
       const statusText = active.status === 'connected' ? '● В сети' : '● Оффлайн';
       const statusColor = active.status === 'connected' ? 'var(--success)' : 'var(--error)';
+      if (sbPill) {
+        const tipText = `${active.nickname} · ${active.status === 'connected' ? 'В сети' : 'Оффлайн'}`;
+        sbPill.title = tipText;
+        sbPill.setAttribute('data-tip', tipText);
+      }
       if (el('user-status')) {
         el('user-status').textContent = statusText;
         el('user-status').style.color = statusColor;
@@ -648,6 +709,10 @@ window.App = {
       if (el('user-status')) el('user-status').textContent = 'Оффлайн';
       if (sbStatus) sbStatus.textContent = 'Оффлайн';
       if (el('bottom-account')) el('bottom-account').textContent = '—';
+      if (sbPill) {
+        sbPill.title = 'Гость · Оффлайн';
+        sbPill.setAttribute('data-tip', 'Гость · Оффлайн');
+      }
     }
     await this.updateSkinsNavVisibility(active);
     this.updateHomeProfile();
