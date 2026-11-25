@@ -202,6 +202,7 @@ window.App = {
         const b = parseInt(accent.slice(5, 7), 16) / 255;
         const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         document.documentElement.style.setProperty('--on-accent', lum < 0.48 ? '#ffffff' : '#050a07');
+        document.documentElement.style.setProperty('--nav-active-text', lum < 0.48 ? '#ffffff' : accentHi);
       }
       if (palette) {
         if (palette.bg) document.documentElement.style.setProperty('--bg', palette.bg);

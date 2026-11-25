@@ -2473,11 +2473,11 @@ main.content.view-mode #right-panel {
 .nav-list .nav-item.active {
   background: var(--glow) !important;
   border: 1px solid var(--accent) !important;
-  color: var(--accent-hi) !important;
+  color: var(--nav-active-text, var(--accent-hi)) !important;
   box-shadow: 0 0 16px var(--shadow-glow) !important;
 }
 .nav-list .nav-item.active svg {
-  stroke: var(--accent-hi) !important;
+  stroke: var(--nav-active-text, var(--accent-hi)) !important;
 }
 
 /* ─── Sidebar User Pill ─── */

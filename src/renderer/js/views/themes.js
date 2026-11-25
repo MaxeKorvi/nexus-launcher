@@ -793,6 +793,7 @@ window.Views = window.Views || {};
       document.documentElement.style.setProperty('--glow', hex + '28');
       document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${hex}44`);
       document.documentElement.style.setProperty('--on-accent', this.computeOnAccent(hex));
+      document.documentElement.style.setProperty('--nav-active-text', this.computeOnAccent(hex) === '#ffffff' ? '#ffffff' : hex);
       if (/^#[0-9a-f]{6}$/i.test(hex)) {
         document.documentElement.style.setProperty('--border-soft', hex + '26');
         document.documentElement.style.setProperty('--border-line', hex + '45');

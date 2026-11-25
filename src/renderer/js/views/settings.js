@@ -99,7 +99,7 @@ window.Views = window.Views || {};
           }
           .st-tab-btn.active {
             background: var(--accent);
-            color: var(--bg);
+            color: var(--on-accent, #04140a);
             font-weight: 700;
             box-shadow: 0 2px 10px var(--glow);
           }
@@ -347,46 +347,34 @@ window.Views = window.Views || {};
 
       // Default: "Основные"
       return `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-          <!-- Left Column: Interface & Rendering -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+          <!-- Left Column: General, Appearance Link & GPU -->
           <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div>
-              <label class="st-label">Язык лаунчера</label>
-              <div class="st-input-row">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                <select id="set-lang">
-                  <option value="ru" ${!s.language || s.language === 'ru' ? 'selected' : ''}>Русский</option>
-                  <option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option>
-                  <option value="ua" ${s.language === 'ua' ? 'selected' : ''}>Українська</option>
-                </select>
+            <div class="st-group-box">
+              <div style="font-size: 14px; font-weight: 750; color: var(--text); margin-bottom: 4px;">Общие</div>
+              <div>
+                <label class="st-label">Язык лаунчера</label>
+                <div class="st-input-row">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  <select id="set-lang">
+                    <option value="ru" ${!s.language || s.language === 'ru' ? 'selected' : ''}>Русский</option>
+                    <option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option>
+                    <option value="ua" ${s.language === 'ua' ? 'selected' : ''}>Українська</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             <div class="st-group-box">
-              <div style="font-size: 14px; font-weight: 750; color: #ffffff; margin-bottom: 14px;">Интерфейс и эффекты</div>
-              
-              <div class="st-toggle-row">
-                <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfd8dc;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                  Плавные анимации UI
-                </div>
-                <div class="st-switch ${s.animations !== false ? 'on' : ''}" id="sw-animations"></div>
-              </div>
-
-              <div class="st-toggle-row">
-                <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfd8dc;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
-                  Эффект матового стекла (Acrylic)
-                </div>
-                <div class="st-switch ${s.acrylic !== false ? 'on' : ''}" id="sw-acrylic"></div>
-              </div>
-
-              <div class="st-toggle-row">
-                <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfd8dc;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                  Прозрачный фон панелей
-                </div>
-                <div class="st-switch ${s.panelGlass !== false ? 'on' : ''}" id="sw-glass"></div>
+              <div style="font-size: 14px; font-weight: 750; color: var(--text);">Внешний вид и эффекты</div>
+              <p style="margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.45;">
+                Цвета акцента, готовые темы, обои, матовое стекло и анимации интерфейса настраиваются в едином разделе кастомизации.
+              </p>
+              <div>
+                <button class="btn outline compact-btn" id="btn-go-themes" style="display: inline-flex; align-items: center; gap: 8px; height: 34px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="16" cy="10" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg>
+                  Перейти к настройкам внешнего вида
+                </button>
               </div>
             </div>
 
@@ -434,7 +422,7 @@ window.Views = window.Views || {};
 
               <div class="st-toggle-row" style="margin-top: 14px;">
                 <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfd8dc;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
                   Проверять зависимости и целостность файлов
                 </div>
                 <div class="st-switch ${s.verifyMods !== false ? 'on' : ''}" id="sw-verify-mods"></div>
@@ -537,6 +525,12 @@ window.Views = window.Views || {};
         saveBtn.onclick = async () => {
           await this.saveCurrentSettings();
         };
+      }
+
+      // Go to Themes link button
+      const goThemesBtn = document.getElementById('btn-go-themes');
+      if (goThemesBtn) {
+        goThemesBtn.onclick = () => { if (window.App) window.App.navigate('themes'); };
       }
 
       // Reset all settings button
