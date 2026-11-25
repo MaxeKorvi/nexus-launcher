@@ -110,25 +110,34 @@ window.Views = window.Views || {};
       c.innerHTML = `
         <div class="view" style="padding:24px;">
           <h1>Менеджер ресурспаков</h1>
-          <p style="color:var(--text-2);margin-bottom:16px;">Ресурспак ставится строго в <b>resourcepacks/ выбранной установленной версии</b>. Выберите версию, каталог и файл попадёт туда.</p>
-          <div class="search-bar" style="display:grid;grid-template-columns:1.2fr 1.35fr 0.75fr 0.9fr auto;gap:10px;align-items:center;">
+          ${targets.length ? '<p style="color:var(--text-2);margin-bottom:14px;">Ресурспаки устанавливаются в папку <b>resourcepacks/</b> выбранной установленной версии.</p>' : ''}
+          <div class="search-bar" style="display:grid;grid-template-columns:minmax(160px,1.4fr) minmax(150px,1.2fr) minmax(90px,0.7fr) minmax(145px,1fr);gap:10px;align-items:center;">
             <input class="input" id="rp-search" placeholder="Поиск ресурспака…" value="${esc(this.query)}">
-            <select class="input" id="rp-target">
-              ${targets.length ? targets.map(v => `<option value="${esc(targetKey(v))}" ${current && targetKey(v) === targetKey(current) ? 'selected' : ''}>${esc(formatTarget(v))}</option>`).join('') : '<option value="">Нет установленных версий</option>'}
+            <select class="input" id="rp-target" title="Целевая версия / профиль">
+              ${targets.length ? targets.map(v => `<option value="${esc(targetKey(v))}" ${current && targetKey(v) === targetKey(current) ? 'selected' : ''}>${esc(formatTarget(v))}</option>`).join('') : '<option value="">Версия: нет</option>'}
             </select>
-            <input class="input" id="rp-version" placeholder="Версия Minecraft" value="${esc(this.mcVersion)}" readonly>
-            <select class="input" id="rp-prefer">
+            <input class="input" id="rp-version" placeholder="Версия" title="Версия игры" value="${esc(this.mcVersion)}" readonly>
+            <select class="input" id="rp-prefer" title="Приоритетный источник">
               <option value="curseforge" ${this.preferSource === 'curseforge' ? 'selected' : ''}>Приоритет: CurseForge</option>
               <option value="modrinth" ${this.preferSource === 'modrinth' ? 'selected' : ''}>Приоритет: Modrinth</option>
-              <option value="minecraft-inside" ${this.preferSource === 'minecraft-inside' ? 'selected' : ''}>Приоритет: Minecraft Inside</option>
+              <option value="minecraft-inside" ${this.preferSource === 'minecraft-inside' ? 'selected' : ''}>Приоритет: MC Inside</option>
             </select>
-            <button class="btn ghost" id="rp-installed">Установленные</button>
           </div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 16px;">
-            ${['curseforge','modrinth','minecraft-inside'].map(src => `<label class="pill-mini" style="display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:pointer;"><input type="checkbox" data-rp-src="${src}" ${this.sources.includes(src) ? 'checked' : ''}><span>${sourceLabel(src)}</span></label>`).join('')}
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0 14px;">
+            <span style="color:var(--text-2);font-size:12px;font-weight:600;">Источники:</span>
+            ${['curseforge','modrinth','minecraft-inside'].map(src => `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:12.5px;color:var(--text);"><input type="checkbox" data-rp-src="${src}" ${this.sources.includes(src) ? 'checked' : ''} style="accent-color:var(--accent);"><span>${sourceLabel(src)}</span></label>`).join('')}
+            <button class="btn outline compact-btn" id="rp-installed" style="margin-left:auto;">Установленные</button>
           </div>
-          ${targets.length ? '' : '<div class="empty-state" style="margin:12px 0;">Сначала установите Minecraft во вкладке «Версии». После этого появится выбор, куда ставить.</div>'}
-          <div id="rp-context" style="margin:10px 0 18px;color:var(--text-2);font-size:12px;"></div>
+          ${targets.length ? '' : `
+            <div class="mods-no-version-alert" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin:0 0 14px;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.35);border-radius:4px;">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span style="font-size:12.5px;color:var(--text);">Нет установленной версии Minecraft — установка ресурспаков заблокирована.</span>
+              </div>
+              <button class="btn outline compact-btn" id="rp-go-versions" style="flex-shrink:0;">Перейти во «Версии»</button>
+            </div>
+          `}
+          <div id="rp-context" style="margin:10px 0 18px;color:var(--text-2);font-size:12px;${targets.length ? '' : 'display:none;'}"></div>
           <div id="rp-list" class="card grid" style="grid-template-columns:1fr;"></div>
           <div style="display:flex;justify-content:center;margin-top:12px;gap:8px;">
             <button class="btn ghost" id="rp-prev" style="${this.page > 0 ? '' : 'display:none;'}">← Назад</button>
@@ -158,6 +167,10 @@ window.Views = window.Views || {};
         this.search();
       });
       document.getElementById('rp-installed').onclick = () => this.showInstalled();
+      const goVersionsBtn = document.getElementById('rp-go-versions');
+      if (goVersionsBtn) {
+        goVersionsBtn.onclick = () => { if (window.App) window.App.navigate('versions'); };
+      }
       document.getElementById('rp-prev').onclick = () => { if (this.page > 0) { this.page--; this.search(); } };
       document.getElementById('rp-next').onclick = () => { this.page++; this.search(); };
       this.updateContext();
@@ -169,9 +182,11 @@ window.Views = window.Views || {};
       if (!el) return;
       const target = this.currentTarget();
       if (!target) {
-        el.textContent = 'Установка отключена: нет установленной версии Minecraft.';
+        el.style.display = 'none';
+        el.textContent = '';
         return;
       }
+      el.style.display = '';
       const rootDir = target.rootDir || target.path;
       el.textContent = `Каталог ограничен выбранной версией Minecraft: ${this.mcVersion || '—'}. Установка пойдёт сюда: ${rootDir}/resourcepacks`;
     },
@@ -218,9 +233,10 @@ window.Views = window.Views || {};
       footer.style.display = 'flex';
       footer.style.gap = '10px';
       footer.style.justifyContent = 'flex-end';
+      const hasTarget = Boolean(this.currentTarget());
       footer.innerHTML = `
         ${pack.url ? `<button class="btn outline" id="modal-preview-site">Открыть сайт в браузере</button>` : ''}
-        <button class="btn primary" id="modal-preview-install">Установить</button>
+        <button class="btn ${hasTarget ? 'primary' : 'ghost disabled'}" id="modal-preview-install" ${hasTarget ? '' : 'disabled title="Сначала установите версию игры" data-tip="Сначала установите версию игры"'}>Установить</button>
         <button class="btn ghost" id="modal-preview-close">Закрыть</button>
       `;
 
@@ -300,7 +316,7 @@ window.Views = window.Views || {};
               </div>
             </div>
             <div class="actions">
-              <button class="btn ${already ? 'ghost' : 'primary'}" style="padding:6px 14px;font-size:12px;" data-install="${idx}" ${hasTarget && !already ? '' : 'disabled'}>${already ? 'Установлено' : 'Установить'}</button>
+              <button class="btn ${already ? 'ghost' : (hasTarget ? 'primary' : 'ghost disabled')}" style="padding:6px 14px;font-size:12px;" data-install="${idx}" ${hasTarget && !already ? '' : 'disabled'} ${!hasTarget && !already ? 'title="Сначала установите версию игры" data-tip="Сначала установите версию игры"' : ''}>${already ? 'Установлено' : 'Установить'}</button>
               <button class="btn ghost" style="padding:6px 14px;font-size:12px;" data-preview="${idx}">Подробнее</button>
             </div>
           </div>`;

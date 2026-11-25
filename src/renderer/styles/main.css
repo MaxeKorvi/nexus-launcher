@@ -2408,16 +2408,20 @@ body.theme-minimal {
 
 /* Library view tabs need min-width: 0 */
 .library-tabs {
-  flex-wrap: wrap;
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
   gap: 6px;
   overflow-x: auto;
+  max-width: 100%;
   scrollbar-width: none;
 }
 .library-tabs::-webkit-scrollbar { display: none; }
 
 /* Tab items should not grow excessively small */
-.tab-item {
+.tab-item,
+.library-tabs .tab-item {
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Downloads panel body min-height safety */

@@ -21,9 +21,9 @@ const dir = (rootDir) => path.join(rootDir || Settings.getAll().gameFolder || pa
 async function list({ query = '', source = 'all', sources = [], preferSource = 'curseforge', mcVersion = '', loader = '', page = 0, pageSize = 60 } = {}) {
   const requested = Array.from(new Set((sources && sources.length ? sources : (source === 'all' ? ['curseforge', 'modrinth', 'minecraft-inside'] : [source])).filter(Boolean)));
   const jobs = [];
-  if (requested.includes('modrinth')) jobs.push(searchModrinth({ query, projectType: 'resourcepack', mcVersion, loader, page, pageSize }));
-  if (requested.includes('curseforge')) jobs.push(searchCurseForge({ query, type: 'resourcepack', mcVersion, loader, page, pageSize }));
-  if (requested.includes('minecraft-inside')) jobs.push(searchMinecraftInside({ section: 'texture-packs', query, mcVersion, loader, page, pageSize }));
+  if (requested.includes('modrinth')) jobs.push(searchModrinth({ query, projectType: 'resourcepack', mcVersion, page, pageSize }));
+  if (requested.includes('curseforge')) jobs.push(searchCurseForge({ query, type: 'resourcepack', mcVersion, page, pageSize }));
+  if (requested.includes('minecraft-inside')) jobs.push(searchMinecraftInside({ section: 'texture-packs', query, mcVersion, page, pageSize }));
   const results = await Promise.allSettled(jobs);
   const hits = [];
   const errors = [];

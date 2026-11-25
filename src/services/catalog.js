@@ -217,10 +217,19 @@ async function searchModrinth({ query = '', projectType, mcVersion = '', loader 
   if (!(data.hits || []).length && (mcVersion || loader)) {
     ({ data } = await request([[`project_type:${projectType}`]]));
   }
+  const hitsRaw = (data.hits || []).filter(h => {
+    if (h.project_type && h.project_type !== projectType) return false;
+    if (projectType === 'resourcepack' && !query) {
+      const title = String(h.title || '');
+      const cats = (h.categories || []).map(c => String(c).toLowerCase());
+      if (/^translations?\s+for\b/i.test(title) || cats.includes('mod-translations')) return false;
+    }
+    return true;
+  });
   return {
     source: 'modrinth',
     total: data.total_hits,
-    hits: (data.hits || []).map(h => {
+    hits: hitsRaw.map(h => {
       const modLoaders = (h.categories || []).filter(c => ['fabric', 'forge', 'neoforge', 'quilt'].includes(c.toLowerCase()));
       const detectedLoader = loader || modLoaders[0] || detectLoader((h.categories || []).join(' '));
       const bannerUrl = h.featured_gallery || (h.gallery && h.gallery[0]) || null;
@@ -296,8 +305,10 @@ async function searchCurseForge({ query = '', type = 'mod', mcVersion = '', load
     sortOrder: 'desc'
   };
   if (mcVersion) params.gameVersion = mcVersion;
-  const modLoaderType = curseForgeLoaderType(loader);
-  if (modLoaderType) params.modLoaderType = modLoaderType;
+  if (type === 'mod' || type === 'modpack') {
+    const modLoaderType = curseForgeLoaderType(loader);
+    if (modLoaderType) params.modLoaderType = modLoaderType;
+  }
   let data;
   try {
     ({ data } = await client({ 'x-api-key': apiKey }).get(`${CURSEFORGE}/mods/search`, { params }));
