@@ -901,6 +901,7 @@ main.content.has-downloads {
 }
 .select { cursor: pointer; }
 .select option { background: var(--bg-2); color: var(--text); }
+input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
 
 /* ─── Progress bar ─────────────────────────────────────────────────────── */
 .progress {

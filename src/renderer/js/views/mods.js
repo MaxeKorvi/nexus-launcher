@@ -118,36 +118,44 @@ window.Views = window.Views || {};
       c.innerHTML = `
         <div class="view" style="padding:24px;">
           <h1>Менеджер модов</h1>
-          <p style="color:var(--text-2);margin-bottom:16px;">Мод ставится строго в <b>mods/ выбранной установленной версии</b>. Если версий нет — установка блокируется, чтобы файл не улетел в общую .minecraft.</p>
+          ${targets.length ? '<p style="color:var(--text-2);margin-bottom:14px;">Моды устанавливаются в папку <b>mods/</b> выбранной установленной версии.</p>' : ''}
 
-          <div class="search-bar" style="display:grid;grid-template-columns:1.4fr 1.4fr 0.8fr 0.9fr auto;gap:10px;align-items:center;">
+          <div class="search-bar" style="display:grid;grid-template-columns:minmax(160px,1.4fr) minmax(150px,1.2fr) minmax(90px,0.7fr) minmax(145px,1fr);gap:10px;align-items:center;">
             <input class="input" id="m-search" placeholder="Поиск мода…" value="${escapeHtml(this.query)}">
-            <select class="input" id="m-target">
-              ${targets.length ? targets.map(v => `<option value="${escapeHtml(targetKey(v))}" ${current && targetKey(v) === targetKey(current) ? 'selected' : ''}>${escapeHtml(formatTarget(v))}</option>`).join('') : '<option value="">Нет установленных версий</option>'}
+            <select class="input" id="m-target" title="Целевая версия / профиль">
+              ${targets.length ? targets.map(v => `<option value="${escapeHtml(targetKey(v))}" ${current && targetKey(v) === targetKey(current) ? 'selected' : ''}>${escapeHtml(formatTarget(v))}</option>`).join('') : '<option value="">Версия: нет</option>'}
             </select>
-            <input class="input" id="m-version" placeholder="Версия Minecraft" value="${escapeHtml(this.mcVersion)}" readonly>
-            <select class="input" id="m-prefer">
+            <input class="input" id="m-version" placeholder="Версия" title="Версия игры" value="${escapeHtml(this.mcVersion)}" readonly>
+            <select class="input" id="m-prefer" title="Приоритетный источник">
               <option value="curseforge" ${this.preferSource === 'curseforge' ? 'selected' : ''}>Приоритет: CurseForge</option>
               <option value="modrinth" ${this.preferSource === 'modrinth' ? 'selected' : ''}>Приоритет: Modrinth</option>
-              <option value="minecraft-inside" ${this.preferSource === 'minecraft-inside' ? 'selected' : ''}>Приоритет: Minecraft Inside</option>
+              <option value="minecraft-inside" ${this.preferSource === 'minecraft-inside' ? 'selected' : ''}>Приоритет: MC Inside</option>
             </select>
-            <button class="btn outline" id="m-installed">Установленные</button>
           </div>
 
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 16px;">
-            <span style="color:var(--text-2);font-size:12px;">Источники:</span>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0 14px;">
+            <span style="color:var(--text-2);font-size:12px;font-weight:600;">Источники:</span>
             ${['curseforge', 'modrinth', 'minecraft-inside'].map(src => `
-              <label class="pill-mini" style="display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:pointer;">
-                <input type="checkbox" data-source="${src}" ${this.sources.includes(src) ? 'checked' : ''}>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:12.5px;color:var(--text);">
+                <input type="checkbox" data-source="${src}" ${this.sources.includes(src) ? 'checked' : ''} style="accent-color:var(--accent);">
                 <span>${sourceLabel(src)}</span>
               </label>`).join('')}
-            <button class="btn ghost" id="m-reset-filters">Обновить версии</button>
+            <button class="btn ghost compact-btn" id="m-reset-filters">Обновить версии</button>
+            <button class="btn outline compact-btn" id="m-installed" style="margin-left:auto;">Установленные</button>
           </div>
 
-          ${targets.length ? '' : '<div class="empty-state" style="margin:12px 0;">Сначала установите Minecraft/Forge/Fabric во вкладке «Версии». После этого тут появится выбор, куда ставить моды.</div>'}
+          ${targets.length ? '' : `
+            <div class="mods-no-version-alert" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin:0 0 14px;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.35);border-radius:4px;">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span style="font-size:12.5px;color:var(--text);">Нет установленной версии Minecraft — установка модов заблокирована.</span>
+              </div>
+              <button class="btn outline compact-btn" id="m-go-versions" style="flex-shrink:0;">Перейти во «Версии»</button>
+            </div>
+          `}
 
           <div id="m-dropzone" class="drop-zone">Перетащите .jar сюда — он попадёт в mods/ выбранной версии</div>
-          <div id="m-context" style="margin:10px 0 18px;color:var(--text-2);font-size:12px;"></div>
+          <div id="m-context" style="margin:10px 0 18px;color:var(--text-2);font-size:12px;${targets.length ? '' : 'display:none;'}"></div>
 
           <h2>Результаты поиска</h2>
           <div id="m-list" class="card grid" style="grid-template-columns:1fr;"></div>
@@ -186,6 +194,10 @@ window.Views = window.Views || {};
       document.getElementById('m-prev').onclick = () => { if (this.page > 0) { this.page--; this.search(); } };
       document.getElementById('m-next').onclick = () => { this.page++; this.search(); };
       document.getElementById('m-installed').onclick = () => this.showInstalled();
+      const goVersionsBtn = document.getElementById('m-go-versions');
+      if (goVersionsBtn) {
+        goVersionsBtn.onclick = () => { if (window.App) window.App.navigate('versions'); };
+      }
 
       const dz = document.getElementById('m-dropzone');
       dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('over'); };
@@ -213,9 +225,11 @@ window.Views = window.Views || {};
       if (!el) return;
       const target = this.currentTarget();
       if (!target) {
-        el.textContent = 'Установка модов отключена: нет установленной версии Minecraft.';
+        el.style.display = 'none';
+        el.textContent = '';
         return;
       }
+      el.style.display = '';
       const version = this.mcVersion || 'любая версия';
       const loader = this.loader || 'vanilla/любой загрузчик';
       const path = target.rootDir || target.path;
@@ -362,9 +376,10 @@ window.Views = window.Views || {};
       footer.style.display = 'flex';
       footer.style.gap = '10px';
       footer.style.justifyContent = 'flex-end';
+      const hasTarget = Boolean(this.currentTarget());
       footer.innerHTML = `
         ${mod.url ? `<button class="btn outline" id="modal-preview-site">Открыть сайт в браузере</button>` : ''}
-        <button class="btn primary" id="modal-preview-install">Установить</button>
+        <button class="btn ${hasTarget ? 'primary' : 'ghost disabled'}" id="modal-preview-install" ${hasTarget ? '' : 'disabled title="Сначала установите версию игры" data-tip="Сначала установите версию игры"'}>Установить</button>
         <button class="btn ghost" id="modal-preview-close">Закрыть</button>
       `;
 
@@ -427,7 +442,7 @@ window.Views = window.Views || {};
               </div>
             </div>
             <div class="actions">
-              <button class="btn ${already ? 'ghost' : 'primary'}" style="padding:6px 14px;font-size:12px;" data-install="${idx}" ${hasTarget && !already ? '' : 'disabled'}>${already ? 'Установлено' : 'Выбрать и установить'}</button>
+              <button class="btn ${already ? 'ghost' : (hasTarget ? 'primary' : 'ghost disabled')}" style="padding:6px 14px;font-size:12px;" data-install="${idx}" ${hasTarget && !already ? '' : 'disabled'} ${!hasTarget && !already ? 'title="Сначала установите версию игры" data-tip="Сначала установите версию игры"' : ''}>${already ? 'Установлено' : 'Выбрать и установить'}</button>
               <button class="btn ghost" style="padding:6px 14px;font-size:12px;" data-preview="${idx}">Подробнее</button>
             </div>
           </div>
