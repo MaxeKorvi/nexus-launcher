@@ -339,6 +339,8 @@ async function searchCurseForge({ query = '', type = 'mod', mcVersion = '', load
       banner: bannerUrl,
       url: m.websiteUrl,
       mcVersions: Array.from(new Set((m.latestFilesIndexes || []).map(x => x.gameVersion).filter(Boolean))),
+      dateModified: m.dateModified || m.dateReleased || null,
+      screenshots: (m.screenshots || []).map(s => s.url || s.thumbnailUrl).filter(Boolean),
       loader: detectedLoader,
       loaders: fileLoaders.length ? fileLoaders : (detectedLoader ? [detectedLoader] : []),
       dateCreated: m.dateCreated,

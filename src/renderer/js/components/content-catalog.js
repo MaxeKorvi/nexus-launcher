@@ -295,45 +295,75 @@
         },
 
         showPreview(item) {
+          const cleanDesc = (text) => String(text || '')
+            .split('\n')
+            .map(l => l.trimStart())
+            .join('\n')
+            .trim();
+
+          const formatUpdated = (d) => {
+            if (!d) return '';
+            const dt = new Date(d);
+            return Number.isNaN(dt.getTime()) ? '' : dt.toLocaleDateString('ru-RU');
+          };
+
+          const renderVersionsBadges = (vers) => {
+            const sorted = sortMcVersionsDesc(vers);
+            if (!sorted.length) return '';
+            return `
+              <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:6px;">Поддерживаемые версии Minecraft:</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:92px;overflow-y:auto;">
+                ${sorted.map(v => `<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);font-size:12px;color:var(--text);">${esc(v)}</span>`).join('')}
+              </div>
+            `;
+          };
+
+          const renderScreenshots = (shots) => {
+            const list = Array.from(new Set((shots || []).filter(Boolean))).slice(0, 6);
+            if (!list.length) return '';
+            return `
+              <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:6px;">Скриншоты:</div>
+              <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
+                ${list.map(url => `<img src="${esc(url)}" alt="" style="height:110px;border-radius:4px;object-fit:cover;border:1px solid var(--border-soft);flex-shrink:0;" loading="lazy">`).join('')}
+              </div>
+            `;
+          };
+
+          const renderMetaHtml = (dl, upd, loaderVal) => {
+            const parts = [];
+            if (dl) parts.push(`<span>⬇ ${Number(dl).toLocaleString('ru-RU')}</span>`);
+            const updStr = formatUpdated(upd);
+            if (updStr) parts.push(`<span>Обновлено: ${esc(updStr)}</span>`);
+            if (loaderVal) parts.push(`<span>⚙ ${esc(loaderVal)}</span>`);
+            return parts.join('');
+          };
+
           const body = document.createElement('div');
           body.style.display = 'flex';
           body.style.flexDirection = 'column';
           body.style.gap = '14px';
 
-          const sortedVersions = sortMcVersionsDesc(item.mcVersions);
+          const initialShots = item.screenshots && item.screenshots.length ? item.screenshots : (item.banner ? [item.banner] : []);
+          const versionsHtml = renderVersionsBadges(item.mcVersions);
+          const shotsHtml = renderScreenshots(initialShots);
 
-          const header = `
-            <div style="display:flex;gap:14px;align-items:flex-start;">
-              <div style="width:64px;height:64px;border-radius:4px;background:var(--bg-2);background-size:cover;background-position:center;flex-shrink:0;${item.icon ? `background-image:url('${item.icon}')` : ''}"></div>
+          body.innerHTML = `
+            <div style="display:flex;gap:14px;align-items:flex-start;padding-right:32px;">
+              <div style="width:64px;height:64px;border-radius:4px;background:var(--bg-2);background-size:cover;background-position:center;flex-shrink:0;border:1px solid var(--border-soft);${item.icon ? `background-image:url('${esc(item.icon)}')` : ''}"></div>
               <div style="flex:1;min-width:0;">
-                <h3 style="margin:0 0 4px;font-size:17px;color:var(--text-0);">${esc(item.title || '')}</h3>
+                <h2 style="margin:0 0 4px;font-size:18px;font-weight:800;color:var(--text);line-height:1.25;">${esc(item.title || '')}</h2>
                 <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">
                   Автор: <strong>${esc(item.author || '—')}</strong> · Источник: <span class="badge" style="font-size:11px;padding:2px 6px;">${esc(sourceLabel(item.source || cfg.defaultSource))}</span>
                 </div>
-                <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-2);">
-                  ${item.downloads ? `<span>⬇ ${Number(item.downloads).toLocaleString('ru-RU')} скачиваний</span>` : ''}
-                  ${item.loader ? `<span>⚙ ${esc(item.loader)}</span>` : ''}
+                <div id="preview-meta-row" style="display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--text-2);">
+                  ${renderMetaHtml(item.downloads, item.dateModified || item.updated, item.loader)}
                 </div>
               </div>
             </div>
+            <div id="preview-desc-box" style="background:rgba(255,255,255,0.025);border:1px solid var(--border-soft);border-radius:4px;padding:12px 14px;font-size:13px;line-height:1.55;color:var(--text);max-height:240px;overflow-y:auto;white-space:pre-wrap;text-indent:0;text-align:left;">${esc(cleanDesc(item.description) || 'Описание отсутствует.')}</div>
+            <div id="preview-gallery-box" style="${shotsHtml ? '' : 'display:none;'}">${shotsHtml}</div>
+            <div id="preview-versions-box" style="${versionsHtml ? '' : 'display:none;'}">${versionsHtml}</div>
           `;
-
-          const desc = `
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:12px;font-size:13px;line-height:1.6;color:var(--text-1);max-height:220px;overflow-y:auto;white-space:pre-wrap;">
-              ${esc(item.description || 'Описание отсутствует.')}
-            </div>
-          `;
-
-          const versions = sortedVersions.length ? `
-            <div>
-              <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:6px;">Поддерживаемые версии Minecraft:</div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:80px;overflow-y:auto;">
-                ${sortedVersions.map(v => `<span style="background:var(--bg-2);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px;color:var(--text-1);">${esc(v)}</span>`).join('')}
-              </div>
-            </div>
-          ` : '';
-
-          body.innerHTML = header + desc + versions;
 
           const hasTarget = Boolean(this.currentTarget());
           const footer = document.createElement('div');
@@ -347,7 +377,7 @@
           `;
 
           const modal = Modal.open({
-            title: esc(item.title || 'Подробнее'),
+            hideHeader: true,
             body,
             footer,
             size: 'large'
@@ -362,6 +392,39 @@
             modal.close();
             this.installItem(item);
           };
+
+          // Fetch full project details (full description, screenshots, updated date, versions) from API
+          if (item.id && (item.source === 'modrinth' || item.source === 'curseforge')) {
+            window.api.invoke('mods:get-by-id', item.id, item.source).then(details => {
+              if (!details || !document.body.contains(body)) return;
+              if (details.fullDescription) {
+                const descEl = body.querySelector('#preview-desc-box');
+                if (descEl) descEl.textContent = cleanDesc(details.fullDescription);
+              }
+              const metaRow = body.querySelector('#preview-meta-row');
+              if (metaRow) {
+                metaRow.innerHTML = renderMetaHtml(
+                  details.downloads || item.downloads,
+                  details.updated || item.dateModified || item.updated,
+                  item.loader
+                );
+              }
+              const mergedShots = [...initialShots, ...(details.screenshots || [])];
+              const gBox = body.querySelector('#preview-gallery-box');
+              if (gBox) {
+                const html = renderScreenshots(mergedShots);
+                gBox.innerHTML = html;
+                gBox.style.display = html ? '' : 'none';
+              }
+              const mergedVers = [...(item.mcVersions || []), ...(details.mcVersions || [])];
+              const vBox = body.querySelector('#preview-versions-box');
+              if (vBox) {
+                const html = renderVersionsBadges(mergedVers);
+                vBox.innerHTML = html;
+                vBox.style.display = html ? '' : 'none';
+              }
+            }).catch(() => {});
+          }
         },
 
         async installItem(item) {

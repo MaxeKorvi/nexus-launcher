@@ -79,10 +79,74 @@ async function search({ query = '', source = 'all', sources = [], preferSource =
   };
 }
 
+function stripHtmlToText(html) {
+  return String(html || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function cleanMarkdownText(md) {
+  return String(md || '')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[*_`~>]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 async function getById(id, source) {
+  const axios = require('axios');
   if (source === 'modrinth') {
-    const versions = await getModrinthVersions(id);
-    return { source, versions };
+    const [projRes, versions] = await Promise.all([
+      axios.get(`https://api.modrinth.com/v2/project/${id}`, { timeout: 10000 }).catch(() => null),
+      getModrinthVersions(id).catch(() => [])
+    ]);
+    const proj = projRes && projRes.data ? projRes.data : {};
+    const gallery = Array.isArray(proj.gallery) ? proj.gallery.map(g => g.url || g.raw_url).filter(Boolean) : [];
+    const bodyText = proj.body ? cleanMarkdownText(proj.body) : '';
+    return {
+      source,
+      id,
+      versions,
+      fullDescription: bodyText || proj.description || '',
+      downloads: proj.downloads,
+      updated: proj.updated,
+      mcVersions: proj.game_versions || [],
+      screenshots: gallery
+    };
+  }
+  if (source === 'curseforge') {
+    const { getCurseForgeApiKey, FALLBACK_CF_KEY } = require('./curseforge-auth');
+    const apiKey = getCurseForgeApiKey() || FALLBACK_CF_KEY;
+    if (apiKey) {
+      const headers = { 'x-api-key': apiKey };
+      const [modRes, descRes] = await Promise.all([
+        axios.get(`https://api.curseforge.com/v1/mods/${id}`, { headers, timeout: 10000 }).catch(() => null),
+        axios.get(`https://api.curseforge.com/v1/mods/${id}/description`, { headers, timeout: 10000 }).catch(() => null)
+      ]);
+      const m = modRes && modRes.data && modRes.data.data ? modRes.data.data : {};
+      const descHtml = descRes && descRes.data && descRes.data.data ? descRes.data.data : '';
+      return {
+        source,
+        id,
+        fullDescription: descHtml ? stripHtmlToText(descHtml) : (m.summary || ''),
+        downloads: m.downloadCount,
+        updated: m.dateModified || m.dateReleased,
+        mcVersions: Array.from(new Set((m.latestFilesIndexes || []).map(x => x.gameVersion).filter(Boolean))),
+        screenshots: (m.screenshots || []).map(s => s.url || s.thumbnailUrl).filter(Boolean)
+      };
+    }
   }
   return { source, id };
 }

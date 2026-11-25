@@ -3,7 +3,7 @@
 window.Modal = {
   _currentInstance: null,
 
-  open({ title = '', body, footer, onClose, size }) {
+  open({ title = '', body, footer, onClose, size, hideHeader = false }) {
     const mount = document.getElementById('modal-mount') || document.body;
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
@@ -13,13 +13,18 @@ window.Modal = {
     if (size === 'small') modal.style.minWidth = '340px';
 
     modal.innerHTML = `
-      <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
-        <h2 style="margin:0;font-size:18px;font-weight:800;color:var(--text);">${title}</h2>
-        <button class="modal-close-btn" style="background:none;border:none;color:var(--text-2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;transition:all 150ms;display:flex;align-items:center;justify-content:center;" title="Закрыть (Esc)">✕</button>
-      </div>
+      ${hideHeader ? `
+        <button class="modal-close-btn" style="position:absolute;top:14px;right:14px;z-index:2;background:none;border:none;color:var(--text-2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;transition:all 150ms;display:flex;align-items:center;justify-content:center;" title="Закрыть (Esc)">✕</button>
+      ` : `
+        <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+          <h2 style="margin:0;font-size:18px;font-weight:800;color:var(--text);">${title}</h2>
+          <button class="modal-close-btn" style="background:none;border:none;color:var(--text-2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;transition:all 150ms;display:flex;align-items:center;justify-content:center;" title="Закрыть (Esc)">✕</button>
+        </div>
+      `}
       <div class="modal-body" style="overflow-y:auto;max-height:75vh;"></div>
       <div class="modal-footer" style="margin-top:16px;"></div>
     `;
+    if (hideHeader) modal.style.position = 'relative';
 
     const bodyEl = modal.querySelector('.modal-body');
     if (body) {
