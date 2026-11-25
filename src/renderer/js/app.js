@@ -197,6 +197,11 @@ window.App = {
       if (/^#[0-9a-f]{6}$/i.test(accent)) {
         document.documentElement.style.setProperty('--border-soft', accent + '26');
         document.documentElement.style.setProperty('--border-line', accent + '45');
+        const r = parseInt(accent.slice(1, 3), 16) / 255;
+        const g = parseInt(accent.slice(3, 5), 16) / 255;
+        const b = parseInt(accent.slice(5, 7), 16) / 255;
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        document.documentElement.style.setProperty('--on-accent', lum < 0.48 ? '#ffffff' : '#050a07');
       }
       if (palette) {
         if (palette.bg) document.documentElement.style.setProperty('--bg', palette.bg);
@@ -211,16 +216,21 @@ window.App = {
       }
 
       const bgImg = s.customBackground || (palette && palette.image);
+      const dim = typeof s.bgDim === 'number' ? s.bgDim : 88;
+      const blurPx = typeof s.bgBlur === 'number' ? s.bgBlur : 0;
+      const topAlpha = (Math.max(10, Math.min(98, dim)) / 100).toFixed(2);
+      const botAlpha = (Math.min(0.98, Number(topAlpha) + 0.06)).toFixed(2);
       if (bgImg) {
         const centerContent = document.querySelector('.center-content');
         if (centerContent) {
-          centerContent.style.backgroundImage = `linear-gradient(180deg, rgba(12, 15, 20, 0.88) 0%, rgba(8, 10, 14, 0.94) 100%), url('${bgImg}')`;
+          centerContent.style.backgroundImage = `linear-gradient(180deg, rgba(12, 15, 20, ${topAlpha}) 0%, rgba(8, 10, 14, ${botAlpha}) 100%), url('${bgImg}')`;
         }
         const profileCover = document.getElementById('profile-cover');
         if (profileCover) {
           profileCover.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%), url('${bgImg}')`;
         }
       }
+      document.documentElement.style.setProperty('--bg-blur', `${blurPx}px`);
 
       if (s.consoleFontFamily) {
         document.documentElement.style.setProperty('--console-font-family', s.consoleFontFamily);

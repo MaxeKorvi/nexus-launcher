@@ -138,10 +138,22 @@ window.Views = window.Views || {};
     currentCard: 'rgba(8, 20, 14, 0.85)',
     currentText: '#f0fdf4',
     customThemeName: 'Мой авторский стиль',
+    bgDim: 88,
+    bgBlur: 0,
     interfaceStyle: 'standard', // standard | glass | matte
     libraryViewMode: 'cards',   // cards | list
     animationsEnabled: true,
     glowEnabled: true,
+
+    computeOnAccent(hex) {
+      const h = this.ensureHex(hex, '');
+      if (!h) return '#050a07';
+      const r = parseInt(h.slice(1, 3), 16) / 255;
+      const g = parseInt(h.slice(3, 5), 16) / 255;
+      const b = parseInt(h.slice(5, 7), 16) / 255;
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      return lum < 0.48 ? '#ffffff' : '#050a07';
+    },
 
     async render() {
       const c = document.getElementById('view-container');
@@ -168,6 +180,8 @@ window.Views = window.Views || {};
       this.currentText = ct.text || curPreset.text || '#f0fdf4';
       this.customThemeName = ct.name || 'Мой авторский стиль';
       this.customBackground = s.customBackground || curPreset.image || 'assets/backgrounds/bg-valley.png';
+      this.bgDim = typeof s.bgDim === 'number' ? s.bgDim : 88;
+      this.bgBlur = typeof s.bgBlur === 'number' ? s.bgBlur : 0;
 
       this.animationsEnabled = s.animations !== false;
       this.glowEnabled = s.glowEffects !== false;
@@ -175,39 +189,41 @@ window.Views = window.Views || {};
       this.libraryViewMode = s.libraryDisplayMode || 'cards';
 
       c.innerHTML = `
-        <div class="view settings-single-card tm-container" style="padding: 24px 30px; width: 100%; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box;">
-          <!-- ═══ 1. Header ═══ -->
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Кастомизация</span>
-                <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Themes & Colors</span>
+        <div class="view settings-single-card tm-container" style="padding: 20px 28px 32px; width: 100%; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box;">
+          <!-- ═══ 1. Header with subtle dark scrim for contrast over wallpapers ═══ -->
+          <div class="tm-header-scrim" style="padding: 14px 16px; border-radius: 4px; background: linear-gradient(180deg, rgba(8, 10, 15, 0.78) 0%, rgba(8, 10, 15, 0.45) 100%); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="eyebrow" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.06em;">Кастомизация</span>
+                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-soft); color: var(--text-2);">Themes & Colors</span>
+                </div>
+                <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Темы и Оформление</h1>
+                <p style="margin: 0; color: var(--text-2); font-size: 13px;">Сделай лаунчер своим: выбирайте готовые палитры, создавайте свою цветовую гамму и настраивайте стили</p>
               </div>
-              <h1 style="font-size: 24px; font-weight: 800; margin: 4px 0; color: var(--text);">Темы и Оформление</h1>
-              <p style="margin: 0; color: var(--text-2); font-size: 13px;">Сделай лаунчер своим: выбирайте готовые палитры, создавайте свою цветовую гамму и настраивайте стили</p>
+              <div>
+                <button class="btn outline" id="tm-reset-default" style="display: flex; align-items: center; gap: 8px; height: 38px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                  Сбросить к стандарту
+                </button>
+              </div>
             </div>
-            <div>
-              <button class="btn outline" id="tm-reset-default" style="display: flex; align-items: center; gap: 8px; height: 38px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                Сбросить к стандарту
+
+            <!-- ═══ 2. Sub-nav Tabs ═══ -->
+            <div style="display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--border-soft); padding-top: 12px;">
+              <button class="st-tab-btn ${this.currentTab === 'ready' ? 'active' : ''}" data-tab="ready">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Готовые темы
+              </button>
+              <button class="st-tab-btn ${this.currentTab === 'personal' ? 'active' : ''}" data-tab="personal">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                Персонализация (Своя тема)
+              </button>
+              <button class="st-tab-btn ${this.currentTab === 'bg' ? 'active' : ''}" data-tab="bg">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                Фон и атмосфера
               </button>
             </div>
-          </div>
-
-          <!-- ═══ 2. Sub-nav Tabs ═══ -->
-          <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border-soft); padding-bottom: 12px;">
-            <button class="st-tab-btn ${this.currentTab === 'ready' ? 'active' : ''}" data-tab="ready">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-              Готовые темы
-            </button>
-            <button class="st-tab-btn ${this.currentTab === 'personal' ? 'active' : ''}" data-tab="personal">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-              Персонализация (Своя тема)
-            </button>
-            <button class="st-tab-btn ${this.currentTab === 'bg' ? 'active' : ''}" data-tab="bg">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-              Фон и атмосфера
-            </button>
           </div>
 
           <!-- ═══ 3. Active Tab Content ═══ -->
@@ -311,9 +327,6 @@ window.Views = window.Views || {};
                   <button class="btn primary" id="tm-btn-save-custom" style="flex:1; padding: 10px 16px; font-weight:800;">
                     ✓ Сохранить и применить тему
                   </button>
-                  <button class="btn outline" id="tm-btn-reset-custom" style="padding: 10px 16px;">
-                    Сбросить
-                  </button>
                 </div>
               </div>
             </section>
@@ -338,9 +351,39 @@ window.Views = window.Views || {};
               <div class="tm-collection-head">
                 <div>
                   <h2>Фон и атмосфера</h2>
-                  <p>Выберите фоновые пейзажи Minecraft для лаунчера.</p>
+                  <p>Загрузите свои обои, выберите готовый пейзаж и настройте затемнение с размытием.</p>
                 </div>
               </div>
+
+              <!-- Custom Wallpaper Controls -->
+              <div style="display:flex;flex-direction:column;gap:12px;padding:12px 14px;margin-bottom:14px;background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius:4px;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <button class="btn outline compact-btn" id="tm-bg-upload-file" style="height:32px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Загрузить с ПК
+                  </button>
+                  <input type="text" class="input" id="tm-bg-url-input" placeholder="Или вставьте URL изображения (https://...)" value="${/^https?:\/\//i.test(activeBg) ? esc(activeBg) : ''}" style="flex:1;min-width:180px;height:32px;font-size:12px;">
+                  <button class="btn primary compact-btn" id="tm-bg-url-apply" style="height:32px;">Применить</button>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding-top:6px;border-top:1px solid var(--border-soft);">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+                      <span style="color:var(--text-2);font-weight:600;">Затемнение фона</span>
+                      <span id="tm-bg-dim-val" style="color:var(--accent-hi);font-weight:700;">${this.bgDim}%</span>
+                    </div>
+                    <input type="range" id="tm-bg-dim" min="15" max="95" step="1" value="${this.bgDim}" style="width:100%;accent-color:var(--accent);">
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+                      <span style="color:var(--text-2);font-weight:600;">Размытие обоев</span>
+                      <span id="tm-bg-blur-val" style="color:var(--accent-hi);font-weight:700;">${this.bgBlur} px</span>
+                    </div>
+                    <input type="range" id="tm-bg-blur" min="0" max="24" step="1" value="${this.bgBlur}" style="width:100%;accent-color:var(--accent);">
+                  </div>
+                </div>
+              </div>
+
               <div class="tm-cards-grid">
                 ${BACKGROUND_PRESETS.map(p => {
                   const isActive = activeBg === p.image;
@@ -361,24 +404,73 @@ window.Views = window.Views || {};
             </section>
           </div>
         `;
+
+        const selectBg = async (url) => {
+          this.customBackground = url;
+          await this.applyBackground(url);
+          document.querySelectorAll('[data-bg-img]').forEach(c => {
+            const isMatch = c.dataset.bgImg === url;
+            c.classList.toggle('active', isMatch);
+            const check = c.querySelector('.tm-check-indicator');
+            if (check) check.textContent = isMatch ? '✓' : '';
+          });
+        };
+
         document.querySelectorAll('[data-bg-img]').forEach(card => {
-          card.onclick = async () => {
-            const url = card.dataset.bgImg;
-            this.customBackground = url;
-            await this.applyBackground(url);
-            document.querySelectorAll('[data-bg-img]').forEach(c => {
-              const isMatch = c.dataset.bgImg === url;
-              c.classList.toggle('active', isMatch);
-              const check = c.querySelector('.tm-check-indicator');
-              if (check) check.textContent = isMatch ? '✓' : '';
+          card.onclick = () => selectBg(card.dataset.bgImg);
+        });
+
+        const uploadBtn = document.getElementById('tm-bg-upload-file');
+        if (uploadBtn) {
+          uploadBtn.onclick = async () => {
+            const files = await window.api.dialog.openFile({
+              title: 'Выберите изображение для фона',
+              properties: ['openFile'],
+              filters: [{ name: 'Изображения', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
             });
-            const mock = document.getElementById('tm-mockup');
-            if (mock) {
-              const b = mock.querySelector('.tm-mock-banner');
-              if (b) b.style.backgroundImage = `url('${url}')`;
+            if (files && files[0]) {
+              const fileUrl = `file://${files[0].replace(/\\/g, '/')}`;
+              await selectBg(fileUrl);
+              Toast.success('Фон обновлён', 'Собственное изображение применено');
             }
           };
-        });
+        }
+
+        const urlBtn = document.getElementById('tm-bg-url-apply');
+        const urlInput = document.getElementById('tm-bg-url-input');
+        if (urlBtn && urlInput) {
+          urlBtn.onclick = async () => {
+            const val = urlInput.value.trim();
+            if (!/^https?:\/\/.+/i.test(val)) {
+              Toast.error('Неверный URL', 'Введите ссылку вида https://...');
+              return;
+            }
+            await selectBg(val);
+            Toast.success('Фон обновлён', 'Изображение по ссылке применено');
+          };
+        }
+
+        const dimSlider = document.getElementById('tm-bg-dim');
+        const dimVal = document.getElementById('tm-bg-dim-val');
+        const blurSlider = document.getElementById('tm-bg-blur');
+        const blurVal = document.getElementById('tm-bg-blur-val');
+        if (dimSlider) {
+          dimSlider.oninput = () => {
+            this.bgDim = Number(dimSlider.value);
+            if (dimVal) dimVal.textContent = `${this.bgDim}%`;
+            this.applyBackgroundAppearance(this.customBackground);
+          };
+          dimSlider.onchange = () => window.api.invoke('settings:set', { bgDim: this.bgDim });
+        }
+        if (blurSlider) {
+          blurSlider.oninput = () => {
+            this.bgBlur = Number(blurSlider.value);
+            if (blurVal) blurVal.textContent = `${this.bgBlur} px`;
+            this.applyBackgroundAppearance(this.customBackground);
+          };
+          blurSlider.onchange = () => window.api.invoke('settings:set', { bgBlur: this.bgBlur });
+        }
+
         this.bindRightCardEvents();
         return;
       }
@@ -477,7 +569,7 @@ window.Views = window.Views || {};
 
           <label style="font-size: 12px; font-weight: 700; color: #fff; margin-top: 14px; display: block;">Вид списков в библиотеке</label>
           <div class="tm-style-pills">
-            <button class="tm-style-pill ${this.libraryViewMode === 'cards' ? 'active' : ''}" data-lib-view="cards">Карточки (концепт)</button>
+            <button class="tm-style-pill ${this.libraryViewMode === 'cards' ? 'active' : ''}" data-lib-view="cards">Карточки</button>
             <button class="tm-style-pill ${this.libraryViewMode === 'list' ? 'active' : ''}" data-lib-view="list">Компактный список</button>
           </div>
 
@@ -546,6 +638,7 @@ window.Views = window.Views || {};
           card: this.currentCard,
           text: this.currentText
         });
+        this.syncAccentControls(this.currentAccent);
       };
 
       if (pAccent) pAccent.oninput = updateRealtime;
@@ -593,14 +686,6 @@ window.Views = window.Views || {};
           }
 
           Toast.success('Пользовательская тема сохранена', `Тема «${name}» активна`);
-        };
-      }
-
-      const resetBtn = document.getElementById('tm-btn-reset-custom');
-      if (resetBtn) {
-        resetBtn.onclick = () => {
-          this.applyPreset('emerald');
-          this.renderTabContent();
         };
       }
     },
@@ -684,6 +769,22 @@ window.Views = window.Views || {};
       }
     },
 
+    syncAccentControls(hex) {
+      if (!hex) return;
+      document.querySelectorAll('[data-color]').forEach(sw => {
+        sw.classList.toggle('active', sw.dataset.color.toLowerCase() === hex.toLowerCase());
+      });
+      const qHex = document.getElementById('tm-quick-hex');
+      const qPick = document.getElementById('tm-quick-picker');
+      if (qHex) qHex.value = hex.toUpperCase();
+      if (qPick) qPick.value = this.ensureHex(hex, '#00e676');
+
+      const pHex = document.getElementById('tm-hex-accent');
+      const pPick = document.getElementById('tm-picker-accent');
+      if (pHex) pHex.value = hex.toUpperCase();
+      if (pPick) pPick.value = this.ensureHex(hex, '#00e676');
+    },
+
     previewAccent(hex) {
       this.currentAccent = hex;
       document.documentElement.style.setProperty('--accent', hex);
@@ -691,10 +792,12 @@ window.Views = window.Views || {};
       document.documentElement.style.setProperty('--accent-glow', hex + '40');
       document.documentElement.style.setProperty('--glow', hex + '28');
       document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${hex}44`);
+      document.documentElement.style.setProperty('--on-accent', this.computeOnAccent(hex));
       if (/^#[0-9a-f]{6}$/i.test(hex)) {
         document.documentElement.style.setProperty('--border-soft', hex + '26');
         document.documentElement.style.setProperty('--border-line', hex + '45');
       }
+      this.syncAccentControls(hex);
       this.updateMockup(hex);
     },
 
@@ -706,6 +809,7 @@ window.Views = window.Views || {};
         document.documentElement.style.setProperty('--accent-glow', accent + '40');
         document.documentElement.style.setProperty('--glow', accent + '28');
         document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${accent}44`);
+        document.documentElement.style.setProperty('--on-accent', this.computeOnAccent(accent));
         if (/^#[0-9a-f]{6}$/i.test(accent)) {
           document.documentElement.style.setProperty('--border-soft', accent + '26');
           document.documentElement.style.setProperty('--border-line', accent + '45');
@@ -836,22 +940,33 @@ window.Views = window.Views || {};
       }
     },
 
+    applyBackgroundAppearance(url) {
+      const bgUrl = url || this.customBackground || 'assets/backgrounds/bg-valley.png';
+      const topAlpha = (Math.max(10, Math.min(98, this.bgDim)) / 100).toFixed(2);
+      const botAlpha = (Math.min(0.98, Number(topAlpha) + 0.06)).toFixed(2);
+      const centerContent = document.querySelector('.center-content');
+      if (centerContent) {
+        centerContent.style.backgroundImage = `linear-gradient(180deg, rgba(12, 15, 20, ${topAlpha}) 0%, rgba(8, 10, 14, ${botAlpha}) 100%), url('${bgUrl}')`;
+      }
+      document.documentElement.style.setProperty('--bg-blur', `${this.bgBlur}px`);
+      const mock = document.getElementById('tm-mockup');
+      if (mock) {
+        const b = mock.querySelector('.tm-mock-banner');
+        if (b) {
+          b.style.backgroundImage = `linear-gradient(180deg, rgba(12, 15, 20, ${Math.min(0.85, Number(topAlpha) * 0.7).toFixed(2)}), rgba(8, 10, 14, ${topAlpha})), url('${bgUrl}')`;
+          b.style.filter = this.bgBlur ? `blur(${Math.min(6, Math.round(this.bgBlur / 3))}px)` : '';
+        }
+      }
+    },
+
     async applyBackground(url) {
       this.customBackground = url;
       Store.set('settings.customBackground', url);
       await window.api.invoke('settings:set', { customBackground: url });
-      const centerContent = document.querySelector('.center-content');
-      if (centerContent) {
-        centerContent.style.backgroundImage = `linear-gradient(180deg, rgba(12, 15, 20, 0.88) 0%, rgba(8, 10, 14, 0.94) 100%), url('${url}')`;
-      }
+      this.applyBackgroundAppearance(url);
       const profileCover = document.getElementById('profile-cover');
       if (profileCover) {
         profileCover.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%), url('${url}')`;
-      }
-      const mock = document.getElementById('tm-mockup');
-      if (mock) {
-        const b = mock.querySelector('.tm-mock-banner');
-        if (b) b.style.backgroundImage = `url('${url}')`;
       }
     },
 
