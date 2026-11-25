@@ -97,6 +97,7 @@ const ALLOWED_CHANNELS = {
   'instances:list': () => ipcRenderer.invoke('instances:list'),
   'instances:get': (id) => ipcRenderer.invoke('instances:get', id),
   'instances:create': (data) => ipcRenderer.invoke('instances:create', data),
+  'instances:update': (id, data) => ipcRenderer.invoke('instances:update', id, data),
   'instances:remove': (id) => ipcRenderer.invoke('instances:remove', id),
   'instances:duplicate': (id, newName) => ipcRenderer.invoke('instances:duplicate', id, newName),
   'instances:open-folder': (id) => ipcRenderer.invoke('instances:open-folder', id),

@@ -162,6 +162,7 @@ const Instances = require('../services/instances');
 ipcMain.handle('instances:list', () => Instances.list());
 ipcMain.handle('instances:get', (_e, id) => Instances.get(id));
 ipcMain.handle('instances:create', (_e, data) => Instances.create(data));
+ipcMain.handle('instances:update', (_e, id, data) => Instances.update(id, data));
 ipcMain.handle('instances:remove', (_e, id) => Instances.remove(id));
 ipcMain.handle('instances:duplicate', (_e, id, newName) => Instances.duplicate(id, newName));
 ipcMain.handle('instances:open-folder', (_e, id) => Instances.openFolder(id));

@@ -162,6 +162,12 @@ async function copyDir(src, dest) {
 }
 
 async function openFolder(id) {
+  if (id === 'default') {
+    const dir = defaultGameDir();
+    await ensureDir(dir);
+    await shell.openPath(dir);
+    return { ok: true, path: dir };
+  }
   const inst = await get(id);
   const dir = inst ? inst.rootDir : instancesRoot();
   if (fs.existsSync(dir)) {
@@ -169,6 +175,26 @@ async function openFolder(id) {
     return { ok: true, path: dir };
   }
   return { ok: false, error: 'not_found' };
+}
+
+async function update(id, data = {}) {
+  const inst = await get(id);
+  if (!inst) throw new Error('Профиль не найден');
+
+  const updated = {
+    ...inst,
+    name: data.name !== undefined ? String(data.name).trim() || inst.name : inst.name,
+    mcVersion: data.mcVersion !== undefined ? String(data.mcVersion).trim() || inst.mcVersion : inst.mcVersion,
+    minecraft: data.mcVersion !== undefined ? String(data.mcVersion).trim() || inst.minecraft : inst.minecraft,
+    loader: data.loader !== undefined ? String(data.loader).toLowerCase() : inst.loader,
+    maxHeap: data.maxHeap !== undefined ? (data.maxHeap ? Number(data.maxHeap) : null) : inst.maxHeap,
+    jvmArgs: data.jvmArgs !== undefined ? (String(data.jvmArgs).trim() || null) : inst.jvmArgs
+  };
+
+  const { rootDir, path: _p, ...metaToSave } = updated;
+  const metaFile = path.join(inst.rootDir, 'nexus-instance.json');
+  await fsp.writeFile(metaFile, JSON.stringify(metaToSave, null, 2), 'utf8');
+  return updated;
 }
 
 async function updateLastPlayed(id) {
@@ -185,6 +211,7 @@ module.exports = {
   list,
   get,
   create,
+  update,
   remove,
   duplicate,
   openFolder,
