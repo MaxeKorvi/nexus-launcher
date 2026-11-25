@@ -90,7 +90,7 @@ window.Views = window.Views || {};
       return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
     }
     // Grass block for vanilla
-    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>`;
   }
 
   window.Views.versions = {

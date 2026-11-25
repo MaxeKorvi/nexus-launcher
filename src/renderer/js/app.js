@@ -194,6 +194,10 @@ window.App = {
       document.documentElement.style.setProperty('--accent-glow', accent + '40');
       document.documentElement.style.setProperty('--glow', accent + '25');
       document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${accent}33`);
+      if (/^#[0-9a-f]{6}$/i.test(accent)) {
+        document.documentElement.style.setProperty('--border-soft', accent + '26');
+        document.documentElement.style.setProperty('--border-line', accent + '45');
+      }
       if (palette) {
         if (palette.bg) document.documentElement.style.setProperty('--bg', palette.bg);
         if (palette.card) document.documentElement.style.setProperty('--card', palette.card);

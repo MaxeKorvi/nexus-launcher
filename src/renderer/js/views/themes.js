@@ -691,6 +691,10 @@ window.Views = window.Views || {};
       document.documentElement.style.setProperty('--accent-glow', hex + '40');
       document.documentElement.style.setProperty('--glow', hex + '28');
       document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${hex}44`);
+      if (/^#[0-9a-f]{6}$/i.test(hex)) {
+        document.documentElement.style.setProperty('--border-soft', hex + '26');
+        document.documentElement.style.setProperty('--border-line', hex + '45');
+      }
       this.updateMockup(hex);
     },
 
@@ -702,6 +706,10 @@ window.Views = window.Views || {};
         document.documentElement.style.setProperty('--accent-glow', accent + '40');
         document.documentElement.style.setProperty('--glow', accent + '28');
         document.documentElement.style.setProperty('--shadow-glow', `0 0 34px ${accent}44`);
+        if (/^#[0-9a-f]{6}$/i.test(accent)) {
+          document.documentElement.style.setProperty('--border-soft', accent + '26');
+          document.documentElement.style.setProperty('--border-line', accent + '45');
+        }
       }
       if (bg) {
         this.currentBg = bg;
