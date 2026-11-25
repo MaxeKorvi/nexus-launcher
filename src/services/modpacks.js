@@ -14,6 +14,7 @@ const fsp = require('fs/promises');
 const { app } = require('electron');
 const JSZip = require('jszip');
 const Downloads = require('./downloads');
+const ZstdStream = require('./zstd-stream');
 const Settings = require('./settings');
 const { getCurseForgeApiKey, curseForgeErrorMessage, FALLBACK_CF_KEY } = require('./curseforge-auth');
 const Versions = require('./versions');
@@ -567,18 +568,59 @@ async function install(pack) {
     throw new Error('Неизвестный источник сборки.');
   }
 
-  const tmpPath = path.join(app.getPath('temp'), file.fileName || `pack-${Date.now()}.zip`);
-  await Downloads.start({
-    id: `pack-${pack.source}-${pack.id}`,
-    label: pack.title || file.fileName,
-    url: file.url,
-    urls: file.urls,
-    path: tmpPath,
-    size: file.fileSize,
-    sha1: file.sha1,
-    kind: 'modpack'
-  });
-  const result = await importZip(tmpPath);
+  const isTarZst = /\.tar\.zst$/i.test(file.fileName || file.url || '');
+  let result;
+  if (isTarZst) {
+    const packName = sanitizeName(pack.slug || pack.title || `pack-${pack.id}`);
+    const dest = path.join(modpacksDir(), packName);
+    const dlId = `pack-${pack.source}-${pack.id}`;
+    try {
+      await ZstdStream.streamDownloadAndExtract({
+        url: file.url,
+        targetDir: dest,
+        expectedSha256: file.sha256 || pack.sha256 || null,
+        timeoutMs: timeoutMs(),
+        onProgress: (p) => {
+          Downloads.emitExternalProgress({
+            id: dlId,
+            label: pack.title || file.fileName,
+            received: p.received,
+            total: p.total,
+            speedBps: p.speedBps,
+            currentFile: p.currentFile
+          });
+        }
+      });
+      Downloads.emitExternalProgress({ id: dlId, label: pack.title || file.fileName, done: true });
+      const manifestPath = fs.existsSync(path.join(dest, 'modrinth.index.json'))
+        ? path.join(dest, 'modrinth.index.json')
+        : (fs.existsSync(path.join(dest, 'manifest.json')) ? path.join(dest, 'manifest.json') : null);
+      if (manifestPath) {
+        const manifest = JSON.parse(await fsp.readFile(manifestPath, 'utf8'));
+        const type = manifestPath.endsWith('modrinth.index.json') ? 'mrpack' : 'curseforge';
+        const runtime = await installRuntime(dest, manifest, type);
+        result = { name: packName, path: dest, ...runtime };
+      } else {
+        result = { name: packName, path: dest };
+      }
+    } catch (err) {
+      Downloads.emitExternalProgress({ id: dlId, label: pack.title || file.fileName, done: true, error: err.message });
+      throw err;
+    }
+  } else {
+    const tmpPath = path.join(app.getPath('temp'), file.fileName || `pack-${Date.now()}.zip`);
+    await Downloads.start({
+      id: `pack-${pack.source}-${pack.id}`,
+      label: pack.title || file.fileName,
+      url: file.url,
+      urls: file.urls,
+      path: tmpPath,
+      size: file.fileSize,
+      sha1: file.sha1,
+      kind: 'modpack'
+    });
+    result = await importZip(tmpPath);
+  }
   try {
     const metaPath = path.join(result.path, 'nexus-modpack.json');
     const meta = fs.existsSync(metaPath) ? JSON.parse(await fsp.readFile(metaPath, 'utf8')) : {};

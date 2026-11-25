@@ -20,12 +20,15 @@
     "rebuild": "electron-rebuild",
     "test": "node test/compatibility-smoke.js",
     "dist:linux": "electron-builder --linux",
-    "package:all": "node scripts/package-crossplatform.js"
+    "package:all": "node scripts/package-crossplatform.js",
+    "pack:modpack": "node scripts/pack-modpack-zst.js"
   },
   "dependencies": {
+    "@mongodb-js/zstd": "^7.0.0",
     "axios": "^1.7.7",
     "electron-store": "^8.2.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "tar-stream": "^3.3.0"
   },
   "optionalDependencies": {
     "keytar": "^7.9.0"

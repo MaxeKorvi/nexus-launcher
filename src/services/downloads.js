@@ -186,6 +186,8 @@ function detectArchiveFormat(buf) {
   if (buf[0] === 0x1F && buf[1] === 0x8B && buf[2] === 0x08) return 'gzip';
   // uncompressed tar: magic at offset 257
   if (buf.length >= 265 && Buffer.from(buf).slice(257, 262).toString('ascii') === 'ustar') return 'tar';
+  // Zstandard magic: 28 B5 2F FD
+  if (buf[0] === 0x28 && buf[1] === 0xB5 && buf[2] === 0x2F && buf[3] === 0xFD) return 'zstd';
   return '';
 }
 
@@ -195,8 +197,8 @@ function isZipHeader(buf) {
 
 function allowedArchiveFormats(item = {}) {
   const kind = String(item.kind || '').toLowerCase();
-  if (kind === 'world') return new Set(['zip', 'rar', '7z', 'gzip', 'tar']);
-  if (kind === 'modpack') return new Set(['zip']);
+  if (kind === 'world') return new Set(['zip', 'rar', '7z', 'gzip', 'tar', 'zstd']);
+  if (kind === 'modpack') return new Set(['zip', 'zstd']);
   if (kind === 'resourcepack') return new Set(['zip']);
   if (kind === 'mod') return new Set(['zip']);
   return new Set(['zip', 'rar', '7z', 'gzip', 'tar']);
@@ -1065,6 +1067,8 @@ function list(opts = {}) {
       received: s.received,
       total: s.total,
       startedAt: s.startedAt,
+      speedBps: s.speedBps || 0,
+      currentFile: s.currentFile || '',
       paused: s.paused,
       status: s.status || 'downloading',
       attempt: s.attempt,
@@ -1081,9 +1085,34 @@ function clearCompleted() {
   return true;
 }
 
+function emitExternalProgress({ id, label, received = 0, total = 0, speedBps = 0, currentFile = '', status = 'downloading', done = false, error = null }) {
+  if (done) {
+    active.delete(id);
+    completed.unshift({ id, label, status: error ? 'error' : 'done', error: error || undefined, item: { id, label, kind: 'modpack' } });
+    emit(error ? 'downloads:error' : 'downloads:done', { id, error });
+    emitSnapshotSoon();
+    return;
+  }
+  const existing = active.get(id) || {
+    item: { id, label, kind: 'modpack' },
+    startedAt: Date.now(),
+    attempt: 1,
+    attempts: 1,
+    paused: false
+  };
+  existing.received = received;
+  existing.total = total;
+  existing.speedBps = speedBps;
+  existing.currentFile = currentFile;
+  existing.status = status;
+  active.set(id, existing);
+  emit('downloads:progress', { id, received, total, speedBps, currentFile });
+  emitSnapshotSoon();
+}
+
 function setWindow() {}
 
-module.exports = { start, pause, resume, cancel, cancelAll, cancelGroup, list, clearCompleted, setWindow };
+module.exports = { start, pause, resume, cancel, cancelAll, cancelGroup, list, clearCompleted, emitExternalProgress, setWindow };
 if (process.env.NODE_ENV === 'test') {
   module.exports.__testing = { detectArchiveFormat, isHtmlHead, extractGoogleDriveId, expandDownloadUrls };
 }

@@ -561,16 +561,18 @@ window.App = {
       const pct = total ? Math.min(100, (received / total) * 100) : (item.status === 'done' || item.status === 'skipped' ? 100 : 0);
       const isActive = active.find(x => x.id === item.id);
       const status = isActive ? 'Идёт загрузка' : queue.find(x => x.id === item.id) ? 'В очереди' : (item.status === 'error' ? 'Ошибка' : 'Готово');
+      const speedMb = item.speedBps ? ` · ${(item.speedBps / 1048576).toFixed(1)} МБ/с` : '';
+      const fileHint = item.currentFile ? ` · ${Shared.escapeHtml(item.currentFile)}` : '';
       return `<div class="drawer-row ${item.status === 'error' ? 'error' : ''} ${isActive ? 'active-download' : ''}">
         <div class="drawer-row-top">
           <b>${Shared.escapeHtml(item.label || item.id)}</b>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span>${status}${item.attempt ? ` · ${item.attempt}/${item.attempts}` : ''}</span>
+            <span>${status}${speedMb}${item.attempt ? ` · ${item.attempt}/${item.attempts}` : ''}</span>
             <button class="btn ghost compact-btn btn-cancel-dl" data-cancel-id="${Shared.escapeHtml(item.id)}" title="Отменить загрузку" style="padding: 1px 5px; font-size: 11px; height: 18px; line-height: 1; color: var(--error);">✕</button>
           </div>
         </div>
         <div class="progress"><div class="fill" style="width:${pct}%"></div></div>
-        <small>${total ? `${(received / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB` : Shared.escapeHtml(item.path || '')}</small>
+        <small>${total ? `${(received / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB${fileHint}` : Shared.escapeHtml(item.path || '')}</small>
       </div>`;
     }).join('') : (this._downloadJustFinished && completed.length ? '<div class="empty-state">Установка завершена</div>' : '<div class="empty-state">Нет загрузок</div>');
 

@@ -22,11 +22,28 @@ app.commandLine.appendSwitch('smooth-scrolling');
 // Disable menu bar by default
 Menu.setApplicationMenu(null);
 
+// Enforce single instance: restore/focus existing window (including hidden in tray) instead of opening duplicates
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+  process.exit(0);
+}
+
 let mainWindow = null;
 let tray = null;
 let manualMaximized = false;
 let restoreBounds = null;
 app.isQuitting = false;
+
+app.on('second-instance', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.focus();
+  } else if (app.isReady()) {
+    createMainWindow();
+  }
+});
 
 function getLauncherIconPath() {
   const assetIcon = path.join(__dirname, '..', 'renderer', 'assets', 'icon.png');
