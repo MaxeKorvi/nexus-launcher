@@ -213,9 +213,10 @@ window.Views = window.Views || {};
         const jvmArgsVal = (s.java && s.java.jvmArgs) ? s.java.jvmArgs : defaultJvmArgs;
 
         return `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
             <!-- Left Column: Paths & Runtime -->
-            <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="st-group-box">
+              <div style="font-size: 14px; font-weight: 750; color: var(--text); margin-bottom: 4px;">Пути и запуск</div>
               <div>
                 <label class="st-label">Папка игры (.minecraft)</label>
                 <div class="st-input-row">
@@ -326,7 +327,7 @@ window.Views = window.Views || {};
 
                 <div class="st-toggle-row">
                   <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfd8dc;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c9ba5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                     Сворачивать в трей при запуске игры
                   </div>
                   <div class="st-switch ${s.minimizeToTray !== false ? 'on' : ''}" id="sw-tray"></div>
