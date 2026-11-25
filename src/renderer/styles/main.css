@@ -3726,16 +3726,42 @@ body.matte-style * {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 20px var(--shadow-glow) !important;
   transform: translateY(-2px);
 }
+.mp-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+.mp-categories {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mp-categories::-webkit-scrollbar {
+  display: none;
+}
 .mp-categories .pill-btn {
-  padding: 7px 14px;
+  padding: 6px 12px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-soft);
   color: var(--text-2);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
   cursor: pointer;
   transition: all 150ms ease;
+}
+#mp-sort:focus,
+.mp-sort-select:focus {
+  outline: none !important;
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.25) !important;
 }
 .mp-categories .pill-btn:hover {
   background: rgba(255, 255, 255, 0.07);

@@ -172,8 +172,8 @@ window.Views = window.Views || {};
           </div>
 
           <!-- Single Horizontal Line: Categories Pills + Sort Dropdown -->
-          <div class="mp-filter-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 0;">
-            <div class="mp-categories" style="display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0;">
+          <div class="mp-filter-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 12px; padding: 2px 0;">
+            <div class="mp-categories" style="display: flex; align-items: center; flex-wrap: nowrap; white-space: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0;">
               ${[
                 { id: 'all', label: 'Все' },
                 { id: 'popular', label: 'Популярные' },
@@ -185,7 +185,7 @@ window.Views = window.Views || {};
                 { id: 'quests', label: 'Квесты' },
                 { id: 'community', label: 'Сообщество' }
               ].map(cat => `
-                <button class="pill-btn ${this.category === cat.id ? 'active' : ''}" data-category="${cat.id}" style="white-space: nowrap; font-size: 12px; padding: 5px 12px; border-radius: 4px;">
+                <button class="pill-btn ${this.category === cat.id ? 'active' : ''}" data-category="${cat.id}" style="white-space: nowrap; flex-shrink: 0; font-size: 12px; padding: 6px 12px; border-radius: 4px;">
                   ${cat.label}
                 </button>
               `).join('')}
@@ -193,7 +193,7 @@ window.Views = window.Views || {};
 
             <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
               <span style="color: var(--text-2); font-size: 12px; white-space: nowrap;">Сортировка:</span>
-              <select class="input" id="mp-sort" style="height: 32px; font-size: 12px; padding: 2px 10px; width: 160px; border-radius: 3px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-soft); color: var(--text);">
+              <select class="input mp-sort-select" id="mp-sort" style="height: 32px; font-size: 12px; padding: 2px 10px; width: 160px; border-radius: 3px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-soft); color: var(--text); outline: none;">
                 <option value="popular" ${this.sortBy === 'popular' ? 'selected' : ''}>По популярности</option>
                 <option value="downloads" ${this.sortBy === 'downloads' ? 'selected' : ''}>По скачиваниям</option>
                 <option value="updated" ${this.sortBy === 'updated' ? 'selected' : ''}>По обновлению</option>

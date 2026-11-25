@@ -131,7 +131,7 @@ window.App = {
 
     // Persist selected version across restarts
     Store.on('selectedVersion', (ver) => {
-      if (ver && ver !== '—') {
+      if (ver && ver !== '—' && ver !== 'нет версии') {
         window.api.invoke('settings:set', 'lastSelectedVersion', ver).catch(() => {});
       }
     });
@@ -867,7 +867,7 @@ window.App = {
       const selectedModpack = Store.get('selectedModpack');
       let targetPath = selectedModpack ? selectedModpack.path : (Store.get('selectedInstallPath') || null);
       const versionId = Store.get('selectedVersion');
-      if (!targetPath && versionId && versionId !== '—') {
+      if (!targetPath && versionId && versionId !== '—' && versionId !== 'нет версии') {
         const paths = await window.api.invoke('versions:get-storage-paths', versionId);
         targetPath = paths && (paths.selected || paths.all);
       }
@@ -902,7 +902,7 @@ window.App = {
       this.navigate('accounts');
       return;
     }
-    if (!versionId || versionId === '—') {
+    if (!versionId || versionId === '—' || versionId === 'нет версии') {
       Toast.error('Не выбрана версия', 'Установите версию Minecraft');
       this.navigate('library');
       return;
@@ -960,8 +960,9 @@ window.App = {
 
   updateHomeProfile() {
     const activeInstance = Store.get('activeInstance');
-    const selectedVersion = (activeInstance && (activeInstance.versionId || activeInstance.profileId || activeInstance.mcVersion)) || Store.get('selectedVersion') || '—';
+    const selectedVersion = (activeInstance && (activeInstance.versionId || activeInstance.profileId || activeInstance.mcVersion)) || Store.get('selectedVersion') || 'нет версии';
     const selectedModpack = Store.get('selectedModpack');
+    const hasValidVersion = Boolean(selectedVersion && selectedVersion !== '—' && selectedVersion !== 'нет версии' && selectedVersion !== 'null' && selectedVersion !== 'undefined');
     
     // Update bottom bar
     const bottomVersion = document.getElementById('bottom-version');
@@ -1002,7 +1003,7 @@ window.App = {
       } else {
         nameEl.textContent = 'Стандартный профиль';
         typeEl.textContent = 'Minecraft';
-        verBadge.textContent = selectedVersion;
+        verBadge.textContent = hasValidVersion ? selectedVersion : 'Версия: нет версии';
         iconEl.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-hi)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M12 12h.01"/><path d="M15 10h.01"/><path d="M18 12h.01"/><path d="M6 12h4"/><path d="M8 10v4"/></svg>`;
         if (coverEl) {
           coverEl.style.backgroundImage = `linear-gradient(90deg, rgba(10, 13, 18, 0.94) 0%, rgba(10, 13, 18, 0.82) 55%, rgba(10, 13, 18, 0.6) 100%)${bgUrl}`;
@@ -1012,7 +1013,6 @@ window.App = {
 
     const isLaunching = Store.get('isLaunching');
     const verifyOnLaunch = Store.get('verifyOnLaunch');
-    const hasValidVersion = Boolean(selectedVersion && selectedVersion !== '—' && selectedVersion !== 'null' && selectedVersion !== 'undefined');
 
     if (statusBadge) {
       if (!hasValidVersion) {
