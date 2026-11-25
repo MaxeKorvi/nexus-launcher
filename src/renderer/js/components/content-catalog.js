@@ -87,11 +87,12 @@
 
     create(cfg) {
       const p = cfg.prefix;
+      const availableSources = cfg.availableSources || ['curseforge', 'modrinth', 'minecraft-inside'];
       const view = {
         query: '',
         page: 0,
-        sources: cfg.hasSources ? ['curseforge', 'modrinth', 'minecraft-inside'] : ['minecraft-inside'],
-        preferSource: 'curseforge',
+        sources: cfg.hasSources ? [...availableSources] : ['minecraft-inside'],
+        preferSource: cfg.fallbackSource || availableSources[0] || 'curseforge',
         mcVersion: '',
         loader: '',
 
@@ -160,9 +161,7 @@
                 <input class="input" id="${p}-version" placeholder="Версия" title="Версия" value="${esc(this.mcVersion)}" readonly>
                 ${cfg.hasSources ? `
                   <select class="input" id="${p}-prefer" title="Приоритет">
-                    <option value="curseforge" ${this.preferSource === 'curseforge' ? 'selected' : ''}>Приоритет: CurseForge</option>
-                    <option value="modrinth" ${this.preferSource === 'modrinth' ? 'selected' : ''}>Приоритет: Modrinth</option>
-                    <option value="minecraft-inside" ${this.preferSource === 'minecraft-inside' ? 'selected' : ''}>Приоритет: MC Inside</option>
+                    ${availableSources.map(src => `<option value="${src}" ${this.preferSource === src ? 'selected' : ''}>Приоритет: ${src === 'minecraft-inside' ? 'MC Inside' : sourceLabel(src)}</option>`).join('')}
                   </select>
                 ` : `<button class="btn outline compact-btn" id="${p}-installed">${esc(cfg.installedButtonLabel || 'Установленные')}</button>`}
               </div>
@@ -170,7 +169,7 @@
               ${cfg.hasSources ? `
                 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0 14px;">
                   <span style="color:var(--text-2);font-size:12px;font-weight:600;">Источники:</span>
-                  ${['curseforge', 'modrinth', 'minecraft-inside'].map(src => `
+                  ${availableSources.map(src => `
                     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:12.5px;color:var(--text);">
                       <input type="checkbox" data-${p}-src="${src}" ${this.sources.includes(src) ? 'checked' : ''} style="accent-color:var(--accent);">
                       <span>${sourceLabel(src)}</span>

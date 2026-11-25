@@ -67,11 +67,12 @@ async function moveFileSafe(src, dest) {
   }
 }
 
-async function list({ query = '', mcVersion = '', page = 0, pageSize = 60 } = {}) {
-  const results = await Promise.allSettled([
-    searchCurseForge({ query, type: 'world', mcVersion, page, pageSize }),
-    searchMinecraftInside({ section: 'maps', query, mcVersion, page, pageSize })
-  ]);
+async function list({ query = '', sources = [], preferSource = 'curseforge', mcVersion = '', page = 0, pageSize = 60 } = {}) {
+  const requested = Array.from(new Set((sources && sources.length ? sources : ['curseforge', 'minecraft-inside']).filter(Boolean)));
+  const jobs = [];
+  if (requested.includes('curseforge')) jobs.push(searchCurseForge({ query, type: 'world', mcVersion, page, pageSize }));
+  if (requested.includes('minecraft-inside')) jobs.push(searchMinecraftInside({ section: 'maps', query, mcVersion, page, pageSize }));
+  const results = await Promise.allSettled(jobs);
   const hits = [];
   const errors = [];
   for (const result of results) {
@@ -80,8 +81,8 @@ async function list({ query = '', mcVersion = '', page = 0, pageSize = 60 } = {}
       if (result.value.error) errors.push(result.value.error);
     } else errors.push(result.reason && result.reason.message || String(result.reason));
   }
-  const ordered = dedupeByPriority(hits, ['curseforge', 'minecraft-inside']);
-  return { source: 'all', total: ordered.length, hits: ordered.slice(0, pageSize), errors };
+  const ordered = dedupeByPriority(hits, [preferSource, 'curseforge', 'minecraft-inside'].filter((x, i, arr) => x && arr.indexOf(x) === i));
+  return { source: requested.length === 1 ? requested[0] : 'all', total: ordered.length, hits: ordered.slice(0, pageSize), errors };
 }
 
 async function extractMapZip(zipPath, root, title) {
