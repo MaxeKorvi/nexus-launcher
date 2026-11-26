@@ -8,7 +8,12 @@ const { Transform, pipeline } = require('stream');
 const { promisify } = require('util');
 const axios = require('axios');
 const tar = require('tar-stream');
-const zstd = require('@mongodb-js/zstd');
+let zstd = null;
+try {
+  zstd = require('@mongodb-js/zstd');
+} catch (err) {
+  console.warn('[zstd-stream] Native @mongodb-js/zstd unavailable:', err && err.message ? err.message : err);
+}
 
 const pipe = promisify(pipeline);
 const IO_CHUNK_BYTES = 256 * 1024; // 256 KB buffer for optimal disk & stream throughput
@@ -25,6 +30,9 @@ function safeJoin(root, rel) {
 }
 
 function createZstdDecompressTransform() {
+  if (!zstd) {
+    throw new Error('Модуль распаковки .tar.zst (@mongodb-js/zstd) недоступен в текущей среде.');
+  }
   if (typeof zstd.DecompressStream === 'function') {
     return new zstd.DecompressStream();
   }

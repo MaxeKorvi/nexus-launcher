@@ -13,6 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 const builder = require('electron-builder');
+const { ensureZstdPrebuild } = require('./ensure-zstd-prebuild');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(ROOT_DIR, 'dist');
@@ -21,25 +22,36 @@ const VERSION = 'build-26.3.0.0.1';
 async function buildAll() {
   console.log(`[Build] Starting cross-platform compilation for Nexus Launcher (${VERSION})...`);
 
-  // 1. Compile Linux Unpacked
-  console.log('[Build] Packaging Linux x64...');
-  await builder.build({
-    targets: builder.Platform.LINUX.createTarget(['dir']),
-    config: {
-      appId: 'app.nexus.launcher',
-      productName: 'Nexus Launcher',
-      directories: { output: 'dist' },
-      files: ['src/**/*', 'package.json'],
-      linux: { category: 'Game' }
-    }
-  });
+  try {
+    // 1. Compile Linux Unpacked with Linux native zstd.node
+    console.log('[Build] Packaging Linux x64...');
+    ensureZstdPrebuild('linux');
+    await builder.build({
+      targets: builder.Platform.LINUX.createTarget(['dir']),
+      config: {
+        appId: 'app.nexus.launcher',
+        productName: 'Nexus Launcher',
+        directories: { output: 'dist' },
+        files: ['src/**/*', 'package.json'],
+        linux: { category: 'Game' }
+      }
+    });
 
-  const linuxAsar = path.join(DIST_DIR, 'linux-unpacked', 'resources', 'app.asar');
-  const winAsar = path.join(DIST_DIR, 'win-unpacked', 'resources', 'app.asar');
-
-  if (fs.existsSync(linuxAsar)) {
-    console.log('[Build] Syncing latest app.asar to Windows package...');
-    fs.copyFileSync(linuxAsar, winAsar);
+    // 2. Compile Windows Unpacked with Windows native zstd.node
+    console.log('[Build] Packaging Windows x64...');
+    ensureZstdPrebuild('win32');
+    await builder.build({
+      targets: builder.Platform.WINDOWS.createTarget(['dir']),
+      config: {
+        appId: 'app.nexus.launcher',
+        productName: 'Nexus Launcher',
+        directories: { output: 'dist' },
+        files: ['src/**/*', 'package.json'],
+        win: { icon: 'src/renderer/assets/nexus-logo.png' }
+      }
+    });
+  } finally {
+    ensureZstdPrebuild(process.platform === 'win32' ? 'win32' : 'linux');
   }
 
   // 2. Compress Linux archive
